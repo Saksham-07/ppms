@@ -1,33 +1,43 @@
 import 'package:flutter/material.dart';
 import 'package:mysql1/mysql1.dart';
-import 'package:ppms/menuScreen.dart';
+import 'package:ppms/home_page1_widget.dart';
 import 'package:ppms/sql.dart';
+import 'dart:convert';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:http/http.dart' as http;
 
-void main() {
-  runApp(const MyApp());
+
+
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  SharedPreferences prefs = await SharedPreferences.getInstance();
+  bool isLoggedIn = prefs.getBool('isLoggedIn') ?? false;
+
+  runApp(MyApp(isLoggedIn: isLoggedIn));
 }
 
 class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+  final bool isLoggedIn;
 
-  // This widget is the root of your application.
+  const MyApp({super.key, required this.isLoggedIn});
+
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'Flutter Demo',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
-
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.orangeAccent),
         useMaterial3: true,
       ),
-      home: const MyHomePage(title: 'Flutter Demo Home Page'),
+      home: isLoggedIn ? HomePage1Widget() : MyHomePage(title: 'Flutter Demo Home Page'),
     );
   }
 }
 
 class MyHomePage extends StatefulWidget {
   const MyHomePage({super.key, required this.title});
+
 
   final String title;
 
@@ -36,8 +46,6 @@ class MyHomePage extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage> {
-  var id = '';
-
   final unfocusNode = FocusNode();
   // State field(s) for TextField widget.
   FocusNode? textFieldFocusNode1;
@@ -55,6 +63,19 @@ class _MyHomePageState extends State<MyHomePage> {
     textController1 = TextEditingController();
     textController2 = TextEditingController();
     passwordVisibility = false;
+    _checkLoginStatus(); // Check if the user is already logged in
+  }
+
+  void _checkLoginStatus() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    bool isLoggedIn = prefs.getBool('isLoggedIn') ?? false;
+    if (isLoggedIn) {
+      // If user is already logged in, navigate to HomePage1Widget
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (context) => HomePage1Widget()),
+      );
+    }
   }
 
   @override
@@ -67,38 +88,120 @@ class _MyHomePageState extends State<MyHomePage> {
     super.dispose();
   }
 
-  Future<bool> verifyUser(String userId, String password) async {
-    var sql = mySql();
-
+  bool isPresent = false;
+  Future<void> fetchData(String user, String password) async {
     try {
-      MySqlConnection conn = await sql.getConnection();
-      print("Connected");
-      var results = await conn.query(
-        'SELECT COUNT(*) FROM HR_USER_MSTR WHERE LOGIN_ID = ? AND PASSWORD = ?',
-        [userId, password],
-      );
-      await conn.close();
-      print("jbjhb");
-      var count = results.first.values?.first as int;
+      final url = 'http://172.16.0.5:10008/login?user_id=$user&password=$password';
+      // final url = 'http://172.16.10.11:8000/login?user_id=$user&password=$password';
+      print('Fetching data from: $url');
 
-      return count > 0;
+      final response = await http.get(Uri.parse(url));
+
+      if (response.statusCode == 200) {
+        var data = jsonDecode(response.body);
+        print('Data received: $data');
+
+        if (data != null && data.isNotEmpty) {
+          String loginId = data[0]['Login_id'];
+          String unit = data[0]['Unit'];
+          print(unit);
+
+          // Save login_id to shared preferences
+          SharedPreferences prefs = await SharedPreferences.getInstance();
+          await prefs.setString('login_id', loginId);
+          await prefs.setString('unit', unit);
+
+          print('Login_id saved: $loginId');
+
+          setState(() {
+            isPresent = true;
+          });
+        } else {
+          setState(() {
+            isPresent = false;
+          });
+        }
+      } else {
+        print('Failed to load data with status code: ${response.statusCode}');
+        throw Exception('Failed to load data');
+      }
     } catch (e) {
-      print('Error connecting to MySQL: $e');
-      return false;
+      print('Error fetching data: $e');
     }
   }
 
-  void _login() async {
-    String userId = textController1?.text ?? '';
-    String password = textController2?.text ?? '';
+  void getB() async {
+    try {
+      const url = 'http://172.16.0.123:12008/api/HRISM/GeteLeaveApplicationHistory';
+      print('Fetching data from: $url');
 
-    bool isValidUser = await verifyUser(userId, password);
-    if (isValidUser) {
-      Navigator.push(context, MaterialPageRoute(builder: (context) => MenuScreen()));
+      // Define the headers and body
+      Map<String, String> headers = {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+      };
+
+      Map<String, dynamic> body = {
+        "employeeCode":"9970",
+        "yearNo":"2024",
+        "monthNo":"6",
+        "appStatus":"All",
+        "appType":"Leave"
+      };
+
+      // Send the POST request
+      final response = await http.post(
+        Uri.parse(url),
+        headers: headers,
+        body: jsonEncode(body),
+      );
+
+      if (response.statusCode == 200) {
+        var data = jsonDecode(response.body);
+        print('Data received: $data');
+      } else {
+        print('Failed to load data with status code: ${response.statusCode}');
+        print('Response body: ${response.body}');
+      }
+    } catch (e) {
+      print('Error fetching data: $e');
+    }
+  }
+
+// Assuming this function is part of a StatefulWidget
+  void setState(VoidCallback fn) {
+    // Implement this function to update the state in your widget
+  }
+
+  void _login() async {
+    String? userId = textController1?.text.trim();
+    String? password = textController2?.text.trim();
+
+    fetchData(userId!, password!);
+
+    final response = await http.get(Uri.parse('http://172.16.0.5:10008/login?user_id=$userId&password=$password'));
+
+    if (response.statusCode == 200) {
+      var data = jsonDecode(response.body);
+      if (data != null && data.isNotEmpty) {
+        print(data);
+        // If login is successful, set isLoggedIn to true and navigate to HomePage1Widget
+        SharedPreferences prefs = await SharedPreferences.getInstance();
+        prefs.setBool('isLoggedIn', true);
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => HomePage1Widget()),
+        );
+      } else {
+        // Show error message if login fails
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Invalid user ID or password')),
+        );
+      }
     } else {
-      // Show error message
+      // Show error message if login fails
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Invalid user ID or password')),
+        SnackBar(content: Text('Failed to login. Please try again later.')),
       );
     }
   }
@@ -258,6 +361,7 @@ class _MyHomePageState extends State<MyHomePage> {
                   padding: EdgeInsetsDirectional.fromSTEB(0, 30, 0, 10),
                   child: ElevatedButton(
                     onPressed: _login,
+                    // onLongPress: getB,
                     child : Text('Login' ,style: TextStyle(
                       fontFamily: 'Tahoma'
                     ),),

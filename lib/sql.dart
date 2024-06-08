@@ -16,11 +16,10 @@ class mySql{
       var settings = ConnectionSettings(
         host: '14.142.248.34',
         port: 51121,
-        user: 'saa',
+        user: 'sa',
         password: 'Admin@321#\$',
         db: 'MHRIS',
-        timeout: Duration(seconds:120),
-
+        timeout: Duration(seconds:80),
         characterSet: CharacterSet.UTF8MB4,
       );
       print("Connecting....");
