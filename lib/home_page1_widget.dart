@@ -100,7 +100,7 @@ class _HomePage1WidgetState extends State<HomePage1Widget>
               headerSliverBuilder: (context, _) => [
                 const SliverAppBar(
                   pinned: true,
-                  floating: false,
+                  floating: true,
                   backgroundColor:Color(0xFF5FE3D3),
                   automaticallyImplyLeading: true,
                   title: Text(
