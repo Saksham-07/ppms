@@ -99,13 +99,25 @@ class _EssDashBoardState extends State<EssDashBoard> {
                             children: [
                               Row(
                                 children: [
-                                  Text("Application Approval",style: Theme.of(context).textTheme.headlineSmall,),
+                                  Text("Leave Approval",style: Theme.of(context).textTheme.headlineSmall,),
                                   const SizedBox(width: 20,),
                                   const Icon(Iconsax.arrow_right)
                                 ],
                               ).onTap((){
-                                Get.to(()=>const LeaveApplication(title: 'ESS- Application Approval',));
+                                Get.to(()=>const LeaveApplication(title: 'ESS- Leave Approval',));
                               }),
+                            ],
+                          ),
+                          const SizedBox(height: 20,),
+                          Row(
+                            children: [
+                              Row(
+                                children: [
+                                  Text("Management Approval",style: Theme.of(context).textTheme.headlineSmall,),
+                                  const SizedBox(width: 20,),
+                                  const Icon(Iconsax.arrow_right)
+                                ],
+                              ).onTap(()=>Get.to(()=>ManagementApproval(title: 'ESS-Management Approval',))),
                             ],
                           ),
                           const SizedBox(height: 20,),
@@ -144,18 +156,7 @@ class _EssDashBoardState extends State<EssDashBoard> {
                               ),
                             ],
                           ),
-                          const SizedBox(height: 20,),
-                          Row(
-                            children: [
-                              Row(
-                                children: [
-                                  Text("Management Approval",style: Theme.of(context).textTheme.headlineSmall,),
-                                  const SizedBox(width: 20,),
-                                  const Icon(Iconsax.arrow_right)
-                                ],
-                              ).onTap(()=>Get.to(()=>ManagementApproval(title: 'ESS-Management Approval',))),
-                            ],
-                          )
+
                         ],
                       ),
                     ),
