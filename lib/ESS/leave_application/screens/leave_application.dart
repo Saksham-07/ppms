@@ -1,6 +1,8 @@
 import 'dart:convert';
 import 'package:dropdown_button2/dropdown_button2.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:velocity_x/velocity_x.dart';
@@ -42,15 +44,15 @@ class _LeaveApplication extends State<LeaveApplication> {
 
   }*/
 
-  void ApproveLeaveApp(String appId) async
-  {
-    await ApproveRejectApplication(appId,"Approved");
+  void ApproveLeaveApp(String appId) async {
+    await ApproveRejectApplication(appId, "Approved");
   }
-  void RejectLeaveApp(String appId) async
-  {
-    await ApproveRejectApplication(appId,"Rejected");
+
+  void RejectLeaveApp(String appId) async {
+    await ApproveRejectApplication(appId, "Rejected");
   }
-  Future<void> ApproveRejectApplication(String appId,String appStatus) async {
+
+  Future<void> ApproveRejectApplication(String appId, String appStatus) async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     try {
       lstAppData = [];
@@ -78,38 +80,98 @@ class _LeaveApplication extends State<LeaveApplication> {
       );
 
       print(response.body);
-      ShowDialog(response.body);
-      if (response.statusCode == 200) {
 
-          setState(() {
-            lstAppData=[];
-            selectedValue="Applied";
-            selectedValue="All";
-          });
+      if (response.statusCode == 200) {
+        ShowDialog(response.body,1);
+        setState(() {
+          lstAppData = [];
+          selectedValue = "Applied";
+          selectedValue = "All";
+        });
       }
+      else
+        {
+          ShowDialog(response.body,2);
+        }
     } catch (e) {
       throw e;
       print('Error fetching data: $e');
     }
   }
-  ShowDialog(String Message)
-  {
-    showDialog(context: context, builder: (context)=>AlertDialog(
-      actions: [
-        TextButton(onPressed: (){
-          Navigator.of(context).pop();
-        }, child: const Text("Close"))
-      ],
-      title: const Text("Application Approval"),
-      contentPadding: const EdgeInsets.all(20),
-      content: Text(Message) ,
-    ));
+
+  ShowDialog(String Message,int msgType) {
+
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Container(
+      padding: const EdgeInsets.all(16),
+      height: 90,
+      decoration: BoxDecoration(
+          color:msgType==1?Colors.blue:Color(0xFFC72C41),
+          borderRadius: const BorderRadius.all(Radius.circular(20))
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(Message,style: const TextStyle(fontSize:12,color:Colors.white,overflow: TextOverflow.ellipsis ),)
+        ],
+          ),
+    )));
+    /*showDialog(
+        context: context,
+        builder: (context) => AlertDialog(
+              actions: [
+                TextButton(
+                    onPressed: () {
+                      Navigator.of(context).pop();
+                    },
+                    child: const Text("Close"))
+              ],
+              title: const Text("Application Approval"),
+              contentPadding: const EdgeInsets.all(20),
+              content: Text(Message),
+            ));*/
   }
+
+  showConfirmDialog(String Message,String appId,int appType) async {
+    showDialog(
+        context: context,
+        builder: (context) => AlertDialog(
+          actions: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: [
+                ElevatedButton(
+                    onPressed: () {
+                      if(appType==1) {
+                        ApproveLeaveApp(appId);
+                        Navigator.of(context).pop();
+                      }
+                      else if(appType==2)
+                      {
+                        RejectLeaveApp(appId);
+                        Navigator.of(context).pop();
+                      }
+                    },
+                    child: const Text("Yes")),
+                const SizedBox(width: 5,),
+                ElevatedButton(
+                    onPressed: () {
+                      Navigator.of(context).pop();
+                    },
+                    child: const Text("No")),
+              ],
+            )
+
+          ],
+          title: const Text("Confirmation Leave Approval"),
+          contentPadding: const EdgeInsets.all(20),
+          content: Text(Message),
+        ));
+  }
+
   Future<List<Appaprovalnewmodel>> getApplicationApprovalSub() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     print("Here on Function");
     try {
-
       lstAppData = [];
       const url =
           'http://172.16.0.123:12008/api/HRISM/GetApplicationApprovalSub';
@@ -168,7 +230,7 @@ class _LeaveApplication extends State<LeaveApplication> {
       body: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Row(
+          /*Row(
             children: [
               const SizedBox(
                 width: 5,
@@ -244,77 +306,177 @@ class _LeaveApplication extends State<LeaveApplication> {
           ),
           const SizedBox(
             height: 30,
-          ),
+          ),*/
           Expanded(
+              child: Padding(
+            padding: const EdgeInsets.all(8.0),
+            child: SingleChildScrollView(
               child: FutureBuilder(
-            future: getApplicationApprovalSub(),
-            builder: (context, snapshot) {
-              if (!snapshot.hasData) {
-                return "Loading".text.make();
-              } else {
-                return Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  mainAxisSize: MainAxisSize.min,
-                  verticalDirection: VerticalDirection.down,
-                  children: [
-                    GridView.builder(
-                        shrinkWrap: true,
-                        itemCount: lstAppData.length,
-                        gridDelegate:
-                            const SliverGridDelegateWithFixedCrossAxisCount(
-                                crossAxisCount: 2,
-                                mainAxisSpacing: 1,
-                                crossAxisSpacing: 1),
-                        itemBuilder: (context, index) {
-                          return Column(children:
-                          [
-                            Column(
-                              children: [
-                                lstAppData[index]
-                                    .employeename
-                                    .toString()
-                                    .text
-                                    .make(),
-                                const SizedBox(height:10 ,),
-                                lstAppData[index]
-                                    .apptype
-                                    .toString()
-                                    .text
-                                    .make(),
-                                const SizedBox(height:10 ,),
-                                ("${lstAppData[index]
-                                    .fromdt} -- ${lstAppData[index]
-                                    .todt}")
-                                    .text
-                                    .make(),
-                                const SizedBox(height:10 ,),
-                                Row(
+                future: getApplicationApprovalSub(),
+                builder: (context, snapshot) {
+                  if (!snapshot.hasData) {
+                    return "Loading".text.make();
+                  } else {
+                    return Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      mainAxisSize: MainAxisSize.min,
+                      verticalDirection: VerticalDirection.down,
+                      children: [
+                        GridView.builder(
+                            shrinkWrap: true,
+                            itemCount: lstAppData.length,
+                            gridDelegate:
+                                const SliverGridDelegateWithFixedCrossAxisCount(
+                                    crossAxisCount: 1,
+                                    mainAxisSpacing: 1,
+                                    crossAxisSpacing: 8,
+                                    childAspectRatio:1.94),
+                            itemBuilder: (context, index) {
+                              return Column(children: [
+                                Column(
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceAround,
+                                  crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
-                                    TextButton(onPressed: (){
-                                          ApproveLeaveApp(lstAppData[index]
-                                              .appid
-                                              .toString());
-                                    }, child: "Approve".text.makeCentered()),
-                                    const SizedBox(width:10 ,),
-                                    TextButton(onPressed: (){
-                                      RejectLeaveApp(lstAppData[index]
-                                          .appid
-                                          .toString());
-                                    }, child: "Reject".text.makeCentered()),
+                                    Row(
+                                      children: [
+                                        "Emp. Name : ".text.bold.make(),
+                                        const SizedBox(
+                                          width: 35,
+                                        ),
+                                        lstAppData[index]
+                                            .employeename
+                                            .toString()
+                                            .text.overflow(TextOverflow.ellipsis)
+                                            .make(),
+                                      ],
+                                    ),
+                                    const SizedBox(
+                                      height: 4.5,
+                                    ),
+                                    Row(
+                                      children: [
+                                        "App Type : ".text.bold.make(),
+                                        const SizedBox(
+                                          width: 50,
+                                        ),
+                                        lstAppData[index]
+                                            .apptype
+                                            .toString()
+                                            .text
+                                            .make()
+                                      ],
+                                    ),
+                                    const SizedBox(
+                                      height: 4.5,
+                                    ),
+                                    Row(
+                                      children: [
+                                        "App. Period : ".text.bold.make(),
+                                        const SizedBox(
+                                          width: 33,
+                                        ),
+                                        ("${lstAppData[index].fromdt} - ${lstAppData[index].todt}")
+                                            .text
+                                            .make(),
+                                      ],
+                                    ),
+                                    const SizedBox(
+                                      height: 4.5,
+                                    ),
+                                    Row(
+                                      children: [
+                                        "Duration : ".text.bold.make(),
+                                        const SizedBox(
+                                          width: 55,
+                                        ),
+                                        "${lstAppData[index].dayscount.toString()} Days"
+                                            .text
+                                            .make(),
+                                      ],
+                                    ),
+                                    const SizedBox(
+                                      height: 4.5,
+                                    ),
+                                    Row(
+                                      children: [
+                                        "Remarks : ".text.bold.make(),
+                                        const SizedBox(
+                                          width: 53,
+                                        ),
+                                        lstAppData[index].appremarks.toString()
+                                            .text.overflow(TextOverflow.ellipsis)
+                                            .make(),
+                                      ],
+                                    ),
+                                    const SizedBox(
+                                      height: 2,
+                                    ),
+                                    Row(
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.spaceEvenly,
+                                      children: [
+                                        IconButton(
+                                          onPressed: () {
+                                            showConfirmDialog("Are you sure want to Approve",lstAppData[index]
+                                                .appid
+                                                .toString(),2);
+                                            /*ApproveLeaveApp(lstAppData[index]
+                                                .appid
+                                                .toString());*/
+                                          },
+                                          icon: const Image(
+                                            image: AssetImage(
+                                                "assets/images/ess_images/ButtonIcons/TickIcon.png"),
+                                            height: 40,
+                                            width: 40,
+                                          ),
+                                          /*child:
+                                                "Approve".text.makeCentered()*/
+                                        ),
+                                        const SizedBox(
+                                          width: 10,
+                                        ),
+                                        IconButton(
+                                          onPressed: () {
+                                            showConfirmDialog("Are you sure want to Reject",lstAppData[index]
+                                                .appid
+                                                .toString(),2);
+                                           /* RejectLeaveApp(lstAppData[index]
+                                                .appid
+                                                .toString());*/
+                                          },
+                                          icon: const Image(
+                                            image: AssetImage(
+                                                "assets/images/ess_images/ButtonIcons/CrossIcon.png"),
+                                            height: 25,
+                                            width: 25,
+                                          ),
+                                          /*child:
+                                                "Reject".text.makeCentered()*/
+                                        ),
+                                      ],
+                                    ).centered()
                                   ],
-                                ).centered()
-                              ],
-                            ).box.rounded.border(color: Colors.blue).make()
-
-
-                          ]);
-                        })
-                  ],
-                );
-              }
-            },
-         )
-          )
+                                )
+                                    .paddingAll(5)
+                                    .box
+                                    .shadow
+                                    .color(Vx.gray50)
+                                    //.width(190)
+                                    .rounded
+                                    .border(color: Colors.grey)
+                                    .shadow
+                                    .make()
+                              ]);
+                            })
+                      ],
+                    );
+                  }
+                },
+              ),
+            ),
+          ))
         ],
       ),
     );

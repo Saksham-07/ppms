@@ -30,6 +30,7 @@ class MyApp extends StatelessWidget {
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.orangeAccent),
         useMaterial3: true,
+        fontFamily: 'tahoma'
       ),
       home: isLoggedIn ? HomePage1Widget() : MyHomePage(title: 'Flutter Demo Home Page'),
     );
