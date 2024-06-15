@@ -1,5 +1,7 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/widgets.dart';
+import 'package:ppms/ESS/essdashboard.dart';
 import 'package:ppms/MainDashboard.dart';
 import 'package:ppms/main.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -96,7 +98,7 @@ class _HomePage1WidgetState extends State<HomePage1Widget>
             children:[ NestedScrollView(
               floatHeaderSlivers: true,
               headerSliverBuilder: (context, _) => [
-                SliverAppBar(
+                const SliverAppBar(
                   pinned: true,
                   floating: false,
                   backgroundColor:Color(0xFF5FE3D3),
@@ -163,36 +165,41 @@ class _HomePage1WidgetState extends State<HomePage1Widget>
                               ),
                             ),
                           ).animateOnPageLoad(animationsMap['containerOnPageLoadAnimation1']!),
-                          Material(
-                            color: Colors.transparent,
-                            elevation: 3,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            child: Container(
-                              decoration: BoxDecoration(
-                                color: Colors.white,
-                                boxShadow: [
-                                  BoxShadow(
-                                    blurRadius: 8,
-                                    color: Color(0x33000000),
-                                    offset: Offset(0, 2),
-                                  )
-                                ],
+                          GestureDetector(
+                            onTap: () async {
+                              Navigator.push(context, MaterialPageRoute(builder: (context) => EssDashBoard()),);
+                            },
+                            child: Material(
+                              color: Colors.transparent,
+                              elevation: 3,
+                              shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(8),
                               ),
-                              child: ClipRRect(
-                                borderRadius: BorderRadius.circular(8),
-                                child : Container(
-                                  width: 20,
-                                  height: 20,
-                                  child: Image.asset(
-                                    'assets/images/ess_new.png', // Updated to use asset image
+                              child: Container(
+                                decoration: BoxDecoration(
+                                  color: Colors.white,
+                                  boxShadow: [
+                                    BoxShadow(
+                                      blurRadius: 8,
+                                      color: Color(0x33000000),
+                                      offset: Offset(0, 2),
+                                    )
+                                  ],
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: ClipRRect(
+                                  borderRadius: BorderRadius.circular(8),
+                                  child : Container(
+                                    width: 20,
+                                    height: 20,
+                                    child: Image.asset(
+                                      'assets/images/ess_new.png', // Updated to use asset image
+                                    ),
                                   ),
                                 ),
                               ),
-                            ),
-                          ).animateOnPageLoad(animationsMap['containerOnPageLoadAnimation2']!),
+                            ).animateOnPageLoad(animationsMap['containerOnPageLoadAnimation2']!),
+                          ),
                           Material(
                             color: Colors.transparent,
                             elevation: 3,

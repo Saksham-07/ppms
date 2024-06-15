@@ -1,8 +1,11 @@
 import 'dart:convert';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+
+import 'ProfitAndLoss.dart';
 
 // Define the MainDashboardModel class and createModel function
 class MainDashboardModel {
@@ -48,7 +51,8 @@ class _MainDashboardWidgetState extends State<MainDashboardWidget> {
   String? _netTodayProfit;
   String? _netTotalProfit;
   String? _cutting;
-  String? _stitching,_finishing,_total,_samToday,_samTotal,_mmrToday,_mmrTotal,_energy,_effToday,_effTotal,_todayTailor,_totalTailor;
+  String? _stitching, _finishing, _total, _samToday, _samTotal, _mmrToday,
+      _mmrTotal, _energy, _effToday, _effTotal, _todayTailor, _totalTailor;
 
   @override
   void initState() {
@@ -69,9 +73,8 @@ class _MainDashboardWidgetState extends State<MainDashboardWidget> {
       _fetchSam('TailorSummary');
       _fetchSam('Efficiency');
     });
-
-
   }
+
   void _calculateDates() {
     DateTime now = DateTime.now();
     toDate = now.subtract(Duration(days: 1));
@@ -91,7 +94,8 @@ class _MainDashboardWidgetState extends State<MainDashboardWidget> {
     String toDateStr = toDateController.text;
     String selectedUnitCode = _unitMap[_selectedUnit]!;
     String url =
-        'http://172.16.0.5:10008/procedure_pnl?type=Pnl&unit=$selectedUnitCode&from=$fromDateStr&to=$toDateStr&unit_list=${_unitMap.values.join(",")}';
+        'http://172.16.0.5:10008/procedure_pnl?type=Pnl&unit=$selectedUnitCode&from=$fromDateStr&to=$toDateStr&unit_list=${_unitMap
+        .values.join(",")}';
 
     print('Fetching profit data from: $url');
 
@@ -115,31 +119,6 @@ class _MainDashboardWidgetState extends State<MainDashboardWidget> {
     }
   }
 
-  Future<void> _fetchMmr() async {
-    if (_selectedUnit == null) return;
-
-    String fromDateStr = fromDateController.text;
-    String toDateStr = toDateController.text;
-    String selectedUnitCode = _unitMap[_selectedUnit]!;
-    String url =
-        'http://172.16.0.5:10008/procedure?proce_type=common&type=MMR&unit=$selectedUnitCode&from=$fromDateStr&to=$toDateStr';
-
-    print('Fetching profit data from: $url');
-
-    final response = await http.get(Uri.parse(url));
-
-    if (response.statusCode == 200) {
-      final data = jsonDecode(response.body);
-      setState(() {
-        _mmrToday = data[0]['TodaySam'].toString();
-      });
-    } else {
-      setState(() {
-        _samTotal = 'Error';
-        _samToday = 'Error';
-      });
-    }
-  }
 
   Future<void> _fetchSam(String type) async {
     if (_selectedUnit == null) return;
@@ -161,18 +140,18 @@ class _MainDashboardWidgetState extends State<MainDashboardWidget> {
           _samToday = data[0]['TodaySam'].toString();
           _samTotal = data[0]['TotalSam'].toString();
         }
-        else if(type == 'MMR'){
+        else if (type == 'MMR') {
           _mmrToday = data[0]['MMRToday'].toString();
           _mmrTotal = data[0]['MMRTotal'].toString();
         }
-        else if(type == 'EnergyCost'){
+        else if (type == 'EnergyCost') {
           _energy = data[0]['TotalValue'].toString();
         }
-        else if(type == 'Efficiency'){
+        else if (type == 'Efficiency') {
           _effToday = data[0]['TodayEff'].toString();
           _effTotal = data[0]['TotalEff'].toString();
         }
-        else if(type == 'TailorSummary'){
+        else if (type == 'TailorSummary') {
           _todayTailor = data[0]['TailorPresentToday'].toString();
           _totalTailor = data[0]['TailorPresentTotal'].toString();
         }
@@ -181,9 +160,17 @@ class _MainDashboardWidgetState extends State<MainDashboardWidget> {
       setState(() {
         _samTotal = 'Error';
         _samToday = 'Error';
+        _mmrTotal = 'Error';
+        _mmrToday = 'Error';
+        _energy = 'Error';
+        _effToday = 'Error';
+        _effTotal = 'Error';
+        _todayTailor = 'Error';
+        _totalTailor = 'Error';
       });
     }
   }
+
 
   Color _getProfitColor(String? profit) {
     if (profit == null) return Colors.black;
@@ -228,20 +215,40 @@ class _MainDashboardWidgetState extends State<MainDashboardWidget> {
       final List<dynamic> data = jsonDecode(response.body);
       setState(() {
         print(data);
-        _dropDownOptions = data.map((e) => e['UnitShortCode'].toString()).toList();
-        _unitMap = {for (var item in data) item['UnitShortCode'].toString(): item['UnitCode'].toString()};
+        _dropDownOptions =
+            data.map((e) => e['UnitShortCode'].toString()).toList();
+        _unitMap = {
+          for (var item in data) item['UnitShortCode']
+              .toString(): item['UnitCode'].toString()
+        };
 
         // Set the selected unit
         if (_dropDownOptions.contains(_unit)) {
           _selectedUnit = _unit;
         } else {
-          _selectedUnit = _dropDownOptions.isNotEmpty ? _dropDownOptions[0] : null;
+          _selectedUnit =
+          _dropDownOptions.isNotEmpty ? _dropDownOptions[0] : null;
         }
+        saveUnitMapToSharedPreferences(_unitMap);
       });
     } else {
       // Handle error
       print('Failed to load options');
     }
+  }
+
+  void navigateToProfitAndLoss(BuildContext context) {
+    String fromDateStr = fromDateController.text;
+    String toDateStr = toDateController.text;
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => ProfitAndLossScreen(fromDate: fromDateStr, toDate: toDateStr,))
+    );
+  }
+
+  Future<void> saveUnitMapToSharedPreferences(Map<String, String> unitMap) async {
+    final SharedPreferences prefs = await SharedPreferences.getInstance();
+    prefs.setString('unitMap', jsonEncode(unitMap));
   }
 
   String? _selectedUnit;
@@ -250,7 +257,8 @@ class _MainDashboardWidgetState extends State<MainDashboardWidget> {
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTap: () => _model.unfocusNode.canRequestFocus
+      onTap: () =>
+      _model.unfocusNode.canRequestFocus
           ? FocusScope.of(context).requestFocus(_model.unfocusNode)
           : FocusScope.of(context).unfocus(),
       child: Scaffold(
@@ -283,1208 +291,1307 @@ class _MainDashboardWidgetState extends State<MainDashboardWidget> {
         body: SafeArea(
           top: true,
           child: Column(
-            mainAxisSize: MainAxisSize.max,
-            children: [
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
-                child: Row(
-                  mainAxisSize: MainAxisSize.max,
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Expanded(
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 12),
-                        child: Container(
-                          height: 50,
-                          decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(8),
-                            border: Border.all(
-                              color: Colors.black,
-                              width: 2,
-                            ),
-                          ),
-                          child: Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 12),
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                Expanded(
-                                  child: TextField(
-                                    controller: fromDateController,
-                                    decoration: const InputDecoration(
-                                      hintText: 'From Date',
-                                      border: InputBorder.none,
-                                    ),
-                                    readOnly: true,
-                                  ),
-                                ),
-                                InkWell(
-                                  onTap: () async {
-                                    final DateTime? datePicked1 = await showDatePicker(
-                                      context: context,
-                                      initialDate: fromDate,
-                                      firstDate: DateTime(1900),
-                                      lastDate: DateTime(2050),
-                                    );
-                                    if (datePicked1 != null) {
-                                      setState(() {
-                                        fromDate = datePicked1;
-                                        fromDateController.text = DateFormat('yyyy-MM-dd').format(fromDate);
-                                      });
-                                    }
-                                  },
-                                  child: const Icon(
-                                    Icons.date_range_outlined,
-                                    color: Colors.grey,
-                                    size: 24,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                    Expanded(
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 12),
-                        child: Container(
-                          height: 50,
-                          decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(8),
-                            border: Border.all(
-                              color: Colors.black,
-                              width: 2,
-                            ),
-                          ),
-                          child: Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 12),
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                Expanded(
-                                  child: TextField(
-                                    controller: toDateController,
-                                    decoration: const InputDecoration(
-                                      hintText: 'To Date',
-                                      border: InputBorder.none,
-                                    ),
-                                    readOnly: true,
-                                  ),
-                                ),
-                                InkWell(
-                                  onTap: () async {
-                                    final DateTime? datePicked2 = await showDatePicker(
-                                      context: context,
-                                      initialDate: toDate,
-                                      firstDate: DateTime(1900),
-                                      lastDate: DateTime(2050),
-                                    );
-                                    if (datePicked2 != null) {
-                                      setState(() {
-                                        toDate = datePicked2;
-                                        toDateController.text = DateFormat('yyyy-MM-dd').format(toDate);
-                                      });
-                                    }
-                                  },
-                                  child: const Icon(
-                                    Icons.date_range_outlined,
-                                    color: Colors.grey,
-                                    size: 24,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                child: Row(
-                  mainAxisSize: MainAxisSize.max,
-                  children: [
-                    Expanded(
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 12),
-                        child: DropdownButtonFormField<String>(
-                          value: _selectedUnit,
-                          items: _dropDownOptions.map<DropdownMenuItem<String>>((String value) {
-                            return DropdownMenuItem<String>(
-                              value: value,
-                              child: Text(
-                                value,
-                                style: const TextStyle(
-                                  fontFamily: 'Readex Pro',
-                                  color: Color(0xFF13171A),
-                                  fontSize: 16,
-                                  letterSpacing: 0,
-                                ),
-                              ),
-                            );
-                          }).toList(),
-                          onChanged: (String? newValue) {
-                            setState(() {
-                              _selectedUnit = newValue!;
-                            });
-                          },
-                          decoration: InputDecoration(
-                            filled: true,
-                            fillColor: const Color(0xFFF5EFEF),
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(8),
-                              borderSide: const BorderSide(color: Color(0xFF605E5E)),
-                            ),
-                            contentPadding: const EdgeInsets.symmetric(horizontal: 16),
-                          ),
-                          icon: const Icon(
-                            Icons.keyboard_arrow_down_rounded,
-                            color: Colors.grey,
-                          ),
-                        ),
-                      ),
-                    ),
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 12),
-                      child: ElevatedButton(
-                        onPressed: () async {
-                          String? selectedUnitCode = _unitMap[_selectedUnit];
-                          print('From Date: ${fromDateController.text}');
-                          print('To Date: ${toDateController.text}');
-                          print('Selected Unit Code: $selectedUnitCode');
-                          await _fetchProfitData();
-                          await _fetchSam('SamProduced');
-                          await _fetchSam('MMR');
-                          await _fetchSam('EnergyCost');
-                          await _fetchSam('TailorSummary');
-                          await _fetchSam('Efficiency');
-                        },
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFF16DE48),
-                          padding: const EdgeInsets.symmetric(horizontal: 24),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                        ),
-                        child: const Text(
-                          'Go',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 16,
-                            fontFamily: 'Readex Pro',
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              Padding(
-                padding: const EdgeInsets.all(4),
-                child: SingleChildScrollView(
-                  child: Column(
+              mainAxisSize: MainAxisSize.max,
+              children: [
+                Padding(
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 16, vertical: 20),
+                  child: Row(
                     mainAxisSize: MainAxisSize.max,
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Padding(
-                        padding:
-                        const EdgeInsetsDirectional.fromSTEB(16, 10, 16, 5),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.max,
-                          children: [
-                            Expanded(
-                              child: Padding(
-                                padding: const EdgeInsetsDirectional.fromSTEB(
-                                    12, 0, 12, 0),
-                                child: Material(
-                                  color: Colors.transparent,
-                                  elevation: 2,
-                                  shape: const RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.only(
-                                      bottomLeft: Radius.circular(8),
-                                      bottomRight: Radius.circular(8),
-                                      topLeft: Radius.circular(8),
-                                      topRight: Radius.circular(8),
-                                    ),
-                                  ),
-                                  child: Container(
-                                    width: 319,
-                                    height: 80,
-                                    decoration: BoxDecoration(
-                                      color: Colors.white,
-                                      boxShadow: const [
-                                        BoxShadow(
-                                          blurRadius: 1,
-                                          color: Color(0xC212F3B0),
-                                          offset: Offset(
-                                            0,
-                                            2,
-                                          ),
-                                          spreadRadius: 0.2,
-                                        )
-                                      ],
-                                      borderRadius: const BorderRadius.only(
-                                        bottomLeft: Radius.circular(8),
-                                        bottomRight: Radius.circular(8),
-                                        topLeft: Radius.circular(8),
-                                        topRight: Radius.circular(8),
-                                      ),
-                                      border: Border.all(
-                                        color: const Color(0xFF07F8C9),
-                                        width: 0.2,
-                                      ),
-                                    ),
-                                    alignment: const AlignmentDirectional(0, 0),
-                                    child: Column(
-                                      mainAxisSize: MainAxisSize.max,
-                                      children: [
-                                        const Padding(
-                                          padding: EdgeInsetsDirectional
-                                              .fromSTEB(0, 10, 0, 0),
-                                          child: Text(
-                                            'Management Review',
-                                            style:TextStyle(
-                                              fontWeight: FontWeight.w500,
-                                              fontFamily: 'Readex Pro',
-                                              fontSize: 20,
-                                              letterSpacing: 0,
-                                            ),
-                                          ),
-                                        ),
-                                          Padding(
-                                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                                            child: RichText(
-                                              text: TextSpan(
-                                                children: [
-                                                  TextSpan(
-                                                    text: _netTodayProfit ?? '0',
-                                                    style: TextStyle(
-                                                      color: _getProfitColor(_netTodayProfit),
-                                                      fontWeight: FontWeight.w500,
-                                                      fontFamily: 'Readex Pro',
-                                                      fontSize: 16,
-                                                      letterSpacing: 0,
-                                                    ),
-                                                  ),
-                                                  const TextSpan(
-                                                    text: ' / ',
-                                                    style: TextStyle(
-                                                      color: Colors.blue,
-                                                      fontWeight: FontWeight.w500,
-                                                      fontFamily: 'Readex Pro',
-                                                      fontSize: 16,
-                                                      letterSpacing: 0,
-                                                    ),
-                                                  ),
-                                                  TextSpan(
-                                                    text: _netTotalProfit ?? '0',
-                                                    style: TextStyle(
-                                                      color: _getProfitColor(_netTotalProfit),
-                                                      fontWeight: FontWeight.w500,
-                                                      fontFamily: 'Readex Pro',
-                                                      fontSize: 16,
-                                                      letterSpacing: 0,
-                                                    ),
-                                                  ),
-                                                ],
-                                              ),
-                                            ),
-                                          ),
-                                      ],
-                                    ),
-                                  ),
-                                ),
+                      Expanded(
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 12),
+                          child: Container(
+                            height: 50,
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(
+                                color: Colors.black,
+                                width: 2,
                               ),
                             ),
-                          ],
-                        ),
-                      ),
-                      Padding(
-                        padding:
-                        const EdgeInsetsDirectional.fromSTEB(16, 10, 16, 5),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.max,
-                          children: [
-                            Expanded(
-                              child: Padding(
-                                padding: const EdgeInsetsDirectional.fromSTEB(
-                                    12, 0, 12, 0),
-                                child: Material(
-                                  color: Colors.transparent,
-                                  elevation: 2,
-                                  shape: const RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.only(
-                                      bottomLeft: Radius.circular(8),
-                                      bottomRight: Radius.circular(8),
-                                      topLeft: Radius.circular(8),
-                                      topRight: Radius.circular(8),
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 12),
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment
+                                    .spaceBetween,
+                                children: [
+                                  Expanded(
+                                    child: TextField(
+                                      controller: fromDateController,
+                                      decoration: const InputDecoration(
+                                        hintText: 'From Date',
+                                        border: InputBorder.none,
+                                      ),
+                                      readOnly: true,
                                     ),
                                   ),
-                                  child: Container(
-                                    width: 319,
-                                    height: 80,
-                                    decoration: BoxDecoration(
-                                      color:Colors.white,
-                                      boxShadow: const [
-                                        BoxShadow(
-                                          blurRadius: 1,
-                                          color: Color(0xC212F3B0),
-                                          offset: Offset(
-                                            0,
-                                            2,
-                                          ),
-                                          spreadRadius: 0.2,
-                                        )
-                                      ],
-                                      borderRadius: const BorderRadius.only(
-                                        bottomLeft: Radius.circular(8),
-                                        bottomRight: Radius.circular(8),
-                                        topLeft: Radius.circular(8),
-                                        topRight: Radius.circular(8),
-                                      ),
-                                      border: Border.all(
-                                        color: const Color(0xFF07F8C9),
-                                        width: 0.2,
-                                      ),
-                                    ),
-                                    alignment: const AlignmentDirectional(0, 0),
-                                    child: Column(
-                                      mainAxisSize: MainAxisSize.max,
-                                      children: [
-                                        const Padding(
-                                          padding: EdgeInsetsDirectional
-                                              .fromSTEB(0, 10, 0, 0),
-                                          child: Text(
-                                            'Sam Produced',
-                                              style:TextStyle(
-                                                fontWeight: FontWeight.w500,
-                                                fontFamily: 'Readex Pro',
-                                                fontSize: 20,
-                                                letterSpacing: 0,
-                                              )
-                                          ),
-                                        ),
-                                        Padding(
-                                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                                          child: RichText(
-                                            text: TextSpan(
-                                              children: [
-                                                TextSpan(
-                                                  text: _samToday ?? '0',
-                                                  style: const TextStyle(
-                                                    color: Colors.blue,
-                                                    fontWeight: FontWeight.w500,
-                                                    fontFamily: 'Readex Pro',
-                                                    fontSize: 16,
-                                                    letterSpacing: 0,
-                                                  ),
-                                                ),
-                                                const TextSpan(
-                                                  text: ' / ',
-                                                  style: TextStyle(
-                                                    color: Colors.blue,
-                                                    fontWeight: FontWeight.w500,
-                                                    fontFamily: 'Readex Pro',
-                                                    fontSize: 16,
-                                                    letterSpacing: 0,
-                                                  ),
-                                                ),
-                                                TextSpan(
-                                                  text: _samTotal ?? '0',
-                                                  style: const TextStyle(
-                                                    color: Colors.blue,
-                                                    fontWeight: FontWeight.w500,
-                                                    fontFamily: 'Readex Pro',
-                                                    fontSize: 16,
-                                                    letterSpacing: 0,
-                                                  ),
-                                                ),
-                                              ],
-                                            ),
-                                          ),
-                                        ),
-                                      ],
+                                  InkWell(
+                                    onTap: () async {
+                                      final DateTime? datePicked1 = await showDatePicker(
+                                        context: context,
+                                        initialDate: fromDate,
+                                        firstDate: DateTime(1900),
+                                        lastDate: DateTime(2050),
+                                      );
+                                      if (datePicked1 != null) {
+                                        setState(() {
+                                          fromDate = datePicked1;
+                                          fromDateController.text =
+                                              DateFormat('yyyy-MM-dd').format(
+                                                  fromDate);
+                                        });
+                                      }
+                                    },
+                                    child: const Icon(
+                                      Icons.date_range_outlined,
+                                      color: Colors.grey,
+                                      size: 24,
                                     ),
                                   ),
-                                ),
+                                ],
                               ),
                             ),
-                          ],
-                        ),
-                      ),
-
-                      Align(
-                        alignment: const AlignmentDirectional(-1, -1),
-                        child: Padding(
-                          padding:
-                          const EdgeInsetsDirectional.fromSTEB(16, 10, 16, 5),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.max,
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Expanded(
-                                child: Padding(
-                                  padding: const EdgeInsetsDirectional.fromSTEB(
-                                      12, 0, 12, 0),
-                                  child: Material(
-                                    color: Colors.transparent,
-                                    elevation: 2,
-                                    shape: const RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.only(
-                                        bottomLeft: Radius.circular(8),
-                                        bottomRight: Radius.circular(8),
-                                        topLeft: Radius.circular(8),
-                                        topRight: Radius.circular(8),
-                                      ),
-                                    ),
-                                    child: Container(
-                                      width: 319,
-                                      height: 80,
-                                      decoration: BoxDecoration(
-                                        color: Colors.white,
-                                        boxShadow: const [
-                                          BoxShadow(
-                                            blurRadius: 1,
-                                            color: Color(0xC212F3B0),
-                                            offset: Offset(
-                                              0,
-                                              2,
-                                            ),
-                                            spreadRadius: 0.2,
-                                          )
-                                        ],
-                                        borderRadius: const BorderRadius.only(
-                                          bottomLeft: Radius.circular(8),
-                                          bottomRight: Radius.circular(8),
-                                          topLeft: Radius.circular(8),
-                                          topRight: Radius.circular(8),
-                                        ),
-                                        border: Border.all(
-                                          color: const Color(0xFF07F8C9),
-                                          width: 0.2,
-                                        ),
-                                      ),
-                                      alignment: const AlignmentDirectional(0, 0),
-                                      child: Column(
-                                        mainAxisSize: MainAxisSize.max,
-                                        children: [
-                                          const Padding(
-                                            padding: EdgeInsetsDirectional
-                                                .fromSTEB(0, 10, 0, 0),
-                                            child: Text(
-                                              'Cutting P&L',
-                                                style:TextStyle(
-                                                  fontWeight: FontWeight.w500,
-                                                  fontFamily: 'Readex Pro',
-                                                  fontSize: 20,
-                                                  letterSpacing: 0,
-                                                )
-                                            ),
-                                          ),
-                                          Padding(
-                                            padding: const EdgeInsetsDirectional
-                                                .fromSTEB(0, 10, 0, 0),
-                                            child: Text(
-                                              _cutting ?? '0',
-                                                style:TextStyle(
-                                                  fontWeight: FontWeight.w500,
-                                                  fontFamily: 'Readex Pro',
-                                                  fontSize: 16,
-                                                  letterSpacing: 0,
-                                                  color: _getProfitColor(_cutting),
-                                                )
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              ),
-                              Expanded(
-                                child: Padding(
-                                  padding: const EdgeInsetsDirectional.fromSTEB(
-                                      12, 0, 12, 0),
-                                  child: Material(
-                                    color: Colors.transparent,
-                                    elevation: 2,
-                                    shape: const RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.only(
-                                        bottomLeft: Radius.circular(8),
-                                        bottomRight: Radius.circular(8),
-                                        topLeft: Radius.circular(8),
-                                        topRight: Radius.circular(8),
-                                      ),
-                                    ),
-                                    child: Container(
-                                      width: 319,
-                                      height: 80,
-                                      decoration: BoxDecoration(
-                                        color: Colors.white,
-                                        boxShadow: const [
-                                          BoxShadow(
-                                            blurRadius: 1,
-                                            color: Color(0xC212F3B0),
-                                            offset: Offset(
-                                              0,
-                                              2,
-                                            ),
-                                            spreadRadius: 0.2,
-                                          )
-                                        ],
-                                        borderRadius: const BorderRadius.only(
-                                          bottomLeft: Radius.circular(8),
-                                          bottomRight: Radius.circular(8),
-                                          topLeft: Radius.circular(8),
-                                          topRight: Radius.circular(8),
-                                        ),
-                                        border: Border.all(
-                                          color: const Color(0xFF07F8C9),
-                                          width: 0.2,
-                                        ),
-                                      ),
-                                      alignment: const AlignmentDirectional(0, 0),
-                                      child: Column(
-                                        mainAxisSize: MainAxisSize.max,
-                                        children: [
-                                          const Padding(
-                                            padding: EdgeInsetsDirectional
-                                                .fromSTEB(0, 10, 0, 0),
-                                            child: Text(
-                                              'Stitching P&L',
-                                                style:TextStyle(
-                                                  fontWeight: FontWeight.w500,
-                                                  fontFamily: 'Readex Pro',
-                                                  fontSize: 20,
-                                                  letterSpacing: 0,
-                                                )
-                                            ),
-                                          ),
-                                          Padding(
-                                            padding: const EdgeInsetsDirectional
-                                                .fromSTEB(0, 10, 0, 0),
-                                            child: Text(
-                                              _stitching ??'0',
-                                                style:TextStyle(
-                                                  fontWeight: FontWeight.w500,
-                                                  fontFamily: 'Readex Pro',
-                                                  color: _getProfitColor(_stitching),
-                                                  fontSize: 16,
-                                                  letterSpacing: 0,
-                                                )
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ],
                           ),
                         ),
                       ),
-                      Align(
-                        alignment: const AlignmentDirectional(-1, -1),
+                      Expanded(
                         child: Padding(
-                          padding:
-                          const EdgeInsetsDirectional.fromSTEB(16, 10, 16, 5),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.max,
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Expanded(
-                                child: Padding(
-                                  padding: const EdgeInsetsDirectional.fromSTEB(
-                                      12, 0, 12, 0),
-                                  child: Material(
-                                    color: Colors.transparent,
-                                    elevation: 2,
-                                    shape: const RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.only(
-                                        bottomLeft: Radius.circular(8),
-                                        bottomRight: Radius.circular(8),
-                                        topLeft: Radius.circular(8),
-                                        topRight: Radius.circular(8),
+                          padding: const EdgeInsets.symmetric(horizontal: 12),
+                          child: Container(
+                            height: 50,
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(
+                                color: Colors.black,
+                                width: 2,
+                              ),
+                            ),
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 12),
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment
+                                    .spaceBetween,
+                                children: [
+                                  Expanded(
+                                    child: TextField(
+                                      controller: toDateController,
+                                      decoration: const InputDecoration(
+                                        hintText: 'To Date',
+                                        border: InputBorder.none,
                                       ),
-                                    ),
-                                    child: Container(
-                                      width: 319,
-                                      height: 80,
-                                      decoration: BoxDecoration(
-                                        color: Colors.white,
-                                        boxShadow: const [
-                                          BoxShadow(
-                                            blurRadius: 1,
-                                            color: Color(0xC212F3B0),
-                                            offset: Offset(
-                                              0,
-                                              2,
-                                            ),
-                                            spreadRadius: 0.2,
-                                          )
-                                        ],
-                                        borderRadius: const BorderRadius.only(
-                                          bottomLeft: Radius.circular(8),
-                                          bottomRight: Radius.circular(8),
-                                          topLeft: Radius.circular(8),
-                                          topRight: Radius.circular(8),
-                                        ),
-                                        border: Border.all(
-                                          color: const Color(0xFF07F8C9),
-                                          width: 0.2,
-                                        ),
-                                      ),
-                                      alignment: const AlignmentDirectional(0, 0),
-                                      child: Column(
-                                        mainAxisSize: MainAxisSize.max,
-                                        children: [
-                                          const Padding(
-                                            padding: EdgeInsetsDirectional
-                                                .fromSTEB(0, 10, 0, 0),
-                                            child: Text(
-                                                'Finishing P&L',
-                                                style:TextStyle(
-                                                  fontWeight: FontWeight.w500,
-                                                  fontFamily: 'Readex Pro',
-                                                  fontSize: 20,
-                                                  letterSpacing: 0,
-                                                )
-                                            ),
-                                          ),
-                                          Padding(
-                                            padding: const EdgeInsetsDirectional
-                                                .fromSTEB(0, 10, 0, 0),
-                                            child: Text(
-                                                _finishing ?? '0',
-                                                style:TextStyle(
-                                                  fontWeight: FontWeight.w500,
-                                                  fontFamily: 'Readex Pro',
-                                                  fontSize: 16,
-                                                  color: _getProfitColor(_finishing),
-                                                  letterSpacing: 0,
-                                                )
-                                            ),
-                                          ),
-                                        ],
-                                      ),
+                                      readOnly: true,
                                     ),
                                   ),
-                                ),
-                              ),
-                              Expanded(
-                                child: Padding(
-                                  padding: const EdgeInsetsDirectional.fromSTEB(
-                                      12, 0, 12, 0),
-                                  child: Material(
-                                    color: Colors.transparent,
-                                    elevation: 2,
-                                    shape: const RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.only(
-                                        bottomLeft: Radius.circular(8),
-                                        bottomRight: Radius.circular(8),
-                                        topLeft: Radius.circular(8),
-                                        topRight: Radius.circular(8),
-                                      ),
-                                    ),
-                                    child: Container(
-                                      width: 319,
-                                      height: 80,
-                                      decoration: BoxDecoration(
-                                        color: Colors.white,
-                                        boxShadow: const [
-                                          BoxShadow(
-                                            blurRadius: 1,
-                                            color: Color(0xC212F3B0),
-                                            offset: Offset(
-                                              0,
-                                              2,
-                                            ),
-                                            spreadRadius: 0.2,
-                                          )
-                                        ],
-                                        borderRadius: const BorderRadius.only(
-                                          bottomLeft: Radius.circular(8),
-                                          bottomRight: Radius.circular(8),
-                                          topLeft: Radius.circular(8),
-                                          topRight: Radius.circular(8),
-                                        ),
-                                        border: Border.all(
-                                          color: const Color(0xFF07F8C9),
-                                          width: 0.2,
-                                        ),
-                                      ),
-                                      alignment: const AlignmentDirectional(0, 0),
-                                      child: Column(
-                                        mainAxisSize: MainAxisSize.max,
-                                        children: [
-                                          const Padding(
-                                            padding: EdgeInsetsDirectional
-                                                .fromSTEB(0, 10, 0, 0),
-                                            child: Text(
-                                                'Total P&L',
-                                                style:TextStyle(
-                                                  fontWeight: FontWeight.w500,
-                                                  fontFamily: 'Readex Pro',
-                                                  fontSize: 20,
-                                                  letterSpacing: 0,
-                                                )
-                                            ),
-                                          ),
-                                          Padding(
-                                            padding: const EdgeInsetsDirectional
-                                                .fromSTEB(0, 10, 0, 0),
-                                            child: Text(
-                                                _total ??'0',
-                                                style:TextStyle(
-                                                  fontWeight: FontWeight.w500,
-                                                  fontFamily: 'Readex Pro',
-                                                  color: _getProfitColor(_total),
-                                                  fontSize: 16,
-                                                  letterSpacing: 0,
-                                                )
-                                            ),
-                                          ),
-                                        ],
-                                      ),
+                                  InkWell(
+                                    onTap: () async {
+                                      final DateTime? datePicked2 = await showDatePicker(
+                                        context: context,
+                                        initialDate: toDate,
+                                        firstDate: DateTime(1900),
+                                        lastDate: DateTime(2050),
+                                      );
+                                      if (datePicked2 != null) {
+                                        setState(() {
+                                          toDate = datePicked2;
+                                          toDateController.text =
+                                              DateFormat('yyyy-MM-dd').format(
+                                                  toDate);
+                                        });
+                                      }
+                                    },
+                                    child: const Icon(
+                                      Icons.date_range_outlined,
+                                      color: Colors.grey,
+                                      size: 24,
                                     ),
                                   ),
-                                ),
+                                ],
                               ),
-                            ],
-                          ),
-                        ),
-                      ),
-                      Align(
-                        alignment: const AlignmentDirectional(-1, -1),
-                        child: Padding(
-                          padding:
-                          const EdgeInsetsDirectional.fromSTEB(16, 10, 16, 5),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.max,
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Expanded(
-                                child: Padding(
-                                  padding: const EdgeInsetsDirectional.fromSTEB(
-                                      12, 0, 12, 0),
-                                  child: Material(
-                                    color: Colors.transparent,
-                                    elevation: 2,
-                                    shape: const RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.only(
-                                        bottomLeft: Radius.circular(8),
-                                        bottomRight: Radius.circular(8),
-                                        topLeft: Radius.circular(8),
-                                        topRight: Radius.circular(8),
-                                      ),
-                                    ),
-                                    child: Container(
-                                      width: 319,
-                                      height: 80,
-                                      decoration: BoxDecoration(
-                                        color: Colors.white,
-                                        boxShadow: const [
-                                          BoxShadow(
-                                            blurRadius: 1,
-                                            color: Color(0xC212F3B0),
-                                            offset: Offset(
-                                              0,
-                                              2,
-                                            ),
-                                            spreadRadius: 0.2,
-                                          )
-                                        ],
-                                        borderRadius: const BorderRadius.only(
-                                          bottomLeft: Radius.circular(8),
-                                          bottomRight: Radius.circular(8),
-                                          topLeft: Radius.circular(8),
-                                          topRight: Radius.circular(8),
-                                        ),
-                                        border: Border.all(
-                                          color: const Color(0xFF07F8C9),
-                                          width: 0.2,
-                                        ),
-                                      ),
-                                      alignment: const AlignmentDirectional(0, 0),
-                                      child: Column(
-                                        mainAxisSize: MainAxisSize.max,
-                                        children: [
-                                          const Padding(
-                                            padding: EdgeInsetsDirectional
-                                                .fromSTEB(0, 10, 0, 0),
-                                            child: Text(
-                                                'MMR',
-                                                style:TextStyle(
-                                                  fontWeight: FontWeight.w500,
-                                                  fontFamily: 'Readex Pro',
-                                                  fontSize: 20,
-                                                  letterSpacing: 0,
-                                                )
-                                            ),
-                                          ),
-                                          Padding(
-                                            padding: const EdgeInsetsDirectional
-                                                .fromSTEB(0, 10, 0, 0),
-                                            child: RichText(
-                                              text: TextSpan(
-                                                children: [
-                                                  TextSpan(
-                                                    text: _mmrToday ?? '0',
-                                                    style: const TextStyle(
-                                                      color: Colors.blue,
-                                                      fontWeight: FontWeight.w500,
-                                                      fontFamily: 'Readex Pro',
-                                                      fontSize: 16,
-                                                      letterSpacing: 0,
-                                                    ),
-                                                  ),
-                                                  const TextSpan(
-                                                    text: ' / ',
-                                                    style: TextStyle(
-                                                      color: Colors.blue,
-                                                      fontWeight: FontWeight.w500,
-                                                      fontFamily: 'Readex Pro',
-                                                      fontSize: 16,
-                                                      letterSpacing: 0,
-                                                    ),
-                                                  ),
-                                                  TextSpan(
-                                                    text: _mmrTotal ?? '0',
-                                                    style: const TextStyle(
-                                                      color: Colors.blue,
-                                                      fontWeight: FontWeight.w500,
-                                                      fontFamily: 'Readex Pro',
-                                                      fontSize: 16,
-                                                      letterSpacing: 0,
-                                                    ),
-                                                  ),
-                                                ],
-                                              ),
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              ),
-                              Expanded(
-                                child: Padding(
-                                  padding: const EdgeInsetsDirectional.fromSTEB(
-                                      12, 0, 12, 0),
-                                  child: Material(
-                                    color: Colors.transparent,
-                                    elevation: 2,
-                                    shape: const RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.only(
-                                        bottomLeft: Radius.circular(8),
-                                        bottomRight: Radius.circular(8),
-                                        topLeft: Radius.circular(8),
-                                        topRight: Radius.circular(8),
-                                      ),
-                                    ),
-                                    child: Container(
-                                      width: 319,
-                                      height: 80,
-                                      decoration: BoxDecoration(
-                                        color: Colors.white,
-                                        boxShadow: const [
-                                          BoxShadow(
-                                            blurRadius: 1,
-                                            color: Color(0xC212F3B0),
-                                            offset: Offset(
-                                              0,
-                                              2,
-                                            ),
-                                            spreadRadius: 0.2,
-                                          )
-                                        ],
-                                        borderRadius: const BorderRadius.only(
-                                          bottomLeft: Radius.circular(8),
-                                          bottomRight: Radius.circular(8),
-                                          topLeft: Radius.circular(8),
-                                          topRight: Radius.circular(8),
-                                        ),
-                                        border: Border.all(
-                                          color: const Color(0xFF07F8C9),
-                                          width: 0.2,
-                                        ),
-                                      ),
-                                      alignment: const AlignmentDirectional(0, 0),
-                                      child: Column(
-                                        mainAxisSize: MainAxisSize.max,
-                                        children: [
-                                          const Padding(
-                                            padding: EdgeInsetsDirectional
-                                                .fromSTEB(0, 10, 0, 0),
-                                            child: Text(
-                                                'Energy Cost',
-                                                style:TextStyle(
-                                                  fontWeight: FontWeight.w500,
-                                                  fontFamily: 'Readex Pro',
-                                                  fontSize: 20,
-                                                  letterSpacing: 0,
-                                                )
-                                            ),
-                                          ),
-                                          Padding(
-                                            padding: const EdgeInsetsDirectional
-                                                .fromSTEB(0, 10, 0, 0),
-                                            child: Text(
-                                                _energy ??'0',
-                                                style:const TextStyle(
-                                                  fontWeight: FontWeight.w500,
-                                                  fontFamily: 'Readex Pro',
-                                                  color: Colors.blue,
-                                                  fontSize: 16,
-                                                  letterSpacing: 0,
-                                                )
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                      Align(
-                        alignment: const AlignmentDirectional(-1, -1),
-                        child: Padding(
-                          padding:
-                          const EdgeInsetsDirectional.fromSTEB(16, 10, 16, 5),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.max,
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Expanded(
-                                child: Padding(
-                                  padding: const EdgeInsetsDirectional.fromSTEB(
-                                      12, 0, 12, 0),
-                                  child: Material(
-                                    color: Colors.transparent,
-                                    elevation: 2,
-                                    shape: const RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.only(
-                                        bottomLeft: Radius.circular(8),
-                                        bottomRight: Radius.circular(8),
-                                        topLeft: Radius.circular(8),
-                                        topRight: Radius.circular(8),
-                                      ),
-                                    ),
-                                    child: Container(
-                                      width: 319,
-                                      height: 80,
-                                      decoration: BoxDecoration(
-                                        color: Colors.white,
-                                        boxShadow: const [
-                                          BoxShadow(
-                                            blurRadius: 1,
-                                            color: Color(0xC212F3B0),
-                                            offset: Offset(
-                                              0,
-                                              2,
-                                            ),
-                                            spreadRadius: 0.2,
-                                          )
-                                        ],
-                                        borderRadius: const BorderRadius.only(
-                                          bottomLeft: Radius.circular(8),
-                                          bottomRight: Radius.circular(8),
-                                          topLeft: Radius.circular(8),
-                                          topRight: Radius.circular(8),
-                                        ),
-                                        border: Border.all(
-                                          color: const Color(0xFF07F8C9),
-                                          width: 0.2,
-                                        ),
-                                      ),
-                                      alignment: const AlignmentDirectional(0, 0),
-                                      child: Column(
-                                        mainAxisSize: MainAxisSize.max,
-                                        children: [
-                                          const Padding(
-                                            padding: EdgeInsetsDirectional
-                                                .fromSTEB(0, 10, 0, 0),
-                                            child: Text(
-                                                'Tailor Summary',
-                                                style:TextStyle(
-                                                  fontWeight: FontWeight.w500,
-                                                  fontFamily: 'Readex Pro',
-                                                  fontSize: 20,
-                                                  letterSpacing: 0,
-                                                )
-                                            ),
-                                          ),
-                                          Padding(
-                                            padding: const EdgeInsetsDirectional
-                                                .fromSTEB(0, 10, 0, 0),
-                                            child: RichText(
-                                              text: TextSpan(
-                                                children: [
-                                                  TextSpan(
-                                                    text: _todayTailor ?? '0',
-                                                    style: const TextStyle(
-                                                      color: Colors.blue,
-                                                      fontWeight: FontWeight.w500,
-                                                      fontFamily: 'Readex Pro',
-                                                      fontSize: 16,
-                                                      letterSpacing: 0,
-                                                    ),
-                                                  ),
-                                                  const TextSpan(
-                                                    text: ' / ',
-                                                    style: TextStyle(
-                                                      color: Colors.blue,
-                                                      fontWeight: FontWeight.w500,
-                                                      fontFamily: 'Readex Pro',
-                                                      fontSize: 16,
-                                                      letterSpacing: 0,
-                                                    ),
-                                                  ),
-                                                  TextSpan(
-                                                    text: _totalTailor ?? '0',
-                                                    style: const TextStyle(
-                                                      color: Colors.blue,
-                                                      fontWeight: FontWeight.w500,
-                                                      fontFamily: 'Readex Pro',
-                                                      fontSize: 16,
-                                                      letterSpacing: 0,
-                                                    ),
-                                                  ),
-                                                ],
-                                              ),
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              ),
-                              Expanded(
-                                child: Padding(
-                                  padding: const EdgeInsetsDirectional.fromSTEB(
-                                      12, 0, 12, 0),
-                                  child: Material(
-                                    color: Colors.transparent,
-                                    elevation: 2,
-                                    shape: const RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.only(
-                                        bottomLeft: Radius.circular(8),
-                                        bottomRight: Radius.circular(8),
-                                        topLeft: Radius.circular(8),
-                                        topRight: Radius.circular(8),
-                                      ),
-                                    ),
-                                    child: Container(
-                                      width: 319,
-                                      height: 80,
-                                      decoration: BoxDecoration(
-                                        color: Colors.white,
-                                        boxShadow: const [
-                                          BoxShadow(
-                                            blurRadius: 1,
-                                            color: Color(0xC212F3B0),
-                                            offset: Offset(
-                                              0,
-                                              2,
-                                            ),
-                                            spreadRadius: 0.2,
-                                          )
-                                        ],
-                                        borderRadius: const BorderRadius.only(
-                                          bottomLeft: Radius.circular(8),
-                                          bottomRight: Radius.circular(8),
-                                          topLeft: Radius.circular(8),
-                                          topRight: Radius.circular(8),
-                                        ),
-                                        border: Border.all(
-                                          color: const Color(0xFF07F8C9),
-                                          width: 0.2,
-                                        ),
-                                      ),
-                                      alignment: const AlignmentDirectional(0, 0),
-                                      child: Column(
-                                        mainAxisSize: MainAxisSize.max,
-                                        children: [
-                                          const Padding(
-                                            padding: EdgeInsetsDirectional
-                                                .fromSTEB(0, 10, 0, 0),
-                                            child: Text(
-                                                'Efficiency (%)',
-                                                style:TextStyle(
-                                                  fontWeight: FontWeight.w500,
-                                                  fontFamily: 'Readex Pro',
-                                                  fontSize: 20,
-                                                  letterSpacing: 0,
-                                                )
-                                            ),
-                                          ),
-                                          Padding(
-                                            padding: const EdgeInsetsDirectional
-                                                .fromSTEB(0, 10, 0, 0),
-                                            child: RichText(
-                                              text: TextSpan(
-                                                children: [
-                                                  TextSpan(
-                                                    text: _effToday ?? '0',
-                                                    style: const TextStyle(
-                                                      color: Colors.blue,
-                                                      fontWeight: FontWeight.w500,
-                                                      fontFamily: 'Readex Pro',
-                                                      fontSize: 16,
-                                                      letterSpacing: 0,
-                                                    ),
-                                                  ),
-                                                  const TextSpan(
-                                                    text: ' / ',
-                                                    style: TextStyle(
-                                                      color: Colors.blue,
-                                                      fontWeight: FontWeight.w500,
-                                                      fontFamily: 'Readex Pro',
-                                                      fontSize: 16,
-                                                      letterSpacing: 0,
-                                                    ),
-                                                  ),
-                                                  TextSpan(
-                                                    text: _effTotal ?? '0',
-                                                    style: const TextStyle(
-                                                      color: Colors.blue,
-                                                      fontWeight: FontWeight.w500,
-                                                      fontFamily: 'Readex Pro',
-                                                      fontSize: 16,
-                                                      letterSpacing: 0,
-                                                    ),
-                                                  ),
-                                                ],
-                                              ),
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ],
+                            ),
                           ),
                         ),
                       ),
                     ],
                   ),
                 ),
-              ),
-            ],
+                Padding(
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 16, vertical: 10),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.max,
+                    children: [
+                      Expanded(
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 12),
+                          child: DropdownButtonFormField<String>(
+                            value: _selectedUnit,
+                            items: _dropDownOptions.map<
+                                DropdownMenuItem<String>>((String value) {
+                              return DropdownMenuItem<String>(
+                                value: value,
+                                child: Text(
+                                  value,
+                                  style: const TextStyle(
+                                    fontFamily: 'Readex Pro',
+                                    color: Color(0xFF13171A),
+                                    fontSize: 16,
+                                    letterSpacing: 0,
+                                  ),
+                                ),
+                              );
+                            }).toList(),
+                            onChanged: (String? newValue) {
+                              setState(() {
+                                _selectedUnit = newValue!;
+                              });
+                            },
+                            decoration: InputDecoration(
+                              filled: true,
+                              fillColor: const Color(0xFFF5EFEF),
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(8),
+                                borderSide: const BorderSide(
+                                    color: Color(0xFF605E5E)),
+                              ),
+                              contentPadding: const EdgeInsets.symmetric(
+                                  horizontal: 16),
+                            ),
+                            icon: const Icon(
+                              Icons.keyboard_arrow_down_rounded,
+                              color: Colors.grey,
+                            ),
+                          ),
+                        ),
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 12),
+                        child: ElevatedButton(
+                          onPressed: () async {
+                            String? selectedUnitCode = _unitMap[_selectedUnit];
+                            print('From Date: ${fromDateController.text}');
+                            print('To Date: ${toDateController.text}');
+                            print('Selected Unit Code: $selectedUnitCode');
+                            await _fetchProfitData();
+                            await _fetchSam('SamProduced');
+                            await _fetchSam('MMR');
+                            await _fetchSam('EnergyCost');
+                            await _fetchSam('TailorSummary');
+                            await _fetchSam('Efficiency');
+                          },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFF16DE48),
+                            padding: const EdgeInsets.symmetric(horizontal: 24),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                          ),
+                          child: const Text(
+                            'Go',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 16,
+                              fontFamily: 'Readex Pro',
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.all(4),
+                  child: Container(
+                    child: SingleChildScrollView(
+                      child: Column(
+                        mainAxisSize: MainAxisSize.max,
+                        children: [
+                          SingleChildScrollView(
+                            child: InkWell(
+                              child: Padding(
+                                padding:
+                                const EdgeInsetsDirectional.fromSTEB(
+                                    16, 10, 16, 5),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.max,
+                                  children: [
+                                    Expanded(
+                                      child: Padding(
+                                        padding: const EdgeInsetsDirectional
+                                            .fromSTEB(
+                                            12, 0, 12, 0),
+                                        child: Material(
+                                          color: Colors.transparent,
+                                          elevation: 2,
+                                          shape: const RoundedRectangleBorder(
+                                            borderRadius: BorderRadius.only(
+                                              bottomLeft: Radius.circular(8),
+                                              bottomRight: Radius.circular(8),
+                                              topLeft: Radius.circular(8),
+                                              topRight: Radius.circular(8),
+                                            ),
+                                          ),
+                                          child: Container(
+                                            width: 300,
+                                            height: 72,
+                                            decoration: BoxDecoration(
+                                              color: Colors.white,
+                                              boxShadow: const [
+                                                BoxShadow(
+                                                  blurRadius: 1,
+                                                  color: Color(0xC212F3B0),
+                                                  offset: Offset(
+                                                    0,
+                                                    2,
+                                                  ),
+                                                  spreadRadius: 0.2,
+                                                )
+                                              ],
+                                              borderRadius: const BorderRadius
+                                                  .only(
+                                                bottomLeft: Radius.circular(8),
+                                                bottomRight: Radius.circular(8),
+                                                topLeft: Radius.circular(8),
+                                                topRight: Radius.circular(8),
+                                              ),
+                                              border: Border.all(
+                                                color: const Color(0xFF07F8C9),
+                                                width: 0.2,
+                                              ),
+                                            ),
+                                            alignment: const AlignmentDirectional(
+                                                0, 0),
+                                            child: Column(
+                                              mainAxisSize: MainAxisSize.max,
+                                              children: [
+                                                const Padding(
+                                                  padding: EdgeInsetsDirectional
+                                                      .fromSTEB(0, 6, 0, 0),
+                                                  child: Text(
+                                                    'Management Review',
+                                                    style: TextStyle(
+                                                      fontWeight: FontWeight
+                                                          .w500,
+                                                      fontFamily: 'Readex Pro',
+                                                      fontSize: 20,
+                                                      letterSpacing: 0,
+                                                    ),
+                                                  ),
+                                                ),
+                                                Padding(
+                                                  padding: const EdgeInsets
+                                                      .symmetric(horizontal: 16,
+                                                      vertical: 8),
+                                                  child: RichText(
+                                                    text: TextSpan(
+                                                      children: [
+                                                        TextSpan(
+                                                          text: _netTodayProfit ??
+                                                              '0',
+                                                          style: TextStyle(
+                                                            color: _getProfitColor(
+                                                                _netTodayProfit),
+                                                            fontWeight: FontWeight
+                                                                .w500,
+                                                            fontFamily: 'Readex Pro',
+                                                            fontSize: 16,
+                                                            letterSpacing: 0,
+                                                          ),
+                                                        ),
+                                                        const TextSpan(
+                                                          text: ' / ',
+                                                          style: TextStyle(
+                                                            color: Colors.blue,
+                                                            fontWeight: FontWeight
+                                                                .w500,
+                                                            fontFamily: 'Readex Pro',
+                                                            fontSize: 16,
+                                                            letterSpacing: 0,
+                                                          ),
+                                                        ),
+                                                        TextSpan(
+                                                          text: _netTotalProfit ??
+                                                              '0',
+                                                          style: TextStyle(
+                                                            color: _getProfitColor(
+                                                                _netTotalProfit),
+                                                            fontWeight: FontWeight
+                                                                .w500,
+                                                            fontFamily: 'Readex Pro',
+                                                            fontSize: 16,
+                                                            letterSpacing: 0,
+                                                          ),
+                                                        ),
+                                                      ],
+                                                    ),
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              onTap: () => navigateToProfitAndLoss(context),
+                            ),
+                          ),
+                          Padding(
+                            padding:
+                            const EdgeInsetsDirectional.fromSTEB(16, 10, 16, 5),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.max,
+                              children: [
+                                Expanded(
+                                  child: Padding(
+                                    padding: const EdgeInsetsDirectional
+                                        .fromSTEB(
+                                        12, 0, 12, 0),
+                                    child: Material(
+                                      color: Colors.transparent,
+                                      elevation: 2,
+                                      shape: const RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.only(
+                                          bottomLeft: Radius.circular(8),
+                                          bottomRight: Radius.circular(8),
+                                          topLeft: Radius.circular(8),
+                                          topRight: Radius.circular(8),
+                                        ),
+                                      ),
+                                      child: Container(
+                                        width: 319,
+                                        height: 72,
+                                        decoration: BoxDecoration(
+                                          color: Colors.white,
+                                          boxShadow: const [
+                                            BoxShadow(
+                                              blurRadius: 1,
+                                              color: Color(0xC212F3B0),
+                                              offset: Offset(
+                                                0,
+                                                2,
+                                              ),
+                                              spreadRadius: 0.2,
+                                            )
+                                          ],
+                                          borderRadius: const BorderRadius.only(
+                                            bottomLeft: Radius.circular(8),
+                                            bottomRight: Radius.circular(8),
+                                            topLeft: Radius.circular(8),
+                                            topRight: Radius.circular(8),
+                                          ),
+                                          border: Border.all(
+                                            color: const Color(0xFF07F8C9),
+                                            width: 0.2,
+                                          ),
+                                        ),
+                                        alignment: const AlignmentDirectional(
+                                            0, 0),
+                                        child: Column(
+                                          mainAxisSize: MainAxisSize.max,
+                                          children: [
+                                            const Padding(
+                                              padding: EdgeInsetsDirectional
+                                                  .fromSTEB(0, 6, 0, 0),
+                                              child: Text(
+                                                  'Sam Produced',
+                                                  style: TextStyle(
+                                                    fontWeight: FontWeight.w500,
+                                                    fontFamily: 'Readex Pro',
+                                                    fontSize: 20,
+                                                    letterSpacing: 0,
+                                                  )
+                                              ),
+                                            ),
+                                            Padding(
+                                              padding: const EdgeInsets
+                                                  .symmetric(
+                                                  horizontal: 16, vertical: 8),
+                                              child: RichText(
+                                                text: TextSpan(
+                                                  children: [
+                                                    TextSpan(
+                                                      text: _samToday ?? '0',
+                                                      style: const TextStyle(
+                                                        color: Colors.blue,
+                                                        fontWeight: FontWeight
+                                                            .w500,
+                                                        fontFamily: 'Readex Pro',
+                                                        fontSize: 16,
+                                                        letterSpacing: 0,
+                                                      ),
+                                                    ),
+                                                    const TextSpan(
+                                                      text: ' / ',
+                                                      style: TextStyle(
+                                                        color: Colors.blue,
+                                                        fontWeight: FontWeight
+                                                            .w500,
+                                                        fontFamily: 'Readex Pro',
+                                                        fontSize: 16,
+                                                        letterSpacing: 0,
+                                                      ),
+                                                    ),
+                                                    TextSpan(
+                                                      text: _samTotal ?? '0',
+                                                      style: const TextStyle(
+                                                        color: Colors.blue,
+                                                        fontWeight: FontWeight
+                                                            .w500,
+                                                        fontFamily: 'Readex Pro',
+                                                        fontSize: 16,
+                                                        letterSpacing: 0,
+                                                      ),
+                                                    ),
+                                                  ],
+                                                ),
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+
+                          Align(
+                            alignment: const AlignmentDirectional(-1, -1),
+                            child: Padding(
+                              padding:
+                              const EdgeInsetsDirectional.fromSTEB(
+                                  16, 10, 16, 5),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.max,
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Expanded(
+                                    child: Padding(
+                                      padding: const EdgeInsetsDirectional
+                                          .fromSTEB(
+                                          12, 0, 12, 0),
+                                      child: Material(
+                                        color: Colors.transparent,
+                                        elevation: 2,
+                                        shape: const RoundedRectangleBorder(
+                                          borderRadius: BorderRadius.only(
+                                            bottomLeft: Radius.circular(8),
+                                            bottomRight: Radius.circular(8),
+                                            topLeft: Radius.circular(8),
+                                            topRight: Radius.circular(8),
+                                          ),
+                                        ),
+                                        child: Container(
+                                          width: 319,
+                                          height: 72,
+                                          decoration: BoxDecoration(
+                                            color: Colors.white,
+                                            boxShadow: const [
+                                              BoxShadow(
+                                                blurRadius: 1,
+                                                color: Color(0xC212F3B0),
+                                                offset: Offset(
+                                                  0,
+                                                  2,
+                                                ),
+                                                spreadRadius: 0.2,
+                                              )
+                                            ],
+                                            borderRadius: const BorderRadius
+                                                .only(
+                                              bottomLeft: Radius.circular(8),
+                                              bottomRight: Radius.circular(8),
+                                              topLeft: Radius.circular(8),
+                                              topRight: Radius.circular(8),
+                                            ),
+                                            border: Border.all(
+                                              color: const Color(0xFF07F8C9),
+                                              width: 0.2,
+                                            ),
+                                          ),
+                                          alignment: const AlignmentDirectional(
+                                              0, 0),
+                                          child: Column(
+                                            mainAxisSize: MainAxisSize.max,
+                                            children: [
+                                              const Padding(
+                                                padding: EdgeInsetsDirectional
+                                                    .fromSTEB(0, 6, 0, 0),
+                                                child: Text(
+                                                    'Cutting P&L',
+                                                    style: TextStyle(
+                                                      fontWeight: FontWeight
+                                                          .w500,
+                                                      fontFamily: 'Readex Pro',
+                                                      fontSize: 20,
+                                                      letterSpacing: 0,
+                                                    )
+                                                ),
+                                              ),
+                                              Padding(
+                                                padding: const EdgeInsetsDirectional
+                                                    .fromSTEB(0, 8, 0, 0),
+                                                child: Text(
+                                                    _cutting ?? '0',
+                                                    style: TextStyle(
+                                                      fontWeight: FontWeight
+                                                          .w500,
+                                                      fontFamily: 'Readex Pro',
+                                                      fontSize: 16,
+                                                      letterSpacing: 0,
+                                                      color: _getProfitColor(
+                                                          _cutting),
+                                                    )
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                  Expanded(
+                                    child: Padding(
+                                      padding: const EdgeInsetsDirectional
+                                          .fromSTEB(
+                                          12, 0, 12, 0),
+                                      child: Material(
+                                        color: Colors.transparent,
+                                        elevation: 2,
+                                        shape: const RoundedRectangleBorder(
+                                          borderRadius: BorderRadius.only(
+                                            bottomLeft: Radius.circular(8),
+                                            bottomRight: Radius.circular(8),
+                                            topLeft: Radius.circular(8),
+                                            topRight: Radius.circular(8),
+                                          ),
+                                        ),
+                                        child: Container(
+                                          width: 319,
+                                          height: 72,
+                                          decoration: BoxDecoration(
+                                            color: Colors.white,
+                                            boxShadow: const [
+                                              BoxShadow(
+                                                blurRadius: 1,
+                                                color: Color(0xC212F3B0),
+                                                offset: Offset(
+                                                  0,
+                                                  2,
+                                                ),
+                                                spreadRadius: 0.2,
+                                              )
+                                            ],
+                                            borderRadius: const BorderRadius
+                                                .only(
+                                              bottomLeft: Radius.circular(8),
+                                              bottomRight: Radius.circular(8),
+                                              topLeft: Radius.circular(8),
+                                              topRight: Radius.circular(8),
+                                            ),
+                                            border: Border.all(
+                                              color: const Color(0xFF07F8C9),
+                                              width: 0.2,
+                                            ),
+                                          ),
+                                          alignment: const AlignmentDirectional(
+                                              0, 0),
+                                          child: Column(
+                                            mainAxisSize: MainAxisSize.max,
+                                            children: [
+                                              const Padding(
+                                                padding: EdgeInsetsDirectional
+                                                    .fromSTEB(0, 6, 0, 0),
+                                                child: Text(
+                                                    'Stitching P&L',
+                                                    style: TextStyle(
+                                                      fontWeight: FontWeight
+                                                          .w500,
+                                                      fontFamily: 'Readex Pro',
+                                                      fontSize: 20,
+                                                      letterSpacing: 0,
+                                                    )
+                                                ),
+                                              ),
+                                              Padding(
+                                                padding: const EdgeInsetsDirectional
+                                                    .fromSTEB(0, 8, 0, 0),
+                                                child: Text(
+                                                    _stitching ?? '0',
+                                                    style: TextStyle(
+                                                      fontWeight: FontWeight
+                                                          .w500,
+                                                      fontFamily: 'Readex Pro',
+                                                      color: _getProfitColor(
+                                                          _stitching),
+                                                      fontSize: 16,
+                                                      letterSpacing: 0,
+                                                    )
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                          Align(
+                            alignment: const AlignmentDirectional(-1, -1),
+                            child: Padding(
+                              padding:
+                              const EdgeInsetsDirectional.fromSTEB(
+                                  16, 10, 16, 5),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.max,
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Expanded(
+                                    child: Padding(
+                                      padding: const EdgeInsetsDirectional
+                                          .fromSTEB(
+                                          12, 0, 12, 0),
+                                      child: Material(
+                                        color: Colors.transparent,
+                                        elevation: 2,
+                                        shape: const RoundedRectangleBorder(
+                                          borderRadius: BorderRadius.only(
+                                            bottomLeft: Radius.circular(8),
+                                            bottomRight: Radius.circular(8),
+                                            topLeft: Radius.circular(8),
+                                            topRight: Radius.circular(8),
+                                          ),
+                                        ),
+                                        child: Container(
+                                          width: 319,
+                                          height: 72,
+                                          decoration: BoxDecoration(
+                                            color: Colors.white,
+                                            boxShadow: const [
+                                              BoxShadow(
+                                                blurRadius: 1,
+                                                color: Color(0xC212F3B0),
+                                                offset: Offset(
+                                                  0,
+                                                  2,
+                                                ),
+                                                spreadRadius: 0.2,
+                                              )
+                                            ],
+                                            borderRadius: const BorderRadius
+                                                .only(
+                                              bottomLeft: Radius.circular(8),
+                                              bottomRight: Radius.circular(8),
+                                              topLeft: Radius.circular(8),
+                                              topRight: Radius.circular(8),
+                                            ),
+                                            border: Border.all(
+                                              color: const Color(0xFF07F8C9),
+                                              width: 0.2,
+                                            ),
+                                          ),
+                                          alignment: const AlignmentDirectional(
+                                              0, 0),
+                                          child: Column(
+                                            mainAxisSize: MainAxisSize.max,
+                                            children: [
+                                              const Padding(
+                                                padding: EdgeInsetsDirectional
+                                                    .fromSTEB(0, 6, 0, 0),
+                                                child: Text(
+                                                    'Finishing P&L',
+                                                    style: TextStyle(
+                                                      fontWeight: FontWeight
+                                                          .w500,
+                                                      fontFamily: 'Readex Pro',
+                                                      fontSize: 20,
+                                                      letterSpacing: 0,
+                                                    )
+                                                ),
+                                              ),
+                                              Padding(
+                                                padding: const EdgeInsetsDirectional
+                                                    .fromSTEB(0, 8, 0, 0),
+                                                child: Text(
+                                                    _finishing ?? '0',
+                                                    style: TextStyle(
+                                                      fontWeight: FontWeight
+                                                          .w500,
+                                                      fontFamily: 'Readex Pro',
+                                                      fontSize: 16,
+                                                      color: _getProfitColor(
+                                                          _finishing),
+                                                      letterSpacing: 0,
+                                                    )
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                  Expanded(
+                                    child: Padding(
+                                      padding: const EdgeInsetsDirectional
+                                          .fromSTEB(
+                                          12, 0, 12, 0),
+                                      child: Material(
+                                        color: Colors.transparent,
+                                        elevation: 2,
+                                        shape: const RoundedRectangleBorder(
+                                          borderRadius: BorderRadius.only(
+                                            bottomLeft: Radius.circular(8),
+                                            bottomRight: Radius.circular(8),
+                                            topLeft: Radius.circular(8),
+                                            topRight: Radius.circular(8),
+                                          ),
+                                        ),
+                                        child: Container(
+                                          width: 319,
+                                          height: 72,
+                                          decoration: BoxDecoration(
+                                            color: Colors.white,
+                                            boxShadow: const [
+                                              BoxShadow(
+                                                blurRadius: 1,
+                                                color: Color(0xC212F3B0),
+                                                offset: Offset(
+                                                  0,
+                                                  2,
+                                                ),
+                                                spreadRadius: 0.2,
+                                              )
+                                            ],
+                                            borderRadius: const BorderRadius
+                                                .only(
+                                              bottomLeft: Radius.circular(8),
+                                              bottomRight: Radius.circular(8),
+                                              topLeft: Radius.circular(8),
+                                              topRight: Radius.circular(8),
+                                            ),
+                                            border: Border.all(
+                                              color: const Color(0xFF07F8C9),
+                                              width: 0.2,
+                                            ),
+                                          ),
+                                          alignment: const AlignmentDirectional(
+                                              0, 0),
+                                          child: Column(
+                                            mainAxisSize: MainAxisSize.max,
+                                            children: [
+                                              const Padding(
+                                                padding: EdgeInsetsDirectional
+                                                    .fromSTEB(0, 6, 0, 0),
+                                                child: Text(
+                                                    'Total P&L',
+                                                    style: TextStyle(
+                                                      fontWeight: FontWeight
+                                                          .w500,
+                                                      fontFamily: 'Readex Pro',
+                                                      fontSize: 20,
+                                                      letterSpacing: 0,
+                                                    )
+                                                ),
+                                              ),
+                                              Padding(
+                                                padding: const EdgeInsetsDirectional
+                                                    .fromSTEB(0, 8, 0, 0),
+                                                child: Text(
+                                                    _total ?? '0',
+                                                    style: TextStyle(
+                                                      fontWeight: FontWeight
+                                                          .w500,
+                                                      fontFamily: 'Readex Pro',
+                                                      color: _getProfitColor(
+                                                          _total),
+                                                      fontSize: 16,
+                                                      letterSpacing: 0,
+                                                    )
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                          Align(
+                            alignment: const AlignmentDirectional(-1, -1),
+                            child: Padding(
+                              padding:
+                              const EdgeInsetsDirectional.fromSTEB(
+                                  16, 10, 16, 5),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.max,
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Expanded(
+                                    child: Padding(
+                                      padding: const EdgeInsetsDirectional
+                                          .fromSTEB(
+                                          12, 0, 12, 0),
+                                      child: Material(
+                                        color: Colors.transparent,
+                                        elevation: 2,
+                                        shape: const RoundedRectangleBorder(
+                                          borderRadius: BorderRadius.only(
+                                            bottomLeft: Radius.circular(8),
+                                            bottomRight: Radius.circular(8),
+                                            topLeft: Radius.circular(8),
+                                            topRight: Radius.circular(8),
+                                          ),
+                                        ),
+                                        child: Container(
+                                          width: 319,
+                                          height: 72,
+                                          decoration: BoxDecoration(
+                                            color: Colors.white,
+                                            boxShadow: const [
+                                              BoxShadow(
+                                                blurRadius: 1,
+                                                color: Color(0xC212F3B0),
+                                                offset: Offset(
+                                                  0,
+                                                  2,
+                                                ),
+                                                spreadRadius: 0.2,
+                                              )
+                                            ],
+                                            borderRadius: const BorderRadius
+                                                .only(
+                                              bottomLeft: Radius.circular(8),
+                                              bottomRight: Radius.circular(8),
+                                              topLeft: Radius.circular(8),
+                                              topRight: Radius.circular(8),
+                                            ),
+                                            border: Border.all(
+                                              color: const Color(0xFF07F8C9),
+                                              width: 0.2,
+                                            ),
+                                          ),
+                                          alignment: const AlignmentDirectional(
+                                              0, 0),
+                                          child: Column(
+                                            mainAxisSize: MainAxisSize.max,
+                                            children: [
+                                              const Padding(
+                                                padding: EdgeInsetsDirectional
+                                                    .fromSTEB(0, 6, 0, 0),
+                                                child: Text(
+                                                    'MMR',
+                                                    style: TextStyle(
+                                                      fontWeight: FontWeight
+                                                          .w500,
+                                                      fontFamily: 'Readex Pro',
+                                                      fontSize: 20,
+                                                      letterSpacing: 0,
+                                                    )
+                                                ),
+                                              ),
+                                              Padding(
+                                                padding: const EdgeInsetsDirectional
+                                                    .fromSTEB(0, 8, 0, 0),
+                                                child: RichText(
+                                                  text: TextSpan(
+                                                    children: [
+                                                      TextSpan(
+                                                        text: _mmrToday ?? '0',
+                                                        style: const TextStyle(
+                                                          color: Colors.blue,
+                                                          fontWeight: FontWeight
+                                                              .w500,
+                                                          fontFamily: 'Readex Pro',
+                                                          fontSize: 16,
+                                                          letterSpacing: 0,
+                                                        ),
+                                                      ),
+                                                      const TextSpan(
+                                                        text: ' / ',
+                                                        style: TextStyle(
+                                                          color: Colors.blue,
+                                                          fontWeight: FontWeight
+                                                              .w500,
+                                                          fontFamily: 'Readex Pro',
+                                                          fontSize: 16,
+                                                          letterSpacing: 0,
+                                                        ),
+                                                      ),
+                                                      TextSpan(
+                                                        text: _mmrTotal ?? '0',
+                                                        style: const TextStyle(
+                                                          color: Colors.blue,
+                                                          fontWeight: FontWeight
+                                                              .w500,
+                                                          fontFamily: 'Readex Pro',
+                                                          fontSize: 16,
+                                                          letterSpacing: 0,
+                                                        ),
+                                                      ),
+                                                    ],
+                                                  ),
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                  Expanded(
+                                    child: Padding(
+                                      padding: const EdgeInsetsDirectional
+                                          .fromSTEB(
+                                          12, 0, 12, 0),
+                                      child: Material(
+                                        color: Colors.transparent,
+                                        elevation: 2,
+                                        shape: const RoundedRectangleBorder(
+                                          borderRadius: BorderRadius.only(
+                                            bottomLeft: Radius.circular(8),
+                                            bottomRight: Radius.circular(8),
+                                            topLeft: Radius.circular(8),
+                                            topRight: Radius.circular(8),
+                                          ),
+                                        ),
+                                        child: Container(
+                                          width: 319,
+                                          height: 72,
+                                          decoration: BoxDecoration(
+                                            color: Colors.white,
+                                            boxShadow: const [
+                                              BoxShadow(
+                                                blurRadius: 1,
+                                                color: Color(0xC212F3B0),
+                                                offset: Offset(
+                                                  0,
+                                                  2,
+                                                ),
+                                                spreadRadius: 0.2,
+                                              )
+                                            ],
+                                            borderRadius: const BorderRadius
+                                                .only(
+                                              bottomLeft: Radius.circular(8),
+                                              bottomRight: Radius.circular(8),
+                                              topLeft: Radius.circular(8),
+                                              topRight: Radius.circular(8),
+                                            ),
+                                            border: Border.all(
+                                              color: const Color(0xFF07F8C9),
+                                              width: 0.2,
+                                            ),
+                                          ),
+                                          alignment: const AlignmentDirectional(
+                                              0, 0),
+                                          child: Column(
+                                            mainAxisSize: MainAxisSize.max,
+                                            children: [
+                                              const Padding(
+                                                padding: EdgeInsetsDirectional
+                                                    .fromSTEB(0, 6, 0, 0),
+                                                child: Text(
+                                                    'Energy Cost',
+                                                    style: TextStyle(
+                                                      fontWeight: FontWeight
+                                                          .w500,
+                                                      fontFamily: 'Readex Pro',
+                                                      fontSize: 20,
+                                                      letterSpacing: 0,
+                                                    )
+                                                ),
+                                              ),
+                                              Padding(
+                                                padding: const EdgeInsetsDirectional
+                                                    .fromSTEB(0, 8, 0, 0),
+                                                child: Text(
+                                                    _energy ?? '0',
+                                                    style: const TextStyle(
+                                                      fontWeight: FontWeight
+                                                          .w500,
+                                                      fontFamily: 'Readex Pro',
+                                                      color: Colors.blue,
+                                                      fontSize: 16,
+                                                      letterSpacing: 0,
+                                                    )
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                          Align(
+                            alignment: const AlignmentDirectional(-1, -1),
+                            child: Padding(
+                              padding:
+                              const EdgeInsetsDirectional.fromSTEB(
+                                  16, 10, 16, 5),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.max,
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Expanded(
+                                    child: Padding(
+                                      padding: const EdgeInsetsDirectional
+                                          .fromSTEB(
+                                          12, 0, 12, 0),
+                                      child: Material(
+                                        color: Colors.transparent,
+                                        elevation: 2,
+                                        shape: const RoundedRectangleBorder(
+                                          borderRadius: BorderRadius.only(
+                                            bottomLeft: Radius.circular(8),
+                                            bottomRight: Radius.circular(8),
+                                            topLeft: Radius.circular(8),
+                                            topRight: Radius.circular(8),
+                                          ),
+                                        ),
+                                        child: Container(
+                                          width: 319,
+                                          height: 72,
+                                          decoration: BoxDecoration(
+                                            color: Colors.white,
+                                            boxShadow: const [
+                                              BoxShadow(
+                                                blurRadius: 1,
+                                                color: Color(0xC212F3B0),
+                                                offset: Offset(
+                                                  0,
+                                                  2,
+                                                ),
+                                                spreadRadius: 0.2,
+                                              )
+                                            ],
+                                            borderRadius: const BorderRadius
+                                                .only(
+                                              bottomLeft: Radius.circular(8),
+                                              bottomRight: Radius.circular(8),
+                                              topLeft: Radius.circular(8),
+                                              topRight: Radius.circular(8),
+                                            ),
+                                            border: Border.all(
+                                              color: const Color(0xFF07F8C9),
+                                              width: 0.2,
+                                            ),
+                                          ),
+                                          alignment: const AlignmentDirectional(
+                                              0, 0),
+                                          child: Column(
+                                            mainAxisSize: MainAxisSize.max,
+                                            children: [
+                                              const Padding(
+                                                padding: EdgeInsetsDirectional
+                                                    .fromSTEB(0, 6, 0, 0),
+                                                child: Text(
+                                                    'Tailor Summary',
+                                                    style: TextStyle(
+                                                      fontWeight: FontWeight
+                                                          .w500,
+                                                      fontFamily: 'Readex Pro',
+                                                      fontSize: 20,
+                                                      letterSpacing: 0,
+                                                    )
+                                                ),
+                                              ),
+                                              Padding(
+                                                padding: const EdgeInsetsDirectional
+                                                    .fromSTEB(0, 8, 0, 0),
+                                                child: RichText(
+                                                  text: TextSpan(
+                                                    children: [
+                                                      TextSpan(
+                                                        text: _todayTailor ??
+                                                            '0',
+                                                        style: const TextStyle(
+                                                          color: Colors.blue,
+                                                          fontWeight: FontWeight
+                                                              .w500,
+                                                          fontFamily: 'Readex Pro',
+                                                          fontSize: 16,
+                                                          letterSpacing: 0,
+                                                        ),
+                                                      ),
+                                                      const TextSpan(
+                                                        text: ' / ',
+                                                        style: TextStyle(
+                                                          color: Colors.blue,
+                                                          fontWeight: FontWeight
+                                                              .w500,
+                                                          fontFamily: 'Readex Pro',
+                                                          fontSize: 16,
+                                                          letterSpacing: 0,
+                                                        ),
+                                                      ),
+                                                      TextSpan(
+                                                        text: _totalTailor ??
+                                                            '0',
+                                                        style: const TextStyle(
+                                                          color: Colors.blue,
+                                                          fontWeight: FontWeight
+                                                              .w500,
+                                                          fontFamily: 'Readex Pro',
+                                                          fontSize: 16,
+                                                          letterSpacing: 0,
+                                                        ),
+                                                      ),
+                                                    ],
+                                                  ),
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                  Expanded(
+                                    child: Padding(
+                                      padding: const EdgeInsetsDirectional
+                                          .fromSTEB(
+                                          12, 0, 12, 0),
+                                      child: Material(
+                                        color: Colors.transparent,
+                                        elevation: 2,
+                                        shape: const RoundedRectangleBorder(
+                                          borderRadius: BorderRadius.only(
+                                            bottomLeft: Radius.circular(8),
+                                            bottomRight: Radius.circular(8),
+                                            topLeft: Radius.circular(8),
+                                            topRight: Radius.circular(8),
+                                          ),
+                                        ),
+                                        child: Container(
+                                          width: 319,
+                                          height: 72,
+                                          decoration: BoxDecoration(
+                                            color: Colors.white,
+                                            boxShadow: const [
+                                              BoxShadow(
+                                                blurRadius: 1,
+                                                color: Color(0xC212F3B0),
+                                                offset: Offset(
+                                                  0,
+                                                  2,
+                                                ),
+                                                spreadRadius: 0.2,
+                                              )
+                                            ],
+                                            borderRadius: const BorderRadius
+                                                .only(
+                                              bottomLeft: Radius.circular(8),
+                                              bottomRight: Radius.circular(8),
+                                              topLeft: Radius.circular(8),
+                                              topRight: Radius.circular(8),
+                                            ),
+                                            border: Border.all(
+                                              color: const Color(0xFF07F8C9),
+                                              width: 0.2,
+                                            ),
+                                          ),
+                                          alignment: const AlignmentDirectional(
+                                              0, 0),
+                                          child: Column(
+                                            mainAxisSize: MainAxisSize.max,
+                                            children: [
+                                              const Padding(
+                                                padding: EdgeInsetsDirectional
+                                                    .fromSTEB(0, 6, 0, 0),
+                                                child: Text(
+                                                    'Efficiency (%)',
+                                                    style: TextStyle(
+                                                      fontWeight: FontWeight
+                                                          .w500,
+                                                      fontFamily: 'Readex Pro',
+                                                      fontSize: 20,
+                                                      letterSpacing: 0,
+                                                    )
+                                                ),
+                                              ),
+                                              Padding(
+                                                padding: const EdgeInsetsDirectional
+                                                    .fromSTEB(0, 8, 0, 0),
+                                                child: RichText(
+                                                  text: TextSpan(
+                                                    children: [
+                                                      TextSpan(
+                                                        text: _effToday ?? '0',
+                                                        style: const TextStyle(
+                                                          color: Colors.blue,
+                                                          fontWeight: FontWeight
+                                                              .w500,
+                                                          fontFamily: 'Readex Pro',
+                                                          fontSize: 16,
+                                                          letterSpacing: 0,
+                                                        ),
+                                                      ),
+                                                      const TextSpan(
+                                                        text: ' / ',
+                                                        style: TextStyle(
+                                                          color: Colors.blue,
+                                                          fontWeight: FontWeight
+                                                              .w500,
+                                                          fontFamily: 'Readex Pro',
+                                                          fontSize: 16,
+                                                          letterSpacing: 0,
+                                                        ),
+                                                      ),
+                                                      TextSpan(
+                                                        text: _effTotal ?? '0',
+                                                        style: const TextStyle(
+                                                          color: Colors.blue,
+                                                          fontWeight: FontWeight
+                                                              .w500,
+                                                          fontFamily: 'Readex Pro',
+                                                          fontSize: 16,
+                                                          letterSpacing: 0,
+                                                        ),
+                                                      ),
+                                                    ],
+                                                  ),
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ]
           ),
         ),
       ),
     );
   }
+
+
 }
