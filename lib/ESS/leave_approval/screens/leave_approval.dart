@@ -4,6 +4,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:intl/intl.dart';
+import 'package:ppms/common/utils/constants/baseurl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:velocity_x/velocity_x.dart';
 import 'package:http/http.dart' as http;
@@ -56,8 +57,7 @@ class _LeaveApproval extends State<LeaveApproval> {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     try {
       lstAppData = [];
-      const url =
-          'http://172.16.0.123:12008/api/HRISM/ApproveRejectApplication';
+      const url = TBaseURL.essBaseUrl+'api/HRISM/ApproveRejectApplication';
       print('Approving Application Approval of Subbordinate: $url');
 
       // Define the headers and body
@@ -173,8 +173,7 @@ class _LeaveApproval extends State<LeaveApproval> {
     print("Here on Function");
     try {
       lstAppData = [];
-      const url =
-          'http://172.16.0.123:12008/api/HRISM/GetApplicationApprovalSub';
+      const url = TBaseURL.essBaseUrl+'api/HRISM/GetApplicationApprovalSub';
       print('Fetching data from Application Approval of Subbordinate: $url');
 
       // Define the headers and body

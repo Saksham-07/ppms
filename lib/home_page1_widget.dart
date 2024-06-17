@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
@@ -5,7 +7,10 @@ import 'package:ppms/MainDashboard.dart';
 import 'package:ppms/main.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'ESS/essdashboard.dart';
-import 'animation_info.dart';  // Import the animation utility
+import 'ESS/leave_approval/models/userprofilemodel.dart';
+import 'animation_info.dart'; // Import the animation utility
+import 'common/utils/constants/baseurl.dart';
+import 'package:http/http.dart' as http;
 
 class HomePage1Widget extends StatefulWidget {
   const HomePage1Widget({super.key});
@@ -75,6 +80,58 @@ class _HomePage1WidgetState extends State<HomePage1Widget>
         ],
       ),
     });
+
+    GetEmployeeProfileByEmployeeCode();
+  }
+
+
+  Future<void> GetEmployeeProfileByEmployeeCode() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    print("Here on Function User Profile");
+    try {
+      const url = TBaseURL.essBaseUrl+'api/HRISM/GetEmployeeProfileByEmployeeCode';
+      print('Fetching data from User Profile: $url');
+
+      // Define the headers and body
+      Map<String, String> headers = {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+      };
+      print("Login Id is "+prefs.getString('login_id').toString());
+      Map<String, dynamic> body = {
+        "employeeCode": prefs.getString('login_id').toString()
+      };
+
+      // Send the POST request
+      final response = await http.post(
+        Uri.parse(url),
+        headers: headers,
+        body: jsonEncode(body),
+      );
+
+      if (response.statusCode == 200) {
+        print("Status Code ${response.statusCode}");
+        var data = jsonDecode(response.body.toString());
+        var newProfiledata=Userprofilemodel.fromJson(data);
+        print(newProfiledata);
+        print(newProfiledata.employeeid.toString());
+        prefs.setString('employeeId', newProfiledata.employeeid.toString());
+        prefs.setString('unitId', newProfiledata.unit.toString());
+        prefs.setString('unitlocation', newProfiledata.unitlocation.toString());
+        prefs.setString('department', newProfiledata.department.toString());
+        prefs.setString('designation', newProfiledata.designation.toString());
+        prefs.setString('reportingperson', newProfiledata.reportingperson.toString());
+        prefs.setString('reportingpersonname', newProfiledata.reportingpersonname.toString());
+
+      } else {
+
+        print('Failed to load data with status code: ${response.statusCode}');
+        print('Response body: ${response.body}');
+      }
+    } catch (e) {
+      throw e;
+      print('Error fetching data: $e');
+    }
   }
 
   @override
