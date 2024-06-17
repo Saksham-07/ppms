@@ -503,9 +503,10 @@ class _MainDashboardWidgetState extends State<MainDashboardWidget> {
                     ],
                   ),
                 ),
-                Padding(
-                  padding: const EdgeInsets.all(4),
-                  child: Container(
+
+
+                  Expanded(
+                      child: Padding( padding: const EdgeInsets.all(4),
                     child: SingleChildScrollView(
                       child: Column(
                         mainAxisSize: MainAxisSize.max,
@@ -1581,11 +1582,251 @@ class _MainDashboardWidgetState extends State<MainDashboardWidget> {
                               ),
                             ),
                           ),
+                          Align(
+                            alignment: const AlignmentDirectional(-1, -1),
+                            child: Padding(
+                              padding:
+                              const EdgeInsetsDirectional.fromSTEB(
+                                  16, 10, 16, 5),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.max,
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Expanded(
+                                    child: Padding(
+                                      padding: const EdgeInsetsDirectional
+                                          .fromSTEB(
+                                          12, 0, 12, 0),
+                                      child: Material(
+                                        color: Colors.transparent,
+                                        elevation: 2,
+                                        shape: const RoundedRectangleBorder(
+                                          borderRadius: BorderRadius.only(
+                                            bottomLeft: Radius.circular(8),
+                                            bottomRight: Radius.circular(8),
+                                            topLeft: Radius.circular(8),
+                                            topRight: Radius.circular(8),
+                                          ),
+                                        ),
+                                        child: Container(
+                                          width: 319,
+                                          height: 72,
+                                          decoration: BoxDecoration(
+                                            color: Colors.white,
+                                            boxShadow: const [
+                                              BoxShadow(
+                                                blurRadius: 1,
+                                                color: Color(0xC212F3B0),
+                                                offset: Offset(
+                                                  0,
+                                                  2,
+                                                ),
+                                                spreadRadius: 0.2,
+                                              )
+                                            ],
+                                            borderRadius: const BorderRadius
+                                                .only(
+                                              bottomLeft: Radius.circular(8),
+                                              bottomRight: Radius.circular(8),
+                                              topLeft: Radius.circular(8),
+                                              topRight: Radius.circular(8),
+                                            ),
+                                            border: Border.all(
+                                              color: const Color(0xFF07F8C9),
+                                              width: 0.2,
+                                            ),
+                                          ),
+                                          alignment: const AlignmentDirectional(
+                                              0, 0),
+                                          child: Column(
+                                            mainAxisSize: MainAxisSize.max,
+                                            children: [
+                                              const Padding(
+                                                padding: EdgeInsetsDirectional
+                                                    .fromSTEB(0, 6, 0, 0),
+                                                child: Text(
+                                                    'Tailor Summary',
+                                                    style: TextStyle(
+                                                      fontWeight: FontWeight
+                                                          .w500,
+                                                      fontFamily: 'Readex Pro',
+                                                      fontSize: 20,
+                                                      letterSpacing: 0,
+                                                    )
+                                                ),
+                                              ),
+                                              Padding(
+                                                padding: const EdgeInsetsDirectional
+                                                    .fromSTEB(0, 8, 0, 0),
+                                                child: RichText(
+                                                  text: TextSpan(
+                                                    children: [
+                                                      TextSpan(
+                                                        text: _todayTailor ??
+                                                            '0',
+                                                        style: const TextStyle(
+                                                          color: Colors.blue,
+                                                          fontWeight: FontWeight
+                                                              .w500,
+                                                          fontFamily: 'Readex Pro',
+                                                          fontSize: 16,
+                                                          letterSpacing: 0,
+                                                        ),
+                                                      ),
+                                                      const TextSpan(
+                                                        text: ' / ',
+                                                        style: TextStyle(
+                                                          color: Colors.blue,
+                                                          fontWeight: FontWeight
+                                                              .w500,
+                                                          fontFamily: 'Readex Pro',
+                                                          fontSize: 16,
+                                                          letterSpacing: 0,
+                                                        ),
+                                                      ),
+                                                      TextSpan(
+                                                        text: _totalTailor ??
+                                                            '0',
+                                                        style: const TextStyle(
+                                                          color: Colors.blue,
+                                                          fontWeight: FontWeight
+                                                              .w500,
+                                                          fontFamily: 'Readex Pro',
+                                                          fontSize: 16,
+                                                          letterSpacing: 0,
+                                                        ),
+                                                      ),
+                                                    ],
+                                                  ),
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                  Expanded(
+                                    child: Padding(
+                                      padding: const EdgeInsetsDirectional
+                                          .fromSTEB(
+                                          12, 0, 12, 0),
+                                      child: Material(
+                                        color: Colors.transparent,
+                                        elevation: 2,
+                                        shape: const RoundedRectangleBorder(
+                                          borderRadius: BorderRadius.only(
+                                            bottomLeft: Radius.circular(8),
+                                            bottomRight: Radius.circular(8),
+                                            topLeft: Radius.circular(8),
+                                            topRight: Radius.circular(8),
+                                          ),
+                                        ),
+                                        child: Container(
+                                          width: 319,
+                                          height: 72,
+                                          decoration: BoxDecoration(
+                                            color: Colors.white,
+                                            boxShadow: const [
+                                              BoxShadow(
+                                                blurRadius: 1,
+                                                color: Color(0xC212F3B0),
+                                                offset: Offset(
+                                                  0,
+                                                  2,
+                                                ),
+                                                spreadRadius: 0.2,
+                                              )
+                                            ],
+                                            borderRadius: const BorderRadius
+                                                .only(
+                                              bottomLeft: Radius.circular(8),
+                                              bottomRight: Radius.circular(8),
+                                              topLeft: Radius.circular(8),
+                                              topRight: Radius.circular(8),
+                                            ),
+                                            border: Border.all(
+                                              color: const Color(0xFF07F8C9),
+                                              width: 0.2,
+                                            ),
+                                          ),
+                                          alignment: const AlignmentDirectional(
+                                              0, 0),
+                                          child: Column(
+                                            mainAxisSize: MainAxisSize.max,
+                                            children: [
+                                              const Padding(
+                                                padding: EdgeInsetsDirectional
+                                                    .fromSTEB(0, 6, 0, 0),
+                                                child: Text(
+                                                    'Efficiency (%)',
+                                                    style: TextStyle(
+                                                      fontWeight: FontWeight
+                                                          .w500,
+                                                      fontFamily: 'Readex Pro',
+                                                      fontSize: 20,
+                                                      letterSpacing: 0,
+                                                    )
+                                                ),
+                                              ),
+                                              Padding(
+                                                padding: const EdgeInsetsDirectional
+                                                    .fromSTEB(0, 8, 0, 0),
+                                                child: RichText(
+                                                  text: TextSpan(
+                                                    children: [
+                                                      TextSpan(
+                                                        text: _effToday ?? '0',
+                                                        style: const TextStyle(
+                                                          color: Colors.blue,
+                                                          fontWeight: FontWeight
+                                                              .w500,
+                                                          fontFamily: 'Readex Pro',
+                                                          fontSize: 16,
+                                                          letterSpacing: 0,
+                                                        ),
+                                                      ),
+                                                      const TextSpan(
+                                                        text: ' / ',
+                                                        style: TextStyle(
+                                                          color: Colors.blue,
+                                                          fontWeight: FontWeight
+                                                              .w500,
+                                                          fontFamily: 'Readex Pro',
+                                                          fontSize: 16,
+                                                          letterSpacing: 0,
+                                                        ),
+                                                      ),
+                                                      TextSpan(
+                                                        text: _effTotal ?? '0',
+                                                        style: const TextStyle(
+                                                          color: Colors.blue,
+                                                          fontWeight: FontWeight
+                                                              .w500,
+                                                          fontFamily: 'Readex Pro',
+                                                          fontSize: 16,
+                                                          letterSpacing: 0,
+                                                        ),
+                                                      ),
+                                                    ],
+                                                  ),
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
                         ],
                       ),
                     ),
-                  ),
-                ),
+                  )),
+
               ]
           ),
         ),

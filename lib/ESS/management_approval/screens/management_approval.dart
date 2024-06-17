@@ -4,6 +4,7 @@ import 'package:dropdown_button2/dropdown_button2.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:iconsax/iconsax.dart';
+import 'package:ppms/common/utils/constants/baseurl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:http/http.dart' as http;
 import 'package:velocity_x/velocity_x.dart';
@@ -48,14 +49,11 @@ class _ManagementApprovalState extends State<ManagementApproval> {
       lstapprovalData = [];
       var url = '';
       if (appType == "1") {
-        url =
-            'http://172.16.0.123:12008/api/HRISM/ApproveRejectManagementApproval';
+        url = TBaseURL.essBaseUrl+'api/HRISM/ApproveRejectManagementApproval';
       } else if (appType == "2") {
-        url =
-            'http://172.16.0.123:12008/api/HRISM/ApproveRejectManagementApprovalHO';
+        url = TBaseURL.essBaseUrl+'api/HRISM/ApproveRejectManagementApprovalHO';
       } else if (appType == "3") {
-        url =
-            'http://172.16.0.123:12008/api/HRISM/ApproveRejectManagementApprovalSRV';
+        url = TBaseURL.essBaseUrl+'api/HRISM/ApproveRejectManagementApprovalSRV';
       }
       print('Approving Application Approval of Subbordinate: $url');
       // Define the headers and body
@@ -104,8 +102,7 @@ class _ManagementApprovalState extends State<ManagementApproval> {
     print("Here on Function");
     try {
       lstapprovalData = [];
-      const url =
-          'http://172.16.0.123:12008/api/HRISM/GetManagementApprovalList';
+      const url = TBaseURL.essBaseUrl+'api/HRISM/GetManagementApprovalList';
       print('Fetching data management Approval : $url');
 
       // Define the headers and body
@@ -463,6 +460,7 @@ class _ManagementApprovalState extends State<ManagementApproval> {
                                                 showConfirmDialog("Are you sure want to Hold?",lstapprovalData[index]
                                                     .appId
                                                     .toString(),
+
                                                     lstapprovalData[index]
                                                         .appCatg
                                                         .toString(),
