@@ -390,6 +390,9 @@ class ManpowerDetail {
   });
 
   factory ManpowerDetail.fromJson(Map<String, dynamic> json) {
+      double toTwoDecimalPlaces(double value) {
+        return double.parse(value.toStringAsFixed(2));
+      }
     return ManpowerDetail(
       bareTailorPresent: (json['BareTailorPresent'] as num?)?.toInt() ?? 0,
       bareTailorPresentToday: (json['BareTailorPresentToday'] as num?)?.toInt() ?? 0,
@@ -404,8 +407,8 @@ class ManpowerDetail {
       gradeATotal: (json['GradeATotal'] as num?)?.toInt() ?? 0,
       gradeBToday: (json['GradeBToday'] as num?)?.toInt() ?? 0,
       gradeBTotal: (json['GradeBTotal'] as num?)?.toInt() ?? 0,
-      mMR: (json['MMR'] as num?)?.toDouble() ?? 0.0,
-      mMRToday: (json['MMRToday'] as num?)?.toDouble() ?? 0.0,
+      mMR: toTwoDecimalPlaces((json['MMR'] as num?)?.toDouble() ?? 0.0),
+      mMRToday: toTwoDecimalPlaces((json['MMRToday'] as num?)?.toDouble() ?? 0.0),
       malePresent: (json['MalePresent'] as num?)?.toInt() ?? 0,
       malePresentToday: (json['MalePresentToday'] as num?)?.toInt() ?? 0,
       mispunch: (json['Mispunch'] as num?)?.toInt() ?? 0,
@@ -498,7 +501,7 @@ class ProfitAndLossData {
 
 Future<List<ProductionData>> fetchProdData(String from, String to, String units) async {
   final response = await http.get(
-    Uri.parse('http://172.16.0.5:10008/management?proce_type=prod&from=$from&to=$to&units=$units'),
+    Uri.parse('http://14.142.248.34:10008/management?proce_type=prod&from=$from&to=$to&units=$units'),
   );
 
   if (response.statusCode == 200) {
@@ -512,7 +515,7 @@ Future<List<ProductionData>> fetchProdData(String from, String to, String units)
 }
 Future<List<FinishDetail>> fetchFinishData(String from, String to, String units) async {
   final response = await http.get(
-    Uri.parse('http://172.16.0.5:10008/management?proce_type=finish&from=''&to=$to&units=$units'),
+    Uri.parse('http://14.142.248.34:10008/management?proce_type=finish&from=''&to=$to&units=$units'),
   );
 
   if (response.statusCode == 200) {
@@ -541,7 +544,7 @@ Future<List<SamProdDetail>> fetchSamData(String from, String to, String units) a
 
 Future<List<OtDetail>> fetchOtData(String from, String to, String units) async {
   final response = await http.get(
-    Uri.parse('http://172.16.0.5:10008/management?proce_type=ot&from=$from&to=$to&units=$units'),
+    Uri.parse('http://14.142.248.34:10008/management?proce_type=ot&from=$from&to=$to&units=$units'),
   );
 
   if (response.statusCode == 200) {
@@ -553,10 +556,24 @@ Future<List<OtDetail>> fetchOtData(String from, String to, String units) async {
     throw Exception('Failed to load data');
   }
 }
+Future<List<ManpowerDetail>> fetchManpowerData(String from, String to, String units) async {
+  final response = await http.get(
+    Uri.parse('http://172.16.10.11:8000/management?proce_type=manpowerTailor&from=$from&to=$to&units=$units'),
+  );
+
+  if (response.statusCode == 200) {
+    List jsonResponse = json.decode(response.body);
+
+    return jsonResponse.map((data) => ManpowerDetail.fromJson(data)).toList();
+
+  } else {
+    throw Exception('Failed to load data');
+  }
+}
 
 Future<List<AuditDetail>> fetchAuditData(String from, String to, String units) async {
   final response = await http.get(
-    Uri.parse('http://172.16.0.5:10008/management?proce_type=audit&from=$from&to=$to&units=$units'),
+    Uri.parse('http://14.142.248.34:10008/management?proce_type=audit&from=$from&to=$to&units=$units'),
   );
 
   if (response.statusCode == 200) {
@@ -571,20 +588,18 @@ Future<List<AuditDetail>> fetchAuditData(String from, String to, String units) a
 
 Future<List<ProfitAndLossData>> fetchProfitAndLossData(String from, String to, String units) async {
   final response = await http.get(
-    Uri.parse('http://172.16.0.5:10008/management?proce_type=pnl&from=$from&to=$to&units=$units'),
+    Uri.parse('http://14.142.248.34:10008/management?proce_type=pnl&from=$from&to=$to&units=$units'),
   );
 
   if (response.statusCode == 200) {
     List jsonResponse = json.decode(response.body);
-
     return jsonResponse.map((data) => ProfitAndLossData.fromJson(data)).toList();
-
   } else {
     throw Exception('Failed to load data');
   }
 }
 Future<List<String>> fetchUnits() async {
-  final response = await http.get(Uri.parse('http://172.16.0.5:10008/unit?type=pnl&user'));
+  final response = await http.get(Uri.parse('http://14.142.248.34:10008/unit?type=pnl&user'));
   if (response.statusCode == 200) {
     final List<dynamic> unitsJson = json.decode(response.body);
     final List<String> units = unitsJson.map((unit) => unit['UnitCode'].toString()).toList();
@@ -727,7 +742,7 @@ class ProfitAndLossTable extends StatelessWidget {
                 ),
                 child: Center(child: Text('Cutting' , style: TextStyle(
                   fontWeight: FontWeight.bold,
-                  fontSize: 17,
+
                   color: Colors.white
                 ),)),
               ),
@@ -743,7 +758,7 @@ class ProfitAndLossTable extends StatelessWidget {
                 ),
                 child: Center(child: Text('Stitching',style: TextStyle(
                     fontWeight: FontWeight.bold,
-                    fontSize: 17,
+
                     color: Colors.white
                 ),)),
               ),
@@ -759,7 +774,7 @@ class ProfitAndLossTable extends StatelessWidget {
                 ),
                 child: Center(child: Text('Finishing',style: TextStyle(
                     fontWeight: FontWeight.bold,
-                    fontSize: 17,
+
                     color: Colors.white
                 ),)),
               ),
@@ -775,7 +790,7 @@ class ProfitAndLossTable extends StatelessWidget {
                 ),
                 child: Center(child: Text('Finishing vs Packing',style: TextStyle(
                     fontWeight: FontWeight.bold,
-                    fontSize: 17,
+
                     color: Colors.white
                 ),)),
               ),
@@ -792,7 +807,7 @@ class ProfitAndLossTable extends StatelessWidget {
                 ),
                 child: Center(child: Text('Overlall',style: TextStyle(
                     fontWeight: FontWeight.bold,
-                    fontSize: 17,
+
                     color: Colors.white
                 ),)),
               ),
@@ -1313,7 +1328,6 @@ class AuditTable extends StatelessWidget {
                 ),
                 child: Center(child: Text('Stitching\nAudit' ,textAlign: TextAlign.center, style: TextStyle(
                     fontWeight: FontWeight.bold,
-                    fontSize: 17,
                     color: Colors.white
                 ),)),
               ),
@@ -1329,7 +1343,6 @@ class AuditTable extends StatelessWidget {
                 ),
                 child: Center(child: Text('Finishing\nAudit',textAlign: TextAlign.center,style: TextStyle(
                     fontWeight: FontWeight.bold,
-                    fontSize: 17,
                     color: Colors.white
                 ),)),
               ),
@@ -1345,7 +1358,7 @@ class AuditTable extends StatelessWidget {
                 ),
                 child: Center(child: Text('Inspection\nAudit',textAlign: TextAlign.center,style: TextStyle(
                     fontWeight: FontWeight.bold,
-                    fontSize: 17,
+
                     color: Colors.white
                 ),)),
               ),
@@ -1361,7 +1374,7 @@ class AuditTable extends StatelessWidget {
                 ),
                 child: Center(child: Text('External Audit',textAlign: TextAlign.center,style: TextStyle(
                     fontWeight: FontWeight.bold,
-                    fontSize: 17,
+
                     color: Colors.white
                 ),)),
               ),
@@ -1799,8 +1812,8 @@ class ManpowerTable extends StatelessWidget {
       'gradeATotal': gradeATotal,
       'gradeBToday': gradeBToday,
       'gradeBTotal': gradeBTotal,
-      'mMR': mMRAvg,
-      'mMRToday': mMRTodayAvg,
+      'mMR': double.parse(mMRAvg.toStringAsFixed(2)),
+      'mMRToday': double.parse(mMRTodayAvg.toStringAsFixed(2)),
       'malePresent': malePresent,
       'malePresentToday': malePresentToday,
       'mispunch': mispunch,
@@ -1833,7 +1846,7 @@ class ManpowerTable extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.start,
             children: [
               Container(
-                width: 120,
+                width: 100,
                 height: 60,
                 decoration: BoxDecoration(
                   color: Color(0xFF08B9AA),
@@ -1845,8 +1858,23 @@ class ManpowerTable extends StatelessWidget {
                 child: Center(child: Text('')),
               ),
               Container(
+                width: 60,
+                height: 60,
+                decoration: BoxDecoration(
+                  color: Color(0xFF08B9AA),
+                  border: Border(
+                    top: BorderSide(color: Colors.black54),
+                    left: BorderSide(color: Colors.black45),
+                  ),
+                ),
+                child: Center(child: Text('Emo\nOnroll' ,textAlign: TextAlign.center, style: TextStyle(
+
+                    color: Colors.white
+                ),)),
+              ),
+              Container(
                 width: 120,
-                height: 80,
+                height: 60,
                 decoration: BoxDecoration(
                   color: Color(0xFF08B9AA),
                   border: Border(
@@ -1855,8 +1883,7 @@ class ManpowerTable extends StatelessWidget {
                   ),
                 ),
                 child: Center(child: Text('Emp\nPresent' ,textAlign: TextAlign.center, style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 17,
+
                     color: Colors.white
                 ),)),
               ),
@@ -1871,8 +1898,7 @@ class ManpowerTable extends StatelessWidget {
                   ),
                 ),
                 child: Center(child: Text('Tailor\nOnroll',textAlign: TextAlign.center,style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 17,
+
                     color: Colors.white
                 ),)),
               ),
@@ -1887,8 +1913,7 @@ class ManpowerTable extends StatelessWidget {
                   ),
                 ),
                 child: Center(child: Text('Tailor \nOnroll(A+)',textAlign: TextAlign.center,style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 17,
+
                     color: Colors.white
                 ),)),
               ),
@@ -1903,8 +1928,7 @@ class ManpowerTable extends StatelessWidget {
                   ),
                 ),
                 child: Center(child: Text('Tailor\nOnroll(A)',textAlign: TextAlign.center,style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 17,
+
                     color: Colors.white
                 ),)),
               ),
@@ -1919,8 +1943,7 @@ class ManpowerTable extends StatelessWidget {
                   ),
                 ),
                 child: Center(child: Text('Tailor\nOnroll(B)',textAlign: TextAlign.center,style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 17,
+
                     color: Colors.white
                 ),)),
               ),
@@ -1935,8 +1958,7 @@ class ManpowerTable extends StatelessWidget {
                   ),
                 ),
                 child: Center(child: Text('Tailor\nPresent',textAlign: TextAlign.center,style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 17,
+
                     color: Colors.white
                 ),)),
               ),
@@ -1951,8 +1973,7 @@ class ManpowerTable extends StatelessWidget {
                   ),
                 ),
                 child: Center(child: Text('Tailor\nPresent(Bare)',textAlign: TextAlign.center,style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 17,
+
                     color: Colors.white
                 ),)),
               ),
@@ -1967,8 +1988,7 @@ class ManpowerTable extends StatelessWidget {
                   ),
                 ),
                 child: Center(child: Text('Tailor\nPresent(Other)',textAlign: TextAlign.center,style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 17,
+                    fontSize: 16,
                     color: Colors.white
                 ),)),
               ),
@@ -1983,8 +2003,7 @@ class ManpowerTable extends StatelessWidget {
                   ),
                 ),
                 child: Center(child: Text('MisPunch',textAlign: TextAlign.center,style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 17,
+
                     color: Colors.white
                 ),)),
               ),
@@ -1999,8 +2018,7 @@ class ManpowerTable extends StatelessWidget {
                   ),
                 ),
                 child: Center(child: Text('Male\nPresent',textAlign: TextAlign.center,style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 17,
+
                     color: Colors.white
                 ),)),
               ),
@@ -2015,8 +2033,7 @@ class ManpowerTable extends StatelessWidget {
                   ),
                 ),
                 child: Center(child: Text('Female\nPresent',textAlign: TextAlign.center,style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 17,
+
                     color: Colors.white
                 ),)),
               ),
@@ -2031,8 +2048,7 @@ class ManpowerTable extends StatelessWidget {
                   ),
                 ),
                 child: Center(child: Text('Piece Rate\nOnroll',textAlign: TextAlign.center,style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 17,
+
                     color: Colors.white
                 ),)),
               ),
@@ -2047,8 +2063,7 @@ class ManpowerTable extends StatelessWidget {
                   ),
                 ),
                 child: Center(child: Text('Piece Rate\nPresent',textAlign: TextAlign.center,style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 17,
+
                     color: Colors.white
                 ),)),
               ),
@@ -2063,8 +2078,7 @@ class ManpowerTable extends StatelessWidget {
                   ),
                 ),
                 child: Center(child: Text('MMR',textAlign: TextAlign.center,style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 17,
+
                     color: Colors.white
                 ),)),
               ),
@@ -2077,8 +2091,8 @@ class ManpowerTable extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Container(
-                    width: 120,
-                    height: 40.5,
+                    width: 100,
+                    height: 20.5,
                     decoration: BoxDecoration(
                       color: Color(0xFF08B9AA),
                       border: Border(
@@ -2087,13 +2101,13 @@ class ManpowerTable extends StatelessWidget {
                         left: BorderSide(color: Colors.black45),
                       ),
                     ),
-                    child: Center(child: Text('\nUnit',style: TextStyle(
+                    child: Center(child: Text('Unit',style: TextStyle(
                         color: Colors.white
                     ),)),
                   ),
                   ...data.map((item) {
                     return Container(
-                      width: 120,
+                      width: 100,
                       height: 20,
                       decoration: BoxDecoration(
                         border: Border(
@@ -2105,7 +2119,7 @@ class ManpowerTable extends StatelessWidget {
                     );
                   }).toList(),
                   Container(
-                    width: 120,
+                    width: 100,
                     height: 20,
                     decoration: BoxDecoration(
                       border: Border(
@@ -2892,7 +2906,7 @@ class ProdDataTable extends StatelessWidget {
                   ),
                   child: Center(child: Text('', style: TextStyle(
                       fontWeight: FontWeight.bold,
-                      fontSize: 17,
+
                       color: Colors.white
                   ),)),
                 ),
@@ -2908,7 +2922,7 @@ class ProdDataTable extends StatelessWidget {
                   ),
                   child: Center(child: Text('Stitching', style: TextStyle(
                       fontWeight: FontWeight.bold,
-                      fontSize: 17,
+
                       color: Colors.white
                   ),)),
                 ),
@@ -2924,7 +2938,7 @@ class ProdDataTable extends StatelessWidget {
                   ),
                   child: Center(child: Text('Finishing', style: TextStyle(
                       fontWeight: FontWeight.bold,
-                      fontSize: 17,
+
                       color: Colors.white
                   ),)),
                 ),
@@ -2940,7 +2954,7 @@ class ProdDataTable extends StatelessWidget {
                   ),
                   child: Center(child: Text('Shipping', style: TextStyle(
                       fontWeight: FontWeight.bold,
-                      fontSize: 17,
+
                       color: Colors.white
                   ),)),
                 ),
@@ -3739,7 +3753,7 @@ class OtTable extends StatelessWidget {
                 ),
                 child: Center(child: Text('Cutting', style: TextStyle(
                     fontWeight: FontWeight.bold,
-                    fontSize: 17,
+
                     color: Colors.white
                 ),)),
               ),
@@ -3755,7 +3769,7 @@ class OtTable extends StatelessWidget {
                 ),
                 child: Center(child: Text('Bare Stitching', style: TextStyle(
                     fontWeight: FontWeight.bold,
-                    fontSize: 17,
+
                     color: Colors.white
                 ),)),
               ),
@@ -3771,7 +3785,7 @@ class OtTable extends StatelessWidget {
                 ),
                 child: Center(child: Text('Finishing', style: TextStyle(
                     fontWeight: FontWeight.bold,
-                    fontSize: 17,
+
                     color: Colors.white
                 ),)),
               ),
@@ -3787,7 +3801,7 @@ class OtTable extends StatelessWidget {
                 ),
                 child: Center(child: Text('Factory', style: TextStyle(
                     fontWeight: FontWeight.bold,
-                    fontSize: 17,
+
                     color: Colors.white
                 ),)),
               ),
@@ -5231,12 +5245,14 @@ class _ProfitAndLossScreenState extends State<ProfitAndLossScreen> {
   bool _isFinishExpanded = false;
   bool _isAuditExpanded = false;
   bool _isSamExpanded = false;
+  bool _isManpowerExpanded = false;
   Future<List<ProfitAndLossData>>? futureData;
   Future<List<ProductionData>>? prodData;
   Future<List<OtDetail>>? otData;
   Future<List<FinishDetail>>? finishData;
   Future<List<AuditDetail>>? auditData;
   Future<List<SamProdDetail>>? samData;
+  Future<List<ManpowerDetail>>? manpowerData;
   late Future<List<String>> futureUnits;
 
   @override
@@ -5339,6 +5355,20 @@ class _ProfitAndLossScreenState extends State<ProfitAndLossScreen> {
         });
       }
     }
+    void _loadManpowerData() {
+      if (auditData == null) {
+        futureUnits.then((units) {
+          final unitsString = units.join(',');
+          final fromDate = widget.fromDate;
+          final toDate = widget.toDate;
+          setState(() {
+            manpowerData = fetchManpowerData(fromDate, toDate, unitsString);
+          });
+        }).catchError((error) {
+          print('Error fetching units: $error');
+        });
+      }
+    }
 
   @override
   Widget build(BuildContext context) {
@@ -5378,6 +5408,7 @@ class _ProfitAndLossScreenState extends State<ProfitAndLossScreen> {
                 _isFinishExpanded = false;
                 _isAuditExpanded = false;
                 _isSamExpanded = false;
+                _isManpowerExpanded = false;
               });
               if (_isProfitAndLossExpanded) {
                 _loadProfitAndLossData();
@@ -5385,12 +5416,13 @@ class _ProfitAndLossScreenState extends State<ProfitAndLossScreen> {
             },
             child: Container(
               decoration: BoxDecoration(
-                  color: Colors.white,
+                  color: Colors.black12,
                   border: Border(bottom: BorderSide(color: Colors.black45))),
               child: Row(
                 children: [
                   Expanded(
-                      child: Center(
+                      child: Padding(
+                          padding: const EdgeInsets.only(left: 8),
                           child: Text('Profit & Loss',
                               style: TextStyle(color: Colors.black)))),
                   Padding(
@@ -5398,8 +5430,8 @@ class _ProfitAndLossScreenState extends State<ProfitAndLossScreen> {
                         right: 16.0, top: 2.0, bottom: 2.0),
                     child: Icon(
                         _isProfitAndLossExpanded
-                            ? Icons.keyboard_arrow_up
-                            : Icons.keyboard_arrow_down,
+                            ? Icons.arrow_drop_down_circle_outlined
+                            : Icons.play_arrow_rounded,
                         color: Colors.black),
                   ),
                 ],
@@ -5431,6 +5463,7 @@ class _ProfitAndLossScreenState extends State<ProfitAndLossScreen> {
                 _isFinishExpanded = false;
                 _isAuditExpanded = false;
                 _isSamExpanded = false;
+                _isManpowerExpanded = false;
               });
               if (_isProductionExpanded) {
                 _loadProductionData();
@@ -5443,7 +5476,8 @@ class _ProfitAndLossScreenState extends State<ProfitAndLossScreen> {
               child: Row(
                 children: [
                   Expanded(
-                      child: Center(
+                      child:  Padding(
+                          padding: const EdgeInsets.only(left: 8),
                           child: Text('Production Detail',
                               style: TextStyle(color: Colors.black)))),
                   Padding(
@@ -5451,8 +5485,8 @@ class _ProfitAndLossScreenState extends State<ProfitAndLossScreen> {
                         right: 16.0, top: 2.0, bottom: 2.0),
                     child: Icon(
                         _isProductionExpanded
-                            ? Icons.keyboard_arrow_up
-                            : Icons.keyboard_arrow_down,
+                            ? Icons.arrow_drop_down_circle_outlined
+                            : Icons.play_arrow_rounded,
                         color: Colors.black),
                   ),
                 ],
@@ -5484,6 +5518,7 @@ class _ProfitAndLossScreenState extends State<ProfitAndLossScreen> {
                 _isFinishExpanded = false;
                 _isAuditExpanded = false;
                 _isSamExpanded = false;
+                _isManpowerExpanded = false;
               });
               if (_isOtExpanded) {
                 _loadOtData();
@@ -5491,12 +5526,13 @@ class _ProfitAndLossScreenState extends State<ProfitAndLossScreen> {
             },
             child: Container(
               decoration: BoxDecoration(
-                  color: Colors.white,
+                  color: Colors.black12,
                   border: Border(bottom: BorderSide(color: Colors.black45))),
               child: Row(
                 children: [
                   Expanded(
-                      child: Center(
+                      child: Padding(
+                          padding: const EdgeInsets.only(left: 8),
                           child: Text('OT Detail',
                               style: TextStyle(color: Colors.black)))),
                   Padding(
@@ -5504,8 +5540,8 @@ class _ProfitAndLossScreenState extends State<ProfitAndLossScreen> {
                         right: 16.0, top: 2.0, bottom: 2.0),
                     child: Icon(
                         _isOtExpanded
-                            ? Icons.keyboard_arrow_up
-                            : Icons.keyboard_arrow_down,
+                            ? Icons.arrow_drop_down_circle_outlined
+                            : Icons.play_arrow_rounded,
                         color: Colors.black),
                   ),
                 ],
@@ -5537,6 +5573,7 @@ class _ProfitAndLossScreenState extends State<ProfitAndLossScreen> {
                 _isOtExpanded = false;
                 _isAuditExpanded = false;
                 _isSamExpanded = false;
+                _isManpowerExpanded = false;
               });
               if (_isFinishExpanded) {
                 _loadFinishData();
@@ -5549,7 +5586,8 @@ class _ProfitAndLossScreenState extends State<ProfitAndLossScreen> {
               child: Row(
                 children: [
                   Expanded(
-                      child: Center(
+                      child: Padding(
+                          padding: const EdgeInsets.only(left: 8),
                           child: Text('Finishing Asking Detail',
                               style: TextStyle(color: Colors.black)))),
                   Padding(
@@ -5557,8 +5595,8 @@ class _ProfitAndLossScreenState extends State<ProfitAndLossScreen> {
                         right: 16.0, top: 2.0, bottom: 2.0),
                     child: Icon(
                         _isFinishExpanded
-                            ? Icons.keyboard_arrow_up
-                            : Icons.keyboard_arrow_down,
+                            ? Icons.arrow_drop_down_circle_outlined
+                            : Icons.play_arrow_rounded,
                         color: Colors.black),
                   ),
                 ],
@@ -5590,6 +5628,7 @@ class _ProfitAndLossScreenState extends State<ProfitAndLossScreen> {
                 _isOtExpanded = false;
                 _isFinishExpanded = false;
                 _isSamExpanded = false;
+                _isManpowerExpanded = false;
               });
               if (_isAuditExpanded) {
                 _loadAuditData();
@@ -5597,12 +5636,13 @@ class _ProfitAndLossScreenState extends State<ProfitAndLossScreen> {
             },
             child: Container(
               decoration: BoxDecoration(
-                  color: Colors.white,
+                  color: Colors.black12,
                   border: Border(bottom: BorderSide(color: Colors.black45))),
               child: Row(
                 children: [
                   Expanded(
-                      child: Center(
+                      child: Padding(
+                          padding: const EdgeInsets.only(left: 8),
                           child: Text('Audit (Fail %)',
                               style: TextStyle(color: Colors.black)))),
                   Padding(
@@ -5610,8 +5650,8 @@ class _ProfitAndLossScreenState extends State<ProfitAndLossScreen> {
                         right: 16.0, top: 2.0, bottom: 2.0),
                     child: Icon(
                         _isAuditExpanded
-                            ? Icons.keyboard_arrow_up
-                            : Icons.keyboard_arrow_down,
+                            ? Icons.arrow_drop_down_circle_outlined
+                            : Icons.play_arrow_rounded,
                         color: Colors.black),
                   ),
                 ],
@@ -5643,6 +5683,7 @@ class _ProfitAndLossScreenState extends State<ProfitAndLossScreen> {
                 _isOtExpanded = false;
                 _isFinishExpanded = false;
                 _isAuditExpanded = false;
+                _isManpowerExpanded = false;
               });
               if (_isSamExpanded) {
                 _loadSamData();
@@ -5655,7 +5696,8 @@ class _ProfitAndLossScreenState extends State<ProfitAndLossScreen> {
               child: Row(
                 children: [
                   Expanded(
-                      child: Center(
+                      child: Padding(
+                          padding: const EdgeInsets.only(left: 8),
                           child: Text('Sam Produced',
                               style: TextStyle(color: Colors.black)))),
                   Padding(
@@ -5663,8 +5705,8 @@ class _ProfitAndLossScreenState extends State<ProfitAndLossScreen> {
                         right: 16.0, top: 2.0, bottom: 2.0),
                     child: Icon(
                         _isSamExpanded
-                            ? Icons.keyboard_arrow_up
-                            : Icons.keyboard_arrow_down,
+                            ? Icons.arrow_drop_down_circle_outlined
+                            : Icons.play_arrow_rounded,
                         color: Colors.black),
                   ),
                 ],
@@ -5683,6 +5725,62 @@ class _ProfitAndLossScreenState extends State<ProfitAndLossScreen> {
                 return Text('No data found');
               } else {
                 return SamTable(data: snapshot.data!);
+              }
+            },
+          )
+              : SizedBox(),
+          GestureDetector(
+            onTap: () {
+              setState(() {
+                _isManpowerExpanded = !_isManpowerExpanded;
+                _isProfitAndLossExpanded = false;
+                _isProductionExpanded = false;
+                _isOtExpanded = false;
+                _isFinishExpanded = false;
+                _isAuditExpanded = false;
+                _isSamExpanded = false;
+              });
+              if (_isManpowerExpanded) {
+                _loadManpowerData();
+              }
+            },
+            child: Container(
+              decoration: BoxDecoration(
+                  color: Colors.black12,
+                  border: Border(bottom: BorderSide(color: Colors.black45))),
+              child: Row(
+                children: [
+                  Expanded(
+                      child: Padding(
+                        padding: const EdgeInsets.only(left: 8),
+                        child: Text('Manpower Table',
+                                style: TextStyle(color: Colors.black)),
+                      )),
+                  Padding(
+                    padding: const EdgeInsets.only(
+                        right: 16.0, top: 2.0, bottom: 2.0),
+                    child: Icon(
+                        _isManpowerExpanded
+                            ? Icons.arrow_drop_down_circle_outlined
+                            : Icons.play_arrow_rounded,
+                        color: Colors.black),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          _isManpowerExpanded
+              ? FutureBuilder<List<ManpowerDetail>>(
+            future: manpowerData,
+            builder: (context, snapshot) {
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return CircularProgressIndicator();
+              } else if (snapshot.hasError) {
+                return Text('Error: ${snapshot.error}');
+              } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
+                return Text('No data found');
+              } else {
+                return ManpowerTable(data: snapshot.data!);
               }
             },
           )

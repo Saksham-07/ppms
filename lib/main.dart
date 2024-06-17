@@ -92,7 +92,7 @@ class _MyHomePageState extends State<MyHomePage> {
   bool isPresent = false;
   Future<void> fetchData(String user, String password) async {
     try {
-      final url = 'http://172.16.0.5:10008/login?user_id=$user&password=$password';
+      final url = 'http://14.142.248.34:10008/login?user_id=$user&password=$password';
       // final url = 'http://172.16.10.11:8000/login?user_id=$user&password=$password';
       print('Fetching data from: $url');
 
@@ -180,7 +180,7 @@ class _MyHomePageState extends State<MyHomePage> {
 
     fetchData(userId!, password!);
 
-    final response = await http.get(Uri.parse('http://172.16.0.5:10008/login?user_id=$userId&password=$password'));
+    final response = await http.get(Uri.parse('http://14.142.248.34:10008/login?user_id=$userId&password=$password'));
 
     if (response.statusCode == 200) {
       var data = jsonDecode(response.body);

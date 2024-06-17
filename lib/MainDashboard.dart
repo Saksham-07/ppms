@@ -94,7 +94,7 @@ class _MainDashboardWidgetState extends State<MainDashboardWidget> {
     String toDateStr = toDateController.text;
     String selectedUnitCode = _unitMap[_selectedUnit]!;
     String url =
-        'http://172.16.0.5:10008/procedure_pnl?type=Pnl&unit=$selectedUnitCode&from=$fromDateStr&to=$toDateStr&unit_list=${_unitMap
+        'http://14.142.248.34:10008/procedure_pnl?type=Pnl&unit=$selectedUnitCode&from=$fromDateStr&to=$toDateStr&unit_list=${_unitMap
         .values.join(",")}';
 
     print('Fetching profit data from: $url');
@@ -111,23 +111,23 @@ class _MainDashboardWidgetState extends State<MainDashboardWidget> {
         _finishing = data[0]['FinishPnL'].toString();
         _total = data[0]['TotalPnL'].toString();
       });
-    } else {
-      setState(() {
-        _netTodayProfit = 'Error';
-        _netTotalProfit = 'Error';
-      });
-    }
+    }  else {
+  setState(() {
+  _netTodayProfit = 'Error';
+  _netTotalProfit = 'Error';
+  });
   }
+}
 
 
-  Future<void> _fetchSam(String type) async {
+Future<void> _fetchSam(String type) async {
     if (_selectedUnit == null) return;
 
     String fromDateStr = fromDateController.text;
     String toDateStr = toDateController.text;
     String selectedUnitCode = _unitMap[_selectedUnit]!;
     String url =
-        'http://172.16.0.5:10008/procedure?proce_type=common&type=$type&unit=$selectedUnitCode&from=$fromDateStr&to=$toDateStr';
+        'http://14.142.248.34:10008/procedure?proce_type=common&type=$type&unit=$selectedUnitCode&from=$fromDateStr&to=$toDateStr';
 
     print('Fetching profit data from: $url');
 
@@ -206,7 +206,7 @@ class _MainDashboardWidgetState extends State<MainDashboardWidget> {
     print(_unit);
 
     // Ensure _loginId is not null before proceeding
-    final String url = 'http://172.16.0.5:10008/unit?type=permissions&user=$_loginId';
+    final String url = 'http://14.142.248.34:10008/unit?type=permissions&user=$_loginId';
     print('Fetching data from: $url');
 
     final response = await http.get(Uri.parse(url));

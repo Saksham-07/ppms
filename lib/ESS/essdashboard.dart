@@ -6,6 +6,7 @@ import 'package:flutter/widgets.dart';
 import 'package:get/get.dart';
 import 'package:iconsax/iconsax.dart';
 import 'package:ppms/ESS/leave_application/screens/leave_application.dart';
+import 'package:ppms/ESS/management_approval/screens/management_approval.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:velocity_x/velocity_x.dart';
 
@@ -161,7 +162,8 @@ class _EssDashBoardState extends State<EssDashBoard> {
                                   const SizedBox(width: 20,),
                                   const Icon(Iconsax.arrow_right)
                                 ],
-                              ),
+                              ).onTap(() {Navigator.push(context, MaterialPageRoute(
+                                  builder: (context) => ManagementApproval(title: 'Management',)),); }),
                             ],
                           )
                         ],
