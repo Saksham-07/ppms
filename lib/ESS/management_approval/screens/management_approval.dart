@@ -463,6 +463,7 @@ class _ManagementApprovalState extends State<ManagementApproval> {
                                                 showConfirmDialog("Are you sure want to Hold?",lstapprovalData[index]
                                                     .appId
                                                     .toString(),
+
                                                     lstapprovalData[index]
                                                         .appCatg
                                                         .toString(),

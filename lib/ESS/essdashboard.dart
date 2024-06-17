@@ -3,14 +3,15 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:iconsax/iconsax.dart';
-import 'package:ppms/ESS/leave_application/screens/leave_application.dart';
+import 'package:ppms/ESS/leave_approval/screens/leave_approval.dart';
 import 'package:ppms/ESS/management_approval/screens/management_approval.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:velocity_x/velocity_x.dart';
-
 import '../common/widgets/appbar/appbar.dart';
-import 'leave_application/models/userprofilemodel.dart';
 import 'package:http/http.dart' as http;
+
+import 'leave_application/screens/leave_application.dart';
+import 'leave_approval/models/userprofilemodel.dart';
 
 class EssDashBoard extends StatefulWidget {
   const EssDashBoard({super.key});
@@ -63,8 +64,11 @@ class _EssDashBoardState extends State<EssDashBoard> {
         print(newProfiledata.employeeid.toString());
         prefs.setString('employeeId', newProfiledata.employeeid.toString());
         prefs.setString('unitId', newProfiledata.unit.toString());
+        prefs.setString('unitlocation', newProfiledata.unitlocation.toString());
         prefs.setString('department', newProfiledata.department.toString());
         prefs.setString('designation', newProfiledata.designation.toString());
+        prefs.setString('reportingperson', newProfiledata.reportingperson.toString());
+        prefs.setString('reportingpersonname', newProfiledata.reportingpersonname.toString());
 
       } else {
 
@@ -104,7 +108,7 @@ class _EssDashBoardState extends State<EssDashBoard> {
                                   const Icon(Iconsax.arrow_right)
                                 ],
                               ).onTap((){
-                                Get.to(()=>const LeaveApplication(title: 'ESS- Leave Approval',));
+                                Get.to(()=>const LeaveApproval(title: 'ESS- Leave Approval',));
                               }),
                             ],
                           ),
@@ -125,37 +129,13 @@ class _EssDashBoardState extends State<EssDashBoard> {
                             children: [
                               Row(
                                 children: [
-                                  Text("OD Application",style: Theme.of(context).textTheme.headlineSmall,),
-                                  const SizedBox(width: 20,),
-                                  const Icon(Iconsax.arrow_right)
-                                ],
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 20,),
-                          Row(
-                            children: [
-                              Row(
-                                children: [
-                                  Text("MIS Punch Application",style: Theme.of(context).textTheme.headlineSmall,),
-                                  const SizedBox(width: 20,),
-                                  const Icon(Iconsax.arrow_right)
-                                ],
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 20,),
-                          Row(
-                            children: [
-                              Row(
-                                children: [
                                   Text("Leave Application",style: Theme.of(context).textTheme.headlineSmall,),
                                   const SizedBox(width: 20,),
                                   const Icon(Iconsax.arrow_right)
                                 ],
                               ),
                             ],
-                          ),
+                          ).onTap(()=>Get.to(()=>const LeaveApplication(title: "ESS-Leave Application",))),
 
                         ],
                       ),
