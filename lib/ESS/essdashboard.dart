@@ -1,8 +1,6 @@
 import 'dart:convert';
 
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/widgets.dart';
 import 'package:get/get.dart';
 import 'package:iconsax/iconsax.dart';
 import 'package:ppms/ESS/leave_application/screens/leave_application.dart';
@@ -99,16 +97,27 @@ class _EssDashBoardState extends State<EssDashBoard> {
                         children: [
                           Row(
                             children: [
-                              GestureDetector(
-
-                                child: Row(
-                                  children: [
-                                    Text("Application Approval",style: Theme.of(context).textTheme.headlineSmall,),
-                                    const SizedBox(width: 20,),
-                                    const Icon(Iconsax.arrow_right)
-                                  ],
-                                ),
-                              )
+                              Row(
+                                children: [
+                                  Text("Leave Approval",style: Theme.of(context).textTheme.headlineSmall,),
+                                  const SizedBox(width: 20,),
+                                  const Icon(Iconsax.arrow_right)
+                                ],
+                              ).onTap((){
+                                Get.to(()=>const LeaveApplication(title: 'ESS- Leave Approval',));
+                              }),
+                            ],
+                          ),
+                          const SizedBox(height: 20,),
+                          Row(
+                            children: [
+                              Row(
+                                children: [
+                                  Text("Management Approval",style: Theme.of(context).textTheme.headlineSmall,),
+                                  const SizedBox(width: 20,),
+                                  const Icon(Iconsax.arrow_right)
+                                ],
+                              ).onTap(()=>Get.to(()=>ManagementApproval(title: 'ESS-Management Approval',))),
                             ],
                           ),
                           const SizedBox(height: 20,),
@@ -138,34 +147,16 @@ class _EssDashBoardState extends State<EssDashBoard> {
                           const SizedBox(height: 20,),
                           Row(
                             children: [
-                              GestureDetector(
-                                child: Row(
-                                  children: [
-                                    Text("Leave Application",style: Theme.of(context).textTheme.headlineSmall,),
-                                    const SizedBox(width: 20,),
-                                    const Icon(Iconsax.arrow_right)
-                                  ],
-                                ),
-                                  onTap: () async {
-                                    Navigator.push(context, MaterialPageRoute(
-                                        builder: (context) => LeaveApplication(title: 'Leave',)),);
-                                  }
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 20,),
-                          Row(
-                            children: [
                               Row(
                                 children: [
-                                  Text("Management Approval",style: Theme.of(context).textTheme.headlineSmall,),
+                                  Text("Leave Application",style: Theme.of(context).textTheme.headlineSmall,),
                                   const SizedBox(width: 20,),
                                   const Icon(Iconsax.arrow_right)
                                 ],
-                              ).onTap(() {Navigator.push(context, MaterialPageRoute(
-                                  builder: (context) => ManagementApproval(title: 'Management',)),); }),
+                              ),
                             ],
-                          )
+                          ),
+
                         ],
                       ),
                     ),
