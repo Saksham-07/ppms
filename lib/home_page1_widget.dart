@@ -29,6 +29,7 @@ class _HomePage1WidgetState extends State<HomePage1Widget>
   @override
   void initState() {
     super.initState();
+    GetEmployeeProfileByEmployeeCode();
 
     animationsMap.addAll({
       'gridOnPageLoadAnimation': AnimationInfo(
@@ -81,7 +82,6 @@ class _HomePage1WidgetState extends State<HomePage1Widget>
       ),
     });
 
-    GetEmployeeProfileByEmployeeCode();
   }
 
 
@@ -122,6 +122,8 @@ class _HomePage1WidgetState extends State<HomePage1Widget>
         prefs.setString('designation', newProfiledata.designation.toString());
         prefs.setString('reportingperson', newProfiledata.reportingperson.toString());
         prefs.setString('reportingpersonname', newProfiledata.reportingpersonname.toString());
+
+        print("reportingpersonname${prefs.getString('reportingpersonname').toString()}");
 
       } else {
 

@@ -101,7 +101,7 @@ class _EssDashBoardState extends State<EssDashBoard> {
                               Row(
                                 children: [
                                   Text("Leave Approval ",style: Theme.of(context).textTheme.headlineSmall,),
-                                  Text("(${pendingLeave=="0"?"":pendingLeave})",style: Theme.of(context).textTheme.headlineSmall!.apply(color: Colors.red,),),
+                                  Text("(${pendingLeave=="0"?"0":pendingLeave})",style: Theme.of(context).textTheme.headlineSmall!.apply(color: Colors.red,),),
                                   const SizedBox(width: 20,),
                                   const Icon(Iconsax.arrow_right)
                                 ],
@@ -116,7 +116,7 @@ class _EssDashBoardState extends State<EssDashBoard> {
                               Row(
                                 children: [
                                   Text("Management Approval ",style: Theme.of(context).textTheme.headlineSmall,),
-                                  Text("(${pendingMngtApproval=="0"?"":pendingMngtApproval})",style: Theme.of(context).textTheme.headlineSmall!.apply(color: Colors.red),),
+                                  Text("(${pendingMngtApproval=="0"?"0":pendingMngtApproval})",style: Theme.of(context).textTheme.headlineSmall!.apply(color: Colors.red),),
                                   const SizedBox(width: 20,),
                                   const Icon(Iconsax.arrow_right)
                                 ],

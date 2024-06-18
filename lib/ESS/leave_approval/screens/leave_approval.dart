@@ -298,7 +298,7 @@ class _LeaveApproval extends State<LeaveApproval> {
                   ),
                 ),
               ),
-              const SizedBox(
+              const SizedBox(l
                 width: 10,
               ),
             ],
