@@ -3,7 +3,9 @@ import 'package:dropdown_button2/dropdown_button2.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:iconsax/iconsax.dart';
 import 'package:intl/intl.dart';
+import 'package:ppms/ESS/essdashboard.dart';
 import 'package:ppms/common/utils/constants/baseurl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:velocity_x/velocity_x.dart';
@@ -217,6 +219,8 @@ class _LeaveApproval extends State<LeaveApproval> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
+        leading: IconButton(onPressed: ()=>(Get.to(()=>const EssDashBoard())), icon: const Icon(Iconsax.arrow_left),),
+        automaticallyImplyLeading: false,
         title: Text(
           widget.title,
           style: Theme.of(context)

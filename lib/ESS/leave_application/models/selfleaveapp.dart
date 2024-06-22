@@ -1,26 +1,27 @@
-/// APP_ID : 75822
+/// APP_ID : 76353
 /// PAY_CODE : "0550687"
 /// EMP_CODE : "53"
 /// U_CODE : "1"
-/// APP_TYPE : "Leave"
-/// FROM_DT : "11-Jun-2024"
-/// TO_DT : "11-Jun-2024"
+/// APP_TYPE : "Mispunch"
+/// FROM_DT : "22-Jun-2024"
+/// TO_DT : "22-Jun-2024"
 /// DAYS_COUNT : 1.0
-/// APP_COUNT : "Full Day"
+/// APP_COUNT : ""
 /// INT_IME : ""
-/// OUT_TIME : ""
-/// APP_REMARKS : "Vrindavan Darshan"
-/// APP_STATUS : "Approved"
-/// LEAVE_TYPE : "0"
-/// APPLIED_ON : "12-Jun-2024"
-/// APPROVED_ON : "12-Jun-2024"
-/// APPROVED_BY : "SATENDRA KUMAR CHANGWAL"
-/// APPROVAL_REMARKS : "Approved From Flutter App"
-/// EMP_ADDRESS : "Vrindavan"
+/// OUT_TIME : "22 : 15"
+/// APP_REMARKS : ""
+/// APP_STATUS : "Sent for Approval"
+/// LEAVE_TYPE : ""
+/// APPLIED_ON : "22-Jun-2024"
+/// APPROVED_ON : null
+/// APPROVED_BY : null
+/// APPROVAL_REMARKS : null
+/// EMP_ADDRESS : ""
 /// MOBILE_NO : ""
-/// DAY_PART : "0"
+/// DAY_PART : "Second Half"
 /// VISIT_LOCATION : ""
-/// VISIT_LOCATION_TYPE : ""
+/// VISIT_LOCATION_TYPE : "null"
+/// Mis_Punch_Reason : "Finger punching issue due to Mehndi / cut"
 
 class Selfleaveapp {
   Selfleaveapp({
@@ -39,14 +40,15 @@ class Selfleaveapp {
       String? appstatus, 
       String? leavetype, 
       String? appliedon, 
-      String? approvedon, 
-      String? approvedby, 
-      String? approvalremarks, 
+      dynamic approvedon, 
+      dynamic approvedby, 
+      dynamic approvalremarks, 
       String? empaddress, 
       String? mobileno, 
       String? daypart, 
       String? visitlocation, 
-      String? visitlocationtype,}){
+      String? visitlocationtype, 
+      String? misPunchReason,}){
     _appid = appid;
     _paycode = paycode;
     _empcode = empcode;
@@ -70,6 +72,7 @@ class Selfleaveapp {
     _daypart = daypart;
     _visitlocation = visitlocation;
     _visitlocationtype = visitlocationtype;
+    _misPunchReason = misPunchReason;
 }
 
   Selfleaveapp.fromJson(dynamic json) {
@@ -96,6 +99,7 @@ class Selfleaveapp {
     _daypart = json['DAY_PART'];
     _visitlocation = json['VISIT_LOCATION'];
     _visitlocationtype = json['VISIT_LOCATION_TYPE'];
+    _misPunchReason = json['Mis_Punch_Reason'];
   }
   num? _appid;
   String? _paycode;
@@ -112,14 +116,15 @@ class Selfleaveapp {
   String? _appstatus;
   String? _leavetype;
   String? _appliedon;
-  String? _approvedon;
-  String? _approvedby;
-  String? _approvalremarks;
+  dynamic _approvedon;
+  dynamic _approvedby;
+  dynamic _approvalremarks;
   String? _empaddress;
   String? _mobileno;
   String? _daypart;
   String? _visitlocation;
   String? _visitlocationtype;
+  String? _misPunchReason;
 Selfleaveapp copyWith({  num? appid,
   String? paycode,
   String? empcode,
@@ -135,14 +140,15 @@ Selfleaveapp copyWith({  num? appid,
   String? appstatus,
   String? leavetype,
   String? appliedon,
-  String? approvedon,
-  String? approvedby,
-  String? approvalremarks,
+  dynamic approvedon,
+  dynamic approvedby,
+  dynamic approvalremarks,
   String? empaddress,
   String? mobileno,
   String? daypart,
   String? visitlocation,
   String? visitlocationtype,
+  String? misPunchReason,
 }) => Selfleaveapp(  appid: appid ?? _appid,
   paycode: paycode ?? _paycode,
   empcode: empcode ?? _empcode,
@@ -166,6 +172,7 @@ Selfleaveapp copyWith({  num? appid,
   daypart: daypart ?? _daypart,
   visitlocation: visitlocation ?? _visitlocation,
   visitlocationtype: visitlocationtype ?? _visitlocationtype,
+  misPunchReason: misPunchReason ?? _misPunchReason,
 );
   num? get appid => _appid;
   String? get paycode => _paycode;
@@ -182,14 +189,15 @@ Selfleaveapp copyWith({  num? appid,
   String? get appstatus => _appstatus;
   String? get leavetype => _leavetype;
   String? get appliedon => _appliedon;
-  String? get approvedon => _approvedon;
-  String? get approvedby => _approvedby;
-  String? get approvalremarks => _approvalremarks;
+  dynamic get approvedon => _approvedon;
+  dynamic get approvedby => _approvedby;
+  dynamic get approvalremarks => _approvalremarks;
   String? get empaddress => _empaddress;
   String? get mobileno => _mobileno;
   String? get daypart => _daypart;
   String? get visitlocation => _visitlocation;
   String? get visitlocationtype => _visitlocationtype;
+  String? get misPunchReason => _misPunchReason;
 
   Map<String, dynamic> toJson() {
     final map = <String, dynamic>{};
@@ -216,6 +224,7 @@ Selfleaveapp copyWith({  num? appid,
     map['DAY_PART'] = _daypart;
     map['VISIT_LOCATION'] = _visitlocation;
     map['VISIT_LOCATION_TYPE'] = _visitlocationtype;
+    map['Mis_Punch_Reason'] = _misPunchReason;
     return map;
   }
 

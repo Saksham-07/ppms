@@ -8,6 +8,7 @@ import 'package:ppms/common/utils/constants/baseurl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:http/http.dart' as http;
 import 'package:velocity_x/velocity_x.dart';
+import '../../essdashboard.dart';
 import '../models/managementapprovalmodel.dart';
 
 class ManagementApproval extends StatefulWidget {
@@ -218,6 +219,8 @@ class _ManagementApprovalState extends State<ManagementApproval> {
   Widget build(BuildContext context) {
     return Scaffold(
         appBar: AppBar(
+          leading: IconButton(onPressed: ()=>(Get.to(()=>const EssDashBoard())), icon: const Icon(Iconsax.arrow_left),),
+          automaticallyImplyLeading: false,
           title: Text(
             widget.title,
             style: Theme.of(context)
@@ -396,17 +399,7 @@ class _ManagementApprovalState extends State<ManagementApproval> {
                                                     lstapprovalData[index]
                                                         .updateByType
                                                         .toString(),1);
-                                                /*ApproveApp(
-                                                    lstapprovalData[index]
-                                                        .appId
-                                                        .toString(),
-                                                    lstapprovalData[index]
-                                                        .appCatg
-                                                        .toString(),
-                                                    lstapprovalData[index]
-                                                        .updateByType
-                                                        .toString()
-                                                );*/
+
                                               },
                                               icon: const Image(
                                                 image: AssetImage(
@@ -416,12 +409,9 @@ class _ManagementApprovalState extends State<ManagementApproval> {
                                               ),
                                               tooltip: "Approve",
 
-                                              /*,
-                                                child: "Approve"
-                                                    .text
-                                                    .makeCentered()*/
+
                                             ),
-                                            //const SizedBox(width:1 ,),
+
                                             IconButton(
                                               onPressed: () {
                                                 showConfirmDialog("Are you sure want to Reject?",lstapprovalData[index]
@@ -433,16 +423,7 @@ class _ManagementApprovalState extends State<ManagementApproval> {
                                                     lstapprovalData[index]
                                                         .updateByType
                                                         .toString(),2);
-                                               /* RejectApp(
-                                                    lstapprovalData[index]
-                                                        .appId
-                                                        .toString(),
-                                                    lstapprovalData[index]
-                                                        .appCatg
-                                                        .toString(),
-                                                    lstapprovalData[index]
-                                                        .updateByType
-                                                        .toString());*/
+
                                               },
                                               icon: const Image(
                                                 image: AssetImage(
@@ -467,16 +448,7 @@ class _ManagementApprovalState extends State<ManagementApproval> {
                                                     lstapprovalData[index]
                                                         .updateByType
                                                         .toString(),3);
-                                                /*HoldApp(
-                                                    lstapprovalData[index]
-                                                        .appId
-                                                        .toString(),
-                                                    lstapprovalData[index]
-                                                        .appCatg
-                                                        .toString(),
-                                                    lstapprovalData[index]
-                                                        .updateByType
-                                                        .toString());*/
+
                                               },
                                               icon: const Image(
                                                 image: AssetImage(

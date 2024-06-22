@@ -161,7 +161,7 @@ class _HomePage1WidgetState extends State<HomePage1Widget>
                   pinned: true,
                   floating: false,
                   backgroundColor:Color(0xFF5FE3D3),
-                  automaticallyImplyLeading: true,
+                  automaticallyImplyLeading: false,
                   title: Text(
                     'Paramount Product Management System',
                     style: TextStyle(

@@ -46,6 +46,7 @@ dependencies:
   velocity_x: ^4.1.2
   flutter_date_range_picker: ^0.1.1
   dropdown_button2: ^2.3.9
+  toggle_switch: ^2.3.0
 
 dev_dependencies:
   flutter_test:

@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:iconsax/iconsax.dart';
 
+import '../../../home_page1_widget.dart';
+
 class TAppBar extends StatelessWidget {
   const TAppBar({
     super.key, required this.title,
@@ -13,7 +15,7 @@ class TAppBar extends StatelessWidget {
       child: AppBar(
         backgroundColor: Colors.blue,
         automaticallyImplyLeading: false,
-        leading: IconButton(onPressed: ()=>(Get.back()), icon: const Icon(Iconsax.arrow_left),),
+        leading: IconButton(onPressed: ()=>(Get.to(()=>HomePage1Widget())), icon: const Icon(Iconsax.arrow_left),),
         title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [

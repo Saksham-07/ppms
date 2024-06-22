@@ -134,7 +134,7 @@ class _EssDashBoardState extends State<EssDashBoard> {
                                 ],
                               ),
                             ],
-                          ).onTap(()=>Get.to(()=>const LeaveApplication(title: "ESS-Leave Application",))),
+                          ).onTap(()=>Get.to(()=>const LeaveApplication(title: "ESS-Leave Application History",))),
 
                         ],
                       ),
