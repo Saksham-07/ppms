@@ -4,6 +4,7 @@ import 'package:dropdown_button2/dropdown_button2.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:iconsax/iconsax.dart';
+import 'package:ppms/ESS/management_approval/screens/management_approval_form.dart';
 import 'package:ppms/common/utils/constants/baseurl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:http/http.dart' as http;
@@ -231,43 +232,6 @@ class _ManagementApprovalState extends State<ManagementApproval> {
           backgroundColor: Colors.blue,
         ),
         body: Column(mainAxisSize: MainAxisSize.min, children: [
-          /*DropdownButtonHideUnderline(
-            child: DropdownButton2<String>(
-              isExpanded: true,
-              hint: Text(
-                'Select Status',
-                style: TextStyle(
-                  fontSize: 14,
-                  color: Theme.of(context).hintColor,
-                ),
-              ),
-              items: items
-                  .map((String item) => DropdownMenuItem<String>(
-                value: item,
-                child: Text(
-                  item,
-                  style: const TextStyle(
-                    fontSize: 14,
-                  ),
-                ),
-              ))
-                  .toList(),
-              value: selectedValue,
-              onChanged: (String? value) {
-                setState(() {
-                  selectedValue = value;
-                });
-              },
-              buttonStyleData: const ButtonStyleData(
-                padding: EdgeInsets.symmetric(horizontal: 16),
-                height: 40,
-                width: 140,
-              ),
-              menuItemStyleData: const MenuItemStyleData(
-                height: 40,
-              ),
-            ),
-          ),*/
           Expanded(
             child: Padding(
               padding: const EdgeInsets.all(8.0),
@@ -457,8 +421,21 @@ class _ManagementApprovalState extends State<ManagementApproval> {
                                                 width: 22,
                                               ),
                                               tooltip: "Hold",
-                                              /*child:
-                                                    "Hold".text.makeCentered()*/
+
+                                            ),
+                                            IconButton(
+                                              onPressed: () {
+                                                Get.to(()=>ManagementApprovalForm(appId: lstapprovalData[index]
+                                                    .appId
+                                                    .toString(), appCatg: lstapprovalData[index]
+                                                    .appCatg
+                                                    .toString(), updateByType: lstapprovalData[index]
+                                                    .updateByType
+                                                    .toString(),));
+                                              },
+                                              icon: const Icon(Iconsax.eye3),
+                                              tooltip: "View",
+
                                             ),
                                           ],
                                         ).centered()

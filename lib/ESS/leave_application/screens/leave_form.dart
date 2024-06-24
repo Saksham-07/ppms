@@ -50,10 +50,10 @@ class _LeaveFormState extends State<LeaveForm> {
   bool isHalfDay = false;
 
   ////Text Input Controller
-  final addressController = TextEditingController();
-  final mobileController = TextEditingController();
-  final reasonController = TextEditingController();
-  final visitLocationController = TextEditingController();
+  TextEditingController  addressController = TextEditingController();
+  TextEditingController  mobileController = TextEditingController();
+  TextEditingController  reasonController = TextEditingController();
+  TextEditingController  visitLocationController = TextEditingController();
 
   @override
   void initState() {

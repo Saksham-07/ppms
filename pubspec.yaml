@@ -47,6 +47,8 @@ dependencies:
   flutter_date_range_picker: ^0.1.1
   dropdown_button2: ^2.3.9
   toggle_switch: ^2.3.0
+  table_sticky_headers: ^2.0.5
+  linked_scroll_controller: ^0.2.0
 
 dev_dependencies:
   flutter_test:

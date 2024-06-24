@@ -3,6 +3,8 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:iconsax/iconsax.dart';
+import 'package:ppms/ESS/attendance/monthly_attendance_view.dart';
+import 'package:ppms/ESS/download_payslip/download_payslip.dart';
 import 'package:ppms/ESS/leave_approval/screens/leave_approval.dart';
 import 'package:ppms/ESS/management_approval/screens/management_approval.dart';
 import 'package:ppms/common/utils/constants/baseurl.dart';
@@ -135,6 +137,31 @@ class _EssDashBoardState extends State<EssDashBoard> {
                               ),
                             ],
                           ).onTap(()=>Get.to(()=>const LeaveApplication(title: "ESS-Leave Application History",))),
+
+                          const SizedBox(height: 20,),
+                          Row(
+                            children: [
+                              Row(
+                                children: [
+                                  Text("Monthly Attendance",style: Theme.of(context).textTheme.headlineSmall,),
+                                  const SizedBox(width: 20,),
+                                  const Icon(Iconsax.arrow_right)
+                                ],
+                              ),
+                            ],
+                          ).onTap(()=>Get.to(()=>const MonthlyAttendance())),
+                          const SizedBox(height: 20,),
+                          Row(
+                            children: [
+                              Row(
+                                children: [
+                                  Text("Download Payslip",style: Theme.of(context).textTheme.headlineSmall,),
+                                  const SizedBox(width: 20,),
+                                  const Icon(Iconsax.arrow_right)
+                                ],
+                              ),
+                            ],
+                          ).onTap(()=>Get.to(()=>const DownloadPayslip())),
 
                         ],
                       ),

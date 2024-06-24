@@ -35,7 +35,7 @@ class _LeaveApplicationState extends State<LeaveApplication> {
   List<YearDto> lstYear = [];
   String? selectedYear = DateTime.now().year.toString();
   List<Monthmodel> lstMonth = [];
-  String? selectedMonth = "6" /*DateTime.now().month.toString()*/;
+  String? selectedMonth = DateTime.now().month.toString();
   List<Selfleaveapp> lstLeaveApp = [];
   String? leaveCL = "0";
   String? leaveSL = "0";
@@ -627,7 +627,7 @@ class _LeaveApplicationState extends State<LeaveApplication> {
                           .rounded
                           .border(color: Colors.grey)
                           .shadow
-                          .make().flexible();
+                          .make();
                     })
               ],
             )),
