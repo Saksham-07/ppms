@@ -76,6 +76,7 @@ flutter:
   assets:
     - assets/images/
     - assets/images/ess_images/ButtonIcons/
+    - assets/images/ess_images/StatusIcon/
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/assets-and-images/#resolution-aware

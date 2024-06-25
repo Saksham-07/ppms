@@ -326,6 +326,8 @@ class _LeaveApproval extends State<LeaveApproval> {
                       verticalDirection: VerticalDirection.down,
                       children: [
                         GridView.builder(
+                            scrollDirection: Axis.vertical,
+                            physics: ScrollPhysics(),
                             shrinkWrap: true,
                             itemCount: lstAppData.length,
                             gridDelegate:

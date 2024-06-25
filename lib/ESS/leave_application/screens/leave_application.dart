@@ -496,6 +496,7 @@ class _LeaveApplicationState extends State<LeaveApplication> {
 
               children: [
                 GridView.builder(
+                    scrollDirection: Axis.vertical,
                     physics: const NeverScrollableScrollPhysics(),
                     shrinkWrap: true,
                     itemCount: lstLeaveApp.length,

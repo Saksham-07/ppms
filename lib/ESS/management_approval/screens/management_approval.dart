@@ -243,11 +243,14 @@ class _ManagementApprovalState extends State<ManagementApproval> {
                         return "Loading".text.make();
                       } else {
                         return Column(
+
                           crossAxisAlignment: CrossAxisAlignment.stretch,
                           mainAxisSize: MainAxisSize.min,
                           verticalDirection: VerticalDirection.down,
                           children: [
                             GridView.builder(
+                              scrollDirection: Axis.vertical,
+                                physics: const ScrollPhysics(),
                                 shrinkWrap: true,
                                 itemCount: lstapprovalData.length,
                                 gridDelegate:
