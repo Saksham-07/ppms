@@ -1,64 +1,159 @@
 import 'dart:convert';
-import 'package:dropdown_button2/dropdown_button2.dart';
-import 'package:flutter/cupertino.dart';
-import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:get/get.dart';
-import 'package:intl/intl.dart';
+import 'package:http/http.dart' as http;
+import 'package:dropdown_button2/dropdown_button2.dart';
+import 'package:flutter/material.dart';
+import 'package:ppms/ESS/leave_application/screens/leave_form.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:velocity_x/velocity_x.dart';
-import 'package:http/http.dart' as http;
-import '../models/appaprovalnewmodel.dart';
+import '../../../common/models/monthmodel.dart';
+import '../../../common/utils/constants/baseurl.dart';
+import '../models/leavebalancedto.dart';
+import '../models/selfleaveapp.dart';
+import '../models/yeardto.dart';
 
 class LeaveApplication extends StatefulWidget {
-  const LeaveApplication({super.key, required this.title});
-
+  const LeaveApplication({super.key,
+    required this.title,
+    this.isRefresh=false});
   final String title;
-
+  final bool isRefresh;
   @override
-  State<LeaveApplication> createState() => _LeaveApplication();
+  State<LeaveApplication> createState() => _LeaveApplicationState();
 }
 
-class _LeaveApplication extends State<LeaveApplication> {
-  DateTimeRange selectedDates = DateTimeRange(
-      start: DateTime.now(), end: DateTime.now().add(const Duration(days: 10)));
-  final List<String> items = [
-    'All',
-    'Applied',
-    'Approved',
-    'Rejected',
-  ];
-  String? selectedValue = "All";
-  var outputFormat = DateFormat('dd-MM-yyyy');
-  List<Appaprovalnewmodel> lstAppData = [];
+class _LeaveApplicationState extends State<LeaveApplication> {
+  String reportingPerson = "", reportingPersonaName = "";
 
-  /*@override
+  List<YearDto> lstYear = [];
+  String? selectedYear = DateTime.now().year.toString();
+  List<Monthmodel> lstMonth = [];
+  String? selectedMonth = DateTime.now().month.toString();
+  List<Selfleaveapp> lstLeaveApp = [];
+  String? leaveCL = "0";
+  String? leaveSL = "0";
+  String? leaveEL = "0";
+
+  @override
   void initState() {
+    if (kDebugMode) {
+      print("Back to List Leave Application ");
+    }
+    // TODO: implement initState
     super.initState();
-    print("Called Init State");
-    Future.delayed(const Duration(milliseconds: 10), () {
-      getApplicationApprovalSub();
-      print('Data Initialyzed: $lstAppData');
-
-    });
-
-
-  }*/
-
-  void ApproveLeaveApp(String appId) async {
-    await ApproveRejectApplication(appId, "Approved");
+    getSharedPrefs();
+    getYearList();
+    getMonthList();
+    getLeaveBalance();
+    getLeaveAppList();
+    if (kDebugMode) {
+      print("Month Number ${DateTime.now().month.toString()}");
+    }
   }
 
-  void RejectLeaveApp(String appId) async {
-    await ApproveRejectApplication(appId, "Rejected");
-  }
-
-  Future<void> ApproveRejectApplication(String appId, String appStatus) async {
+  Future<Null> getSharedPrefs() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
+    reportingPersonaName = prefs.getString("reportingpersonname").toString();
+    setState(() {
+    });
+  }
+
+  Future<List<YearDto>> getYearList() async {
+    if (kDebugMode) {
+      print("Here on Function");
+    }
     try {
-      lstAppData = [];
-      const url =
-          'http://172.16.0.123:12008/api/HRISM/ApproveRejectApplication';
-      print('Approving Application Approval of Subbordinate: $url');
+      lstYear = [];
+      const url = '${TBaseURL.essBaseUrl}api/HRISM/GetyearList';
+      if (kDebugMode) {
+        print('Fetching data Year List: $url');
+      }
+
+      // Define the headers and body
+      Map<String, String> headers = {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+      };
+
+      // Send the POST request
+      final response = await http.get(
+        Uri.parse(url),
+        headers: headers,
+      );
+
+      if (response.statusCode == 200) {
+        var data = jsonDecode(response.body.toString());
+        for (Map i in data) {
+          setState(() {
+            lstYear.add(YearDto.fromJson(i));
+          });
+        }
+        if (kDebugMode) {
+          print('Response body Year List: ${response.body.toString()}');
+        }
+        return lstYear;
+      } else {
+        return lstYear;
+      }
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  Future<List<Monthmodel>> getMonthList() async {
+    if (kDebugMode) {
+      print("Here on Function");
+    }
+    try {
+      lstMonth = [];
+      const url = '${TBaseURL.essBaseUrl}api/HRISM/GetmonthList';
+      if (kDebugMode) {
+        print('Fetching data Month List: $url');
+      }
+
+      // Define the headers and body
+      Map<String, String> headers = {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+      };
+
+      // Send the POST request
+      final response = await http.get(
+        Uri.parse(url),
+        headers: headers,
+      );
+
+      if (response.statusCode == 200) {
+        var data = jsonDecode(response.body.toString());
+        for (Map i in data) {
+          setState(() {
+            lstMonth.add(Monthmodel.fromJson(i));
+          });
+        }
+        if (kDebugMode) {
+          print('Response body Month List: ${response.body.toString()}');
+        }
+        return lstMonth;
+      } else {
+        return lstMonth;
+      }
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  Future<List<Selfleaveapp>> getLeaveAppList() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    if (kDebugMode) {
+      print("Here on Function");
+    }
+    try {
+      lstLeaveApp = [];
+      const url = '${TBaseURL.essBaseUrl}api/HRISM/GeteLeaveApplicationHistory';
+      if (kDebugMode) {
+        print('Fetching data Month List: $url');
+      }
 
       // Define the headers and body
       Map<String, String> headers = {
@@ -68,8 +163,9 @@ class _LeaveApplication extends State<LeaveApplication> {
 
       Map<String, dynamic> body = {
         "employeeCode": prefs.getString('employeeId').toString(),
-        "appId": appId,
-        "appStatus": appStatus
+        "yearNo": selectedYear.toString(),
+        "monthNo": selectedMonth.toString(),
+        "appStatus": "All"
       };
 
       // Send the POST request
@@ -79,59 +175,78 @@ class _LeaveApplication extends State<LeaveApplication> {
         body: jsonEncode(body),
       );
 
-      print(response.body);
-
       if (response.statusCode == 200) {
-        ShowDialog(response.body,1);
-        setState(() {
-          lstAppData = [];
-          selectedValue = "Applied";
-          selectedValue = "All";
-        });
-      }
-      else
-        {
-          ShowDialog(response.body,2);
+        var data = jsonDecode(response.body.toString());
+        for (Map i in data) {
+          setState(() {
+            lstLeaveApp.add(Selfleaveapp.fromJson(i));
+          });
         }
+        if (kDebugMode) {
+          print('Response body Self Leave List: ${response.body.toString()}');
+        }
+        return lstLeaveApp;
+      } else {
+        return lstLeaveApp;
+      }
     } catch (e) {
-      throw e;
-      print('Error fetching data: $e');
+      rethrow;
     }
   }
 
-  ShowDialog(String Message,int msgType) {
+  Future<void> getLeaveBalance() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    if (kDebugMode) {
+      print("Here on Function Leave Balance");
+    }
+    try {
+      const url = '${TBaseURL.essBaseUrl}api/HRISM/GeteLeaveBalance';
+      if (kDebugMode) {
+        print('Fetching data Leave Balance: $url');
+      }
 
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Container(
-      padding: const EdgeInsets.all(16),
-      height: 90,
-      decoration: BoxDecoration(
-          color:msgType==1?Colors.blue:Color(0xFFC72C41),
-          borderRadius: const BorderRadius.all(Radius.circular(20))
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(Message,style: const TextStyle(fontSize:12,color:Colors.white,overflow: TextOverflow.ellipsis ),)
-        ],
-          ),
-    )));
-    /*showDialog(
-        context: context,
-        builder: (context) => AlertDialog(
-              actions: [
-                TextButton(
-                    onPressed: () {
-                      Navigator.of(context).pop();
-                    },
-                    child: const Text("Close"))
-              ],
-              title: const Text("Application Approval"),
-              contentPadding: const EdgeInsets.all(20),
-              content: Text(Message),
-            ));*/
+      // Define the headers and body
+      Map<String, String> headers = {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+      };
+
+      Map<String, dynamic> body = {
+        "employeeCode": prefs.getString('employeeId').toString(),
+        "unitCode": prefs.getString('unitId').toString(),
+      };
+
+      // Send the POST request
+      final response = await http.post(
+        Uri.parse(url),
+        headers: headers,
+        body: jsonEncode(body),
+      );
+
+      if (response.statusCode == 200) {
+        var data = jsonDecode(response.body.toString());
+        var leaveBal = Leavebalancedto.fromJson(data);
+        setState(() {
+          leaveCL = leaveBal.clbal.toString();
+          leaveSL = leaveBal.slbal.toString();
+          leaveEL = leaveBal.elbal.toString();
+        });
+
+        if (kDebugMode) {
+          print('Response body Self Leave List: ${response.body.toString()}');
+        }
+      } else {
+        if (kDebugMode) {
+          print('Failed to load data with status code: ${response.statusCode}');
+        print('Response body: ${response.body}');
+        }
+      }
+    } catch (e) {
+      rethrow;
+    }
   }
 
-  showConfirmDialog(String Message,String appId,int appType) async {
+  showConfirmDialog(String message,String appId,int appType) async {
     showDialog(
         context: context,
         builder: (context) => AlertDialog(
@@ -141,13 +256,9 @@ class _LeaveApplication extends State<LeaveApplication> {
               children: [
                 ElevatedButton(
                     onPressed: () {
-                      if(appType==1) {
-                        ApproveLeaveApp(appId);
-                        Navigator.of(context).pop();
-                      }
-                      else if(appType==2)
+                      if(appType==2)
                       {
-                        RejectLeaveApp(appId);
+                        cancelLeaveApp(appId);
                         Navigator.of(context).pop();
                       }
                     },
@@ -162,20 +273,23 @@ class _LeaveApplication extends State<LeaveApplication> {
             )
 
           ],
-          title: const Text("Confirmation Leave Approval"),
+          title: const Text("Confirmation Leave Cancellation"),
           contentPadding: const EdgeInsets.all(20),
-          content: Text(Message),
+          content: Text(message),
         ));
   }
 
-  Future<List<Appaprovalnewmodel>> getApplicationApprovalSub() async {
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-    print("Here on Function");
+  void cancelLeaveApp(String appId) async {
+    await cancelApplication(appId, "Cancelled");
+  }
+
+  Future<void> cancelApplication(String appId, String appStatus) async {
     try {
-      lstAppData = [];
-      const url =
-          'http://172.16.0.123:12008/api/HRISM/GetApplicationApprovalSub';
-      print('Fetching data from Application Approval of Subbordinate: $url');
+      lstLeaveApp = [];
+      const url = '${TBaseURL.essBaseUrl}api/HRISM/CancelLeaveApplication';
+      if (kDebugMode) {
+        print('Approving Application Approval of Subbordinate: $url');
+      }
 
       // Define the headers and body
       Map<String, String> headers = {
@@ -184,10 +298,8 @@ class _LeaveApplication extends State<LeaveApplication> {
       };
 
       Map<String, dynamic> body = {
-        "employeeCode": prefs.getString('employeeId').toString(),
-        "dFrom": "2024-06-11",
-        "dTo": "2024-06-22",
-        "appStatus": selectedValue
+        "appId": appId,
+        "appStatus": appStatus
       };
 
       // Send the POST request
@@ -197,20 +309,53 @@ class _LeaveApplication extends State<LeaveApplication> {
         body: jsonEncode(body),
       );
 
+      if (kDebugMode) {
+        print(response.body);
+      }
+
       if (response.statusCode == 200) {
-        var data = jsonDecode(response.body.toString());
-        for (Map i in data) {
-          lstAppData.add(Appaprovalnewmodel.fromJson(i));
-        }
-        return lstAppData;
-      } else {
-        return lstAppData;
-        print('Failed to load data with status code: ${response.statusCode}');
-        print('Response body: ${response.body}');
+        showAlert(response.body,1);
+        setState(() {
+            selectedYear=DateTime.now().year.toString();
+            getLeaveAppList();
+        });
+      }
+      else
+      {
+        showAlert(response.body,2);
       }
     } catch (e) {
-      throw e;
-      print('Error fetching data: $e');
+      rethrow;
+    }
+  }
+
+  showAlert(String message,int msgType) {
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Container(
+      padding: const EdgeInsets.all(16),
+      height: 90,
+      decoration: BoxDecoration(
+          color:msgType==1?Colors.blue:const Color(0xFFC72C41),
+          borderRadius: const BorderRadius.all(Radius.circular(20))
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(message,style: const TextStyle(fontSize:12,color:Colors.white,overflow: TextOverflow.ellipsis ),)
+        ],
+      ),
+    )));
+  }
+
+  Future<void> _navigateToPage (String title , String req) async {
+      final result = await Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) =>
+              LeaveForm(title: title ,reqType: req,
+              )
+          )
+      );
+      if (result == true) {
+        getLeaveAppList();
     }
   }
 
@@ -218,266 +363,496 @@ class _LeaveApplication extends State<LeaveApplication> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(
-          widget.title,
-          style: Theme.of(context)
-              .textTheme
-              .headlineSmall!
-              .apply(color: Colors.white),
+        backgroundColor: const Color(0xFF5FE3D3),
+        automaticallyImplyLeading: false,
+        leading: IconButton(
+          icon: const Icon(
+            Icons.arrow_back_rounded,
+            color: Colors.white,
+            size: 22,
+          ),
+          onPressed: () {
+            Navigator.of(context).pop();
+          },
         ),
-        backgroundColor: Colors.blue,
+        title: const Text(
+          'Application',
+          style: TextStyle(
+            color: Colors.white,
+            fontSize: 20,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        centerTitle: true,
+        elevation: 2,
       ),
-      body: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          /*Row(
-            children: [
-              const SizedBox(
-                width: 5,
-              ),
-              Column(
+      body: InteractiveViewer(
+        panEnabled: true,
+        scaleEnabled: true,
+        panAxis: PanAxis.free,
+        minScale: 1.0,
+        maxScale: 4.0,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const SizedBox(
+              height: 10,
+            ),
+            Row(
+              children: [
+                const SizedBox(
+                  width: 10,
+                ),
+                "Reporting Manager : ".text.size(16).bold.makeCentered(),
+                const SizedBox(
+                  width: 10,
+                ),
+                reportingPersonaName.text
+                    .size(16)
+                    .overflow(TextOverflow.ellipsis)
+                    .makeCentered().flexible()
+              ],
+            ),
+            const SizedBox(
+              height: 10,
+            ),
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Leave Balances Column
+            Padding(
+              padding: const EdgeInsets.only(left: 18.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  ElevatedButton(
-                      onPressed: () async {
-                        final DateTimeRange? dateTimeRange =
-                            await showDateRangePicker(
-                          context: context,
-                          firstDate: DateTime(2000),
-                          lastDate: DateTime(3000),
-                        );
-                        if (dateTimeRange != null) {
-                          setState(() {
-                            selectedDates = dateTimeRange;
-                          });
-                        }
-                      },
-                      child: const Text("Select Date")),
-                  const SizedBox(
-                    height: 10,
-                  ),
-                  Text(
-                      "${outputFormat.format(selectedDates.start)} - ${outputFormat.format(selectedDates.end)}"),
+                  "CL $leaveCL".text.make(),
+                  "SL $leaveSL".text.make(),
+                  "EL $leaveEL".text.make(),
                 ],
               ),
-              const SizedBox(
-                width: 10,
-              ),
-              DropdownButtonHideUnderline(
-                child: DropdownButton2<String>(
-                  isExpanded: true,
-                  hint: Text(
-                    'Select Status',
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: Theme.of(context).hintColor,
+            ),
+            // Buttons Column
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Visibility(
+                    visible: (reportingPersonaName.isNotEmptyAndNotNull),
+                    child: LayoutBuilder(
+                      builder: (context, constraints) {
+                        double buttonWidth = (constraints.maxWidth - 90) / 2;
+                        return Padding(
+                          padding: const EdgeInsets.only(right: 8.0),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.end,
+                            children: [
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.end,
+                                children: [
+                                  SizedBox(
+                                    width: buttonWidth,
+                                    height: 30,
+                                    child: ElevatedButton(
+                                      onPressed: () {
+                                        _navigateToPage('Leave Request', "Leave");
+                                      },
+                                      style: ElevatedButton.styleFrom(
+                                        backgroundColor: Colors.green,
+                                        foregroundColor: const Color(0xFFFFFFFF),
+                                      ),
+                                      child: const Text("Leave"),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 10),
+                                  // MisPunch Button
+                                  SizedBox(
+                                    width: buttonWidth,
+                                    height: 30, // Fixed height
+                                    child: ElevatedButton(
+                                      onPressed: () {
+                                        _navigateToPage('MisPunch Request', "Mispunch");
+                                      },
+                                      style: ElevatedButton.styleFrom(
+                                        backgroundColor: Colors.orange,
+                                        foregroundColor: const Color(0xFFFFFFFF),
+                                      ),
+                                      child: const Text("MisPunch"),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 10),
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.end,
+                                children: [
+                                  // OD Button
+                                  SizedBox(
+                                    width: buttonWidth,
+                                    height: 30, // Fixed height
+                                    child: ElevatedButton(
+                                      onPressed: () {
+                                        _navigateToPage('OD Request', "OD");
+                                      },
+                                      style: ElevatedButton.styleFrom(
+                                        backgroundColor: Colors.lightBlue,
+                                        foregroundColor: const Color(0xFFFFFFFF),
+                                      ),
+                                      child: const Text("OD"),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 10),
+                                  // WFH Button
+                                  SizedBox(
+                                    width: buttonWidth,
+                                    height: 30, // Fixed height
+                                    child: ElevatedButton(
+                                      onPressed: () {
+                                        _navigateToPage('WFH Request', "WFH");
+                                      },
+                                      style: ElevatedButton.styleFrom(
+                                        backgroundColor: Colors.indigo,
+                                        foregroundColor: const Color(0xFFFFFFFF),
+                                      ),
+                                      child: const Text("WFH"),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                        );
+                      },
                     ),
                   ),
-                  items: items
-                      .map((String item) => DropdownMenuItem<String>(
-                            value: item,
-                            child: Text(
-                              item,
-                              style: const TextStyle(
-                                fontSize: 14,
-                              ),
-                            ),
-                          ))
-                      .toList(),
-                  value: selectedValue,
-                  onChanged: (String? value) {
-                    setState(() {
-                      selectedValue = value;
-                    });
-                  },
-                  buttonStyleData: const ButtonStyleData(
-                    padding: EdgeInsets.symmetric(horizontal: 16),
-                    height: 40,
-                    width: 140,
-                  ),
-                  menuItemStyleData: const MenuItemStyleData(
-                    height: 40,
-                  ),
-                ),
-              ),
-              const SizedBox(
-                width: 10,
-              ),
-            ],
-          ),
-          const SizedBox(
-            height: 30,
-          ),*/
-          Expanded(
-              child: Padding(
-            padding: const EdgeInsets.all(8.0),
-            child: SingleChildScrollView(
-              child: FutureBuilder(
-                future: getApplicationApprovalSub(),
-                builder: (context, snapshot) {
-                  if (!snapshot.hasData) {
-                    return "Loading".text.make();
-                  } else {
-                    return Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      mainAxisSize: MainAxisSize.min,
-                      verticalDirection: VerticalDirection.down,
-                      children: [
-                        GridView.builder(
-                            shrinkWrap: true,
-                            itemCount: lstAppData.length,
-                            gridDelegate:
-                                const SliverGridDelegateWithFixedCrossAxisCount(
-                                    crossAxisCount: 1,
-                                    mainAxisSpacing: 1,
-                                    crossAxisSpacing: 8,
-                                    childAspectRatio:1.94),
-                            itemBuilder: (context, index) {
-                              return Column(children: [
-                                Column(
-                                  mainAxisAlignment:
-                                      MainAxisAlignment.spaceAround,
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Row(
-                                      children: [
-                                        "Emp. Name : ".text.bold.make(),
-                                        const SizedBox(
-                                          width: 35,
-                                        ),
-                                        lstAppData[index]
-                                            .employeename
-                                            .toString()
-                                            .text.overflow(TextOverflow.ellipsis)
-                                            .make(),
-                                      ],
-                                    ),
-                                    const SizedBox(
-                                      height: 4.5,
-                                    ),
-                                    Row(
-                                      children: [
-                                        "App Type : ".text.bold.make(),
-                                        const SizedBox(
-                                          width: 50,
-                                        ),
-                                        lstAppData[index]
-                                            .apptype
-                                            .toString()
-                                            .text
-                                            .make()
-                                      ],
-                                    ),
-                                    const SizedBox(
-                                      height: 4.5,
-                                    ),
-                                    Row(
-                                      children: [
-                                        "App. Period : ".text.bold.make(),
-                                        const SizedBox(
-                                          width: 33,
-                                        ),
-                                        ("${lstAppData[index].fromdt} - ${lstAppData[index].todt}")
-                                            .text
-                                            .make(),
-                                      ],
-                                    ),
-                                    const SizedBox(
-                                      height: 4.5,
-                                    ),
-                                    Row(
-                                      children: [
-                                        "Duration : ".text.bold.make(),
-                                        const SizedBox(
-                                          width: 55,
-                                        ),
-                                        "${lstAppData[index].dayscount.toString()} Days"
-                                            .text
-                                            .make(),
-                                      ],
-                                    ),
-                                    const SizedBox(
-                                      height: 4.5,
-                                    ),
-                                    Row(
-                                      children: [
-                                        "Remarks : ".text.bold.make(),
-                                        const SizedBox(
-                                          width: 53,
-                                        ),
-                                        lstAppData[index].appremarks.toString()
-                                            .text.overflow(TextOverflow.ellipsis)
-                                            .make(),
-                                      ],
-                                    ),
-                                    const SizedBox(
-                                      height: 2,
-                                    ),
-                                    Row(
-                                      mainAxisAlignment:
-                                          MainAxisAlignment.spaceEvenly,
-                                      children: [
-                                        IconButton(
-                                          onPressed: () {
-                                            showConfirmDialog("Are you sure want to Approve",lstAppData[index]
-                                                .appid
-                                                .toString(),2);
-                                            /*ApproveLeaveApp(lstAppData[index]
-                                                .appid
-                                                .toString());*/
-                                          },
-                                          icon: const Image(
-                                            image: AssetImage(
-                                                "assets/images/ess_images/ButtonIcons/TickIcon.png"),
-                                            height: 40,
-                                            width: 40,
-                                          ),
-                                          /*child:
-                                                "Approve".text.makeCentered()*/
-                                        ),
-                                        const SizedBox(
-                                          width: 10,
-                                        ),
-                                        IconButton(
-                                          onPressed: () {
-                                            showConfirmDialog("Are you sure want to Reject",lstAppData[index]
-                                                .appid
-                                                .toString(),2);
-                                           /* RejectLeaveApp(lstAppData[index]
-                                                .appid
-                                                .toString());*/
-                                          },
-                                          icon: const Image(
-                                            image: AssetImage(
-                                                "assets/images/ess_images/ButtonIcons/CrossIcon.png"),
-                                            height: 25,
-                                            width: 25,
-                                          ),
-                                          /*child:
-                                                "Reject".text.makeCentered()*/
-                                        ),
-                                      ],
-                                    ).centered()
-                                  ],
-                                )
-                                    .paddingAll(5)
-                                    .box
-                                    .shadow
-                                    .color(Vx.gray50)
-                                    //.width(190)
-                                    .rounded
-                                    .border(color: Colors.grey)
-                                    .shadow
-                                    .make()
-                              ]);
-                            })
-                      ],
-                    );
-                  }
-                },
+                ],
               ),
             ),
-          ))
-        ],
+          ],
+        ),
+
+        /// Filter
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: [
+                Padding(
+                  padding: const EdgeInsets.only(top: 12.0),
+                  child: Container(
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(12.0),
+                      border: const Border(
+                        bottom: BorderSide(
+                          color: Colors.grey,
+                          width: 2,
+                        ),
+                        left: BorderSide(
+                          color: Colors.grey,
+                          width: 1,
+                        ),
+                        right: BorderSide(
+                          color: Colors.grey,
+                          width: 1,
+                        ),
+                        top: BorderSide(
+                          color: Colors.grey,
+                          width: 0.5,
+                        ),
+                      ),
+                    ),
+                    child: DropdownButtonHideUnderline(
+                      child: DropdownButton2<String>(
+                        isExpanded: true,
+                        hint: Text(
+                          'Select Year',
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: Theme.of(context).hintColor,
+                          ),
+                        ),
+                        items: lstYear
+                            .map((YearDto item) => DropdownMenuItem<String>(
+                                  value: item.yearNo,
+                                  child: Text(
+                                    item.yearNo.toString(),
+                                    style: const TextStyle(
+                                      fontSize: 14,
+                                    ),
+                                  ),
+                                ))
+                            .toList(),
+                        value: selectedYear,
+                        onChanged: (String? value) {
+                          setState(() {
+                            selectedYear = value;
+                            getLeaveAppList();
+                          });
+                        },
+                        buttonStyleData: const ButtonStyleData(
+                          padding: EdgeInsets.symmetric(horizontal: 16),
+                          height: 40,
+                          width: 140,
+                        ),
+                        menuItemStyleData: const MenuItemStyleData(
+                          height: 40,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.only(top: 12.0),
+                  child: Container(
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(12.0),
+                      border: const Border(
+                        bottom: BorderSide(
+                          color: Colors.grey,
+                          width: 2,
+                        ),
+                        left: BorderSide(
+                          color: Colors.grey,
+                          width: 1,
+                        ),
+                        right: BorderSide(
+                          color: Colors.grey,
+                          width: 1,
+                        ),
+                        top: BorderSide(
+                          color: Colors.grey,
+                          width: 0.5,
+                        ),
+                      ),
+                    ),
+                  child: DropdownButtonHideUnderline(
+                    child: DropdownButton2<String>(
+                      isExpanded: true,
+                      hint: Text(
+                        'Select Month',
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: Theme.of(context).hintColor,
+                        ),
+                      ),
+                      items: lstMonth
+                          .map((Monthmodel item) => DropdownMenuItem<String>(
+                                value: item.monthNo,
+                                child: Text(
+                                  item.monthName.toString(),
+                                  style: const TextStyle(
+                                    fontSize: 14,
+                                  ),
+                                ),
+                              ))
+                          .toList(),
+                      value: selectedMonth,
+                      onChanged: (String? value) {
+                        setState(() {
+                          selectedMonth = value;
+                          getLeaveAppList();
+                        });
+                      },
+                      buttonStyleData: const ButtonStyleData(
+                        padding: EdgeInsets.symmetric(horizontal: 16),
+                        height: 40,
+                        width: 140,
+                      ),
+                      menuItemStyleData: const MenuItemStyleData(
+                        height: 40,
+                      ),
+                    ),
+                  ),
+                ),
+                ),
+              ],
+            ),
+
+            ////Application List
+            Expanded(
+                child: Padding(
+              padding: const EdgeInsets.all(8.0),
+              child: SingleChildScrollView(
+                  child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                mainAxisSize: MainAxisSize.min,
+                verticalDirection: VerticalDirection.down,
+
+                children: [
+                  GridView.builder(
+                  scrollDirection: Axis.vertical,
+                    physics: const NeverScrollableScrollPhysics(),
+                    shrinkWrap: true,
+                    itemCount: lstLeaveApp.length,
+                    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: 1,
+                      mainAxisSpacing: 6,
+                      crossAxisSpacing: 10,
+                      childAspectRatio: 2.2,
+                    ),
+                    itemBuilder: (context, index) {
+                      return SingleChildScrollView(
+                        child: Column(
+                          children: [
+                            Padding(
+                              padding: const EdgeInsets.all(8.0),
+                              child: Row(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  // Application Type Row
+                                  Flexible(
+                                    child: Row(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        "App Type    : ".text.bold.make(),
+                                        const SizedBox(width: 8),
+                                        Expanded(
+                                          child: lstLeaveApp[index]
+                                              .apptype
+                                              .toString()
+                                              .text
+                                              .make(),
+                                        ),
+                                        const Spacer(),
+                                        Visibility(
+                                          visible: (lstLeaveApp[index].appstatus.toString() ==
+                                              "Sent for Approval"),
+                                          child: Align(
+                                            alignment: Alignment.centerRight,
+                                            child: IconButton(
+                                              onPressed: () {
+                                                showConfirmDialog(
+                                                  "Are you sure want to Cancel",
+                                                  lstLeaveApp[index].appid.toString(),
+                                                  2,
+                                                );
+                                              },
+                                              icon: const Image(
+                                                image: AssetImage(
+                                                    "assets/images/ess_images/ButtonIcons/CrossIcon.png"),
+                                                height: 25,
+                                                width: 25,
+                                              ),
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            const SizedBox(height: 6),
+                            // Application Period Row
+                            Padding(
+                              padding: const EdgeInsets.symmetric(horizontal: 8.0),
+                              child: Row(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  "App. Period : ".text.bold.make(),
+                                  const SizedBox(width: 8),
+                                  Expanded(
+                                    child: ("${lstLeaveApp[index].fromdt} - ${lstLeaveApp[index].todt}")
+                                        .text
+                                        .make(),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            const SizedBox(height: 6),
+                            // Remarks Row
+                            Padding(
+                              padding: const EdgeInsets.symmetric(horizontal: 8.0),
+                              child: Row(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  "Remarks     : ".text.bold.make(),
+                                  const SizedBox(width: 8),
+                                  Expanded(
+                                    child: Text(
+                                      lstLeaveApp[index].apptype.toString() == "Mispunch"
+                                          ? lstLeaveApp[index].misPunchReason.toString()
+                                          :  lstLeaveApp[index].appremarks!.length >= 15 ? lstLeaveApp[index].appremarks.toString().substring(0,15): lstLeaveApp[index].appremarks.toString() ,
+                                      textAlign: TextAlign.start,
+                                      overflow: TextOverflow.ellipsis,
+                                      maxLines: 2,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            const SizedBox(height: 6),
+                            // Application Status Row
+                            Padding(
+                              padding: const EdgeInsets.symmetric(horizontal: 8.0),
+                              child: Row(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  "App. Status : ".text.bold.make(),
+                                  const SizedBox(width: 8),
+                                  Expanded(
+                                    child: lstLeaveApp[index].appstatus!.text.make(),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            const SizedBox(height: 6),
+                            if(lstLeaveApp[index].appstatus! == 'Accepted' || lstLeaveApp[index].appstatus! == 'Rejected')
+                            Padding(
+                              padding: const EdgeInsets.symmetric(horizontal: 8.0),
+                              child: Row(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  "App. Cmnts : ".text.bold.make(),
+                                  const SizedBox(width: 8),
+                                  Expanded(
+                                    child: (lstLeaveApp[index].approvalremarks ?? '').text.make(),
+                                  ),
+                                ],
+                              ),
+                            ),
+
+                            Visibility(
+                              visible: (lstLeaveApp[index].apptype.toString() == "Mispunch"),
+                              child: Padding(
+                                padding: const EdgeInsets.symmetric(horizontal: 8.0),
+                                child: Row(
+                                  children: [
+                                    (lstLeaveApp[index].intime == null ||
+                                        lstLeaveApp[index].intime!.isEmpty
+                                        ? "Out Time    : "
+                                        : "In Time    : ")
+                                        .text
+                                        .bold
+                                        .make(),
+                                    const SizedBox(width: 8),
+                                    Expanded(
+                                      child: (lstLeaveApp[index].intime == null ||
+                                          lstLeaveApp[index].intime!.isEmpty
+                                          ? lstLeaveApp[index].outtime
+                                          : lstLeaveApp[index].intime)
+                                          .toString()
+                                          .text
+                                          .make(),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ],
+                        )
+                            .paddingAll(5)
+                            .box
+                            .shadow
+                            .color(Vx.gray50)
+                            .rounded
+                            .border(color: Colors.grey)
+                            .make(),
+                      );
+                    },
+                  ),
+                ],
+              )),
+            )),
+          ],
+        ),
       ),
     );
   }

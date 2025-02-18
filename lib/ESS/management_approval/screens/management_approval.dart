@@ -1,12 +1,14 @@
 import 'dart:convert';
-
-import 'package:dropdown_button2/dropdown_button2.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:iconsax/iconsax.dart';
+import 'package:ppms/ESS/management_approval/screens/management_approval_form.dart';
+import 'package:ppms/common/utils/constants/baseurl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:http/http.dart' as http;
 import 'package:velocity_x/velocity_x.dart';
+import '../../../ExtraFunction/uuid.dart';
 import '../models/managementapprovalmodel.dart';
 
 class ManagementApproval extends StatefulWidget {
@@ -15,6 +17,8 @@ class ManagementApproval extends StatefulWidget {
   @override
   State<ManagementApproval> createState() => _ManagementApprovalState();
 }
+
+
 
 class _ManagementApprovalState extends State<ManagementApproval> {
   final List<String> items = [
@@ -25,39 +29,58 @@ class _ManagementApprovalState extends State<ManagementApproval> {
   ];
   String? selectedValue = "All";
   List<Managementapprovalmodel> lstapprovalData = [];
+  String uuid = '';
+  Future<List<Managementapprovalmodel>>? _futureAppData;
 
-  void ApproveApp(String appId, String appCatg, String updateByType) async {
-    await ApproveRejectApplication(
+  @override
+  void initState() {
+    super.initState();
+    getUid();
+    _futureAppData = getManagementApproval();
+  }
+
+  void getUid() async {
+    WidgetsFlutterBinding.ensureInitialized();
+
+    String id = await PersistentUUID.getOrCreateUUID();
+    setState(() {
+      uuid = id;
+    });
+    print('Persistent UUID: $uuid');
+
+  }
+
+  void approveApp(String appId, String appCatg, String updateByType) async {
+    await approveRejectApplication(
         appId, "Approved", appCatg, updateByType, "APPROVE_APP_APPROVAL");
   }
 
-  void RejectApp(String appId, String appCatg, String updateByType) async {
-    await ApproveRejectApplication(
+  void rejectApp(String appId, String appCatg, String updateByType) async {
+    await approveRejectApplication(
         appId, "Rejected", appCatg, updateByType, "APPROVE_APP_APPROVAL");
   }
 
-  void HoldApp(String appId, String appCatg, String updateByType) async {
-    await ApproveRejectApplication(
+  void holdApp(String appId, String appCatg, String updateByType) async {
+    await approveRejectApplication(
         appId, "Hold", appCatg, updateByType, "APPROVE_APP_APPROVAL");
   }
 
-  Future<void> ApproveRejectApplication(String appId, String appStatus,
+  Future<void> approveRejectApplication(String appId, String appStatus,
       String appType, String updateByType, String mode) async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     try {
       lstapprovalData = [];
       var url = '';
       if (appType == "1") {
-        url =
-            'http://172.16.0.123:12008/api/HRISM/ApproveRejectManagementApproval';
+        url = '${TBaseURL.essBaseUrl}api/HRISM/ApproveRejectManagementApproval';
       } else if (appType == "2") {
-        url =
-            'http://172.16.0.123:12008/api/HRISM/ApproveRejectManagementApprovalHO';
+        url = '${TBaseURL.essBaseUrl}api/HRISM/ApproveRejectManagementApprovalHO';
       } else if (appType == "3") {
-        url =
-            'http://172.16.0.123:12008/api/HRISM/ApproveRejectManagementApprovalSRV';
+        url = '${TBaseURL.essBaseUrl}api/HRISM/ApproveRejectManagementApprovalSRV';
       }
-      print('Approving Application Approval of Subbordinate: $url');
+      if (kDebugMode) {
+        print('Approving Application Approval of Subbordinate: $url');
+      }
       // Define the headers and body
       Map<String, String> headers = {
         'Content-Type': 'application/json',
@@ -69,7 +92,8 @@ class _ManagementApprovalState extends State<ManagementApproval> {
         "appStatus": appStatus,
         "updateByType": updateByType,
         "mode": mode,
-        "employeeId": prefs.getString('employeeId').toString()
+        "employeeId": prefs.getString('employeeId').toString(),
+        "deviceId" : uuid
       };
 
       // Send the POST request
@@ -79,7 +103,9 @@ class _ManagementApprovalState extends State<ManagementApproval> {
         body: jsonEncode(body),
       );
 
-      print(response.body);
+      if (kDebugMode) {
+        print(response.body);
+      }
 
       if (response.statusCode == 200) {
         ShowDialog(response.body,1);
@@ -94,19 +120,21 @@ class _ManagementApprovalState extends State<ManagementApproval> {
           ShowDialog(response.body,2);
         }
     } catch (e) {
-      throw e;
-      print('Error fetching data: $e');
+      rethrow;
     }
   }
 
   Future<List<Managementapprovalmodel>> getManagementApproval() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
-    print("Here on Function");
+    if (kDebugMode) {
+      print("Here on Function");
+    }
     try {
       lstapprovalData = [];
-      const url =
-          'http://172.16.0.123:12008/api/HRISM/GetManagementApprovalList';
-      print('Fetching data management Approval : $url');
+      const url = '${TBaseURL.essBaseUrl}api/HRISM/GetManagementApprovalList';
+      if (kDebugMode) {
+        print('Fetching data management Approval : $url');
+      }
 
       // Define the headers and body
       Map<String, String> headers = {
@@ -124,38 +152,39 @@ class _ManagementApprovalState extends State<ManagementApproval> {
         headers: headers,
         body: jsonEncode(body),
       );
-      print('Response body: ${response.body}');
+      if (kDebugMode) {
+        print('Response body: ${response.body}');
+      }
       if (response.statusCode == 200) {
         var data = jsonDecode(response.body.toString());
         for (Map i in data) {
           lstapprovalData.add(Managementapprovalmodel.fromJson(i));
         }
-        print('Response body: ${lstapprovalData}');
+        if (kDebugMode) {
+          print('Response body: $lstapprovalData');
+        }
         return lstapprovalData;
       } else {
         return lstapprovalData;
-        print('Failed to load data with status code: ${response.statusCode}');
-        print('Response body: ${response.body}');
       }
     } catch (e) {
-      throw e;
-      print('Error fetching data: $e');
+      rethrow;
     }
   }
 
-  ShowDialog(String Message,int msgType) {
+  ShowDialog(String message,int msgType) {
 
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Container(
       padding: const EdgeInsets.all(16),
       height: 90,
       decoration: BoxDecoration(
-          color:msgType==1?Colors.blue:Color(0xFFC72C41),
+          color:msgType==1?Colors.blue:const Color(0xFFC72C41),
           borderRadius: const BorderRadius.all(Radius.circular(20))
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(Message,style: const TextStyle(fontSize:12,color:Colors.white,overflow: TextOverflow.ellipsis ),)
+          Text(message,style: const TextStyle(fontSize:12,color:Colors.white,overflow: TextOverflow.ellipsis ),)
         ],
       ),
     )));
@@ -175,7 +204,7 @@ class _ManagementApprovalState extends State<ManagementApproval> {
             ));*/
   }
 
-  showConfirmDialog(String Message,String appId, String appCatg, String updateByType,int appType) async {
+  showConfirmDialog(String message,String appId, String appCatg, String updateByType,int appType) async {
     showDialog(
         context: context,
         builder: (context) => AlertDialog(
@@ -186,17 +215,17 @@ class _ManagementApprovalState extends State<ManagementApproval> {
                 ElevatedButton(
                     onPressed: () {
                       if(appType==1) {
-                        ApproveApp(appId, appCatg, updateByType);
+                        approveApp(appId, appCatg, updateByType);
                         Navigator.of(context).pop();
                       }
                       else if(appType==2)
                         {
-                          RejectApp(appId, appCatg, updateByType);
+                          rejectApp(appId, appCatg, updateByType);
                           Navigator.of(context).pop();
                         }
                       else if(appType==3)
                         {
-                          HoldApp(appId, appCatg, updateByType);
+                          holdApp(appId, appCatg, updateByType);
                           Navigator.of(context).pop();
                         }
                     },
@@ -213,7 +242,7 @@ class _ManagementApprovalState extends State<ManagementApproval> {
           ],
           title: const Text("Confirmation Management Approval"),
           contentPadding: const EdgeInsets.all(20),
-          content: Text(Message),
+          content: Text(message),
         ));
   }
 
@@ -221,185 +250,136 @@ class _ManagementApprovalState extends State<ManagementApproval> {
   Widget build(BuildContext context) {
     return Scaffold(
         appBar: AppBar(
-          title: Text(
-            widget.title,
-            style: Theme.of(context)
-                .textTheme
-                .headlineSmall!
-                .apply(color: Colors.white),
-          ),
-          backgroundColor: Colors.blue,
-        ),
-        body: Column(mainAxisSize: MainAxisSize.min, children: [
-          /*DropdownButtonHideUnderline(
-            child: DropdownButton2<String>(
-              isExpanded: true,
-              hint: Text(
-                'Select Status',
-                style: TextStyle(
-                  fontSize: 14,
-                  color: Theme.of(context).hintColor,
-                ),
-              ),
-              items: items
-                  .map((String item) => DropdownMenuItem<String>(
-                value: item,
-                child: Text(
-                  item,
-                  style: const TextStyle(
-                    fontSize: 14,
-                  ),
-                ),
-              ))
-                  .toList(),
-              value: selectedValue,
-              onChanged: (String? value) {
-                setState(() {
-                  selectedValue = value;
-                });
-              },
-              buttonStyleData: const ButtonStyleData(
-                padding: EdgeInsets.symmetric(horizontal: 16),
-                height: 40,
-                width: 140,
-              ),
-              menuItemStyleData: const MenuItemStyleData(
-                height: 40,
-              ),
+          backgroundColor: const Color(0xFF5FE3D3),
+          automaticallyImplyLeading: false,
+          leading: IconButton(
+            icon: const Icon(
+              Icons.arrow_back_rounded,
+              color: Colors.white,
+              size: 22,
             ),
-          ),*/
-          Expanded(
-            child: Padding(
-              padding: const EdgeInsets.all(8.0),
-              child: SingleChildScrollView(
-                child: FutureBuilder(
-                    future: getManagementApproval(),
-                    builder: (context, snapshot) {
-                      if (!snapshot.hasData) {
-                        return "Loading".text.make();
-                      } else {
-                        return Column(
-                          crossAxisAlignment: CrossAxisAlignment.stretch,
-                          mainAxisSize: MainAxisSize.min,
-                          verticalDirection: VerticalDirection.down,
-                          children: [
-                            GridView.builder(
+            onPressed: () {
+              Navigator.of(context).pop();
+            },
+          ),
+          title: const Text(
+            'Management Approval',
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          centerTitle: true,
+          elevation: 2,
+        ),
+        body: InteractiveViewer(
+          panEnabled: true,
+          scaleEnabled: true,
+          panAxis: PanAxis.free,
+          minScale: 1.0,
+          maxScale: 4.0,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.all(8.0),
+                  child: SingleChildScrollView(
+                    child: FutureBuilder(
+                      future: _futureAppData,
+                      builder: (context, snapshot) {
+                        if (!snapshot.hasData) {
+                          return "Loading".text.make();
+                        } else {
+                          return Column(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            mainAxisSize: MainAxisSize.min,
+                            verticalDirection: VerticalDirection.down,
+                            children: [
+                              GridView.builder(
+                                scrollDirection: Axis.vertical,
+                                physics: const ScrollPhysics(),
                                 shrinkWrap: true,
                                 itemCount: lstapprovalData.length,
-                                gridDelegate:
-                                    const SliverGridDelegateWithFixedCrossAxisCount(
-                                        crossAxisCount: 1,
-                                        mainAxisSpacing: 1,
-                                        crossAxisSpacing: 1,
-                                        childAspectRatio: 2.1),
+                                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                                  crossAxisCount: 1,
+                                  mainAxisSpacing: 20,
+                                  crossAxisSpacing: 12,
+                                  childAspectRatio: 1.7,
+                                ),
                                 itemBuilder: (context, index) {
-                                  return Column(children: [
-                                    Column(
-                                      mainAxisAlignment:
-                                          MainAxisAlignment.spaceAround,
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      children: [
-                                        Row(
-                                          children: [
-                                            "Emp. Name : ".text.bold.make(),
-                                            const SizedBox(
-                                              width: 50,
-                                            ),
-                                            lstapprovalData[index]
-                                                .name
-                                                .toString()
-                                                .text
-                                                .overflow(TextOverflow.ellipsis)
-                                                .make(),
-                                          ],
-                                        ),
-                                        const SizedBox(
-                                          height: 4.5,
-                                        ),
-                                        Row(
-                                          children: [
-                                            "Emp. Type : ".text.bold.make(),
-                                            const SizedBox(
-                                              width: 59,
-                                            ),
-                                            ("${lstapprovalData[index].appType} , (${lstapprovalData[index].unit})")
-                                                .text
-                                                .overflow(TextOverflow.ellipsis)
-                                                .make()
-                                          ],
-                                        ),
-                                        const SizedBox(
-                                          height: 4.5,
-                                        ),
-                                        Row(children: [
-                                          "Department : ".text.bold.make(),
-                                          const SizedBox(
-                                            width: 51,
-                                          ),
-                                          lstapprovalData[index]
-                                              .department
-                                              .toString()
-                                              .text
-                                              .overflow(TextOverflow.ellipsis)
-                                              .make(),
-                                        ]),
-                                        const SizedBox(
-                                          height: 4.5,
-                                        ),
-                                        Row(
-                                          children: [
-                                            "Monthly Salary : "
-                                                .text
-                                                .bold
-                                                .make(),
-                                            const SizedBox(
-                                              width: 30,
-                                            ),
-                                            lstapprovalData[index]
-                                                .monthlySalary
-                                                .toString()
-                                                .text
-                                                .wrapWords(true)
-                                                .make()
-                                          ],
-                                        ),
-                                        const SizedBox(
-                                          height: 4.5,
-                                        ),
-                                        Row(
-                                          children: [
-                                            "Increment Amount : "
-                                                .text
-                                                .bold
-                                                .make(),
-                                            const SizedBox(
-                                              width: 8,
-                                            ),
-                                            lstapprovalData[index]
-                                                .incAmount
-                                                .toString()
-                                                .text
-                                                .wrapWords(true)
-                                                .make()
-                                          ],
-                                        ),
-                                        Row(
-                                          mainAxisAlignment:
-                                              MainAxisAlignment.spaceEvenly,
-                                          children: [
-                                            IconButton(
-                                              onPressed: () {
-                                                showConfirmDialog("Are you sure want to Approve?",lstapprovalData[index]
-                                                    .appId
-                                                    .toString(),
-                                                    lstapprovalData[index]
-                                                        .appCatg
-                                                        .toString(),
-                                                    lstapprovalData[index]
-                                                        .updateByType
-                                                        .toString(),1);
-                                                /*ApproveApp(
+                                  return Column(
+                                    children: [
+                                      Column(
+                                        mainAxisAlignment: MainAxisAlignment.spaceAround,
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          Row(
+                                            children: [
+                                              "Emp. Name: ".text.bold.make(),
+                                              const SizedBox(width: 10),
+                                              lstapprovalData[index]
+                                                  .name
+                                                  .toString()
+                                                  .text
+                                                  .overflow(TextOverflow.ellipsis)
+                                                  .make(),
+                                            ],
+                                          ).paddingSymmetric(vertical: 4, horizontal: 8),
+                                          Row(
+                                            children: [
+                                              "Emp. Type: ".text.bold.make(),
+                                              const SizedBox(width: 10),
+                                              ("${lstapprovalData[index].appType}, (${lstapprovalData[index].unit})")
+                                                  .text
+                                                  .overflow(TextOverflow.ellipsis)
+                                                  .make(),
+                                            ],
+                                          ).paddingSymmetric(vertical: 4, horizontal: 8),
+                                          Row(
+                                            children: [
+                                              "Department: ".text.bold.make(),
+                                              const SizedBox(width: 10),
+                                              lstapprovalData[index]
+                                                  .department
+                                                  .toString()
+                                                  .text
+                                                  .overflow(TextOverflow.ellipsis)
+                                                  .make(),
+                                            ],
+                                          ).paddingSymmetric(vertical: 4, horizontal: 8),
+                                          Row(
+                                            children: [
+                                              "Monthly Salary: ".text.bold.make(),
+                                              const SizedBox(width: 10),
+                                              lstapprovalData[index]
+                                                  .monthlySalary
+                                                  .toString()
+                                                  .text
+                                                  .wrapWords(true)
+                                                  .make(),
+                                            ],
+                                          ).paddingSymmetric(vertical: 4, horizontal: 8),
+                                          Row(
+                                            children: [
+                                              "Increment Amount: ".text.bold.make(),
+                                              const SizedBox(width: 10),
+                                              lstapprovalData[index]
+                                                  .incAmount
+                                                  .toString()
+                                                  .text
+                                                  .wrapWords(true)
+                                                  .make(),
+                                            ],
+                                          ).paddingSymmetric(vertical: 4, horizontal: 8),
+                                          Row(
+                                            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                                            children: [
+                                              IconButton(
+                                                onPressed: () {
+                                                  showConfirmDialog(
+                                                    "Are you sure want to Approve?",
                                                     lstapprovalData[index]
                                                         .appId
                                                         .toString(),
@@ -408,35 +388,17 @@ class _ManagementApprovalState extends State<ManagementApproval> {
                                                         .toString(),
                                                     lstapprovalData[index]
                                                         .updateByType
-                                                        .toString()
-                                                );*/
-                                              },
-                                              icon: const Image(
-                                                image: AssetImage(
-                                                    "assets/images/ess_images/ButtonIcons/TickIcon.png"),
-                                                height: 40,
-                                                width: 40,
-                                              ),
-                                              tooltip: "Approve",
-
-                                              /*,
-                                                child: "Approve"
-                                                    .text
-                                                    .makeCentered()*/
-                                            ),
-                                            //const SizedBox(width:1 ,),
-                                            IconButton(
-                                              onPressed: () {
-                                                showConfirmDialog("Are you sure want to Reject?",lstapprovalData[index]
-                                                    .appId
-                                                    .toString(),
-                                                    lstapprovalData[index]
-                                                        .appCatg
                                                         .toString(),
-                                                    lstapprovalData[index]
-                                                        .updateByType
-                                                        .toString(),2);
-                                               /* RejectApp(
+                                                    1,
+                                                  );
+                                                },
+                                                icon: const Icon(Iconsax.tick_square, color: Colors.green),
+                                                tooltip: "Approve",
+                                              ),
+                                              IconButton(
+                                                onPressed: () {
+                                                  showConfirmDialog(
+                                                    "Are you sure want to Reject?",
                                                     lstapprovalData[index]
                                                         .appId
                                                         .toString(),
@@ -445,31 +407,17 @@ class _ManagementApprovalState extends State<ManagementApproval> {
                                                         .toString(),
                                                     lstapprovalData[index]
                                                         .updateByType
-                                                        .toString());*/
-                                              },
-                                              icon: const Image(
-                                                image: AssetImage(
-                                                    "assets/images/ess_images/ButtonIcons/CrossIcon.png"),
-                                                height: 25,
-                                                width: 25,
-                                              ),
-                                              tooltip: "Reject",
-                                              /*child: "Reject"
-                                                    .text
-                                                    .makeCentered()*/
-                                            ),
-                                            IconButton(
-                                              onPressed: () {
-                                                showConfirmDialog("Are you sure want to Hold?",lstapprovalData[index]
-                                                    .appId
-                                                    .toString(),
-                                                    lstapprovalData[index]
-                                                        .appCatg
                                                         .toString(),
-                                                    lstapprovalData[index]
-                                                        .updateByType
-                                                        .toString(),3);
-                                                /*HoldApp(
+                                                    2,
+                                                  );
+                                                },
+                                                icon: const Icon(Icons.disabled_by_default_rounded, color: Colors.red),
+                                                tooltip: "Reject",
+                                              ),
+                                              IconButton(
+                                                onPressed: () {
+                                                  showConfirmDialog(
+                                                    "Are you sure want to Hold?",
                                                     lstapprovalData[index]
                                                         .appId
                                                         .toString(),
@@ -478,40 +426,48 @@ class _ManagementApprovalState extends State<ManagementApproval> {
                                                         .toString(),
                                                     lstapprovalData[index]
                                                         .updateByType
-                                                        .toString());*/
-                                              },
-                                              icon: const Image(
-                                                image: AssetImage(
-                                                    "assets/images/ess_images/ButtonIcons/HoldIcon.png"),
-                                                height: 22,
-                                                width: 22,
+                                                        .toString(),
+                                                    3,
+                                                  );
+                                                },
+                                                icon: const Icon(Icons.back_hand, color: Color(0xFFEEE258)),
+                                                tooltip: "Hold",
                                               ),
-                                              tooltip: "Hold",
-                                              /*child:
-                                                    "Hold".text.makeCentered()*/
-                                            ),
-                                          ],
-                                        ).centered()
-                                      ],
-                                    )
-                                        .paddingAll(5)
-                                        .box
-                                        .shadow
-                                        .color(Vx.gray50)
-                                        //.width(190)
-                                        .rounded
-                                        .border(color: Colors.grey)
-                                        .shadow
-                                        .make()
-                                  ]);
-                                })
-                          ],
-                        );
-                      }
-                    }),
+                                              IconButton(
+                                                onPressed: () {
+                                                  Get.to(() => ManagementApprovalForm(
+                                                    appId: lstapprovalData[index]
+                                                        .appId
+                                                        .toString(),
+                                                    appCatg: lstapprovalData[index]
+                                                        .appCatg
+                                                        .toString(),
+                                                    updateByType: lstapprovalData[index]
+                                                        .updateByType
+                                                        .toString(),
+                                                  ));
+                                                },
+                                                icon: const Icon(Iconsax.eye3),
+                                                tooltip: "View",
+                                              ),
+                                            ],
+                                          ).paddingSymmetric(vertical: 0).centered()
+                                        ],
+                                      ).paddingAll(8).box.shadow.color(Vx.gray50).rounded.border(color: Colors.grey).make()
+                                    ],
+                                  );
+                                },
+                              ),
+                            ],
+                          );
+                        }
+                      },
+                    ),
+                  ),
+                ),
               ),
-            ),
+            ],
           ),
-        ]));
+        ),);
   }
 }
