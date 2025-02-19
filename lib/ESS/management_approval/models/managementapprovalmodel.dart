@@ -22,8 +22,9 @@
 class Managementapprovalmodel {
   Managementapprovalmodel({
       String? appId, 
-      String? appType, 
-      num? appCatg, 
+      String? appType,
+      String? updateByType,
+      num? appCatg,
       String? name, 
       String? unit, 
       String? dateofSubmission, 
@@ -43,6 +44,7 @@ class Managementapprovalmodel {
       String? approver5Status,}){
     _appId = appId;
     _appType = appType;
+    _updateByType = updateByType;
     _appCatg = appCatg;
     _name = name;
     _unit = unit;
@@ -66,6 +68,7 @@ class Managementapprovalmodel {
   Managementapprovalmodel.fromJson(dynamic json) {
     _appId = json['appId'];
     _appType = json['appType'];
+    _updateByType = json['updateByType'];
     _appCatg = json['appCatg'];
     _name = json['name'];
     _unit = json['unit'];
@@ -87,6 +90,7 @@ class Managementapprovalmodel {
   }
   String? _appId;
   String? _appType;
+  String? _updateByType;
   num? _appCatg;
   String? _name;
   String? _unit;
@@ -107,6 +111,7 @@ class Managementapprovalmodel {
   String? _approver5Status;
 Managementapprovalmodel copyWith({  String? appId,
   String? appType,
+  String? updateByType,
   num? appCatg,
   String? name,
   String? unit,
@@ -127,6 +132,7 @@ Managementapprovalmodel copyWith({  String? appId,
   String? approver5Status,
 }) => Managementapprovalmodel(  appId: appId ?? _appId,
   appType: appType ?? _appType,
+  updateByType: updateByType ?? _updateByType,
   appCatg: appCatg ?? _appCatg,
   name: name ?? _name,
   unit: unit ?? _unit,
@@ -148,6 +154,7 @@ Managementapprovalmodel copyWith({  String? appId,
 );
   String? get appId => _appId;
   String? get appType => _appType;
+  String? get updateByType => _updateByType;
   num? get appCatg => _appCatg;
   String? get name => _name;
   String? get unit => _unit;
@@ -171,6 +178,7 @@ Managementapprovalmodel copyWith({  String? appId,
     final map = <String, dynamic>{};
     map['appId'] = _appId;
     map['appType'] = _appType;
+    map['updateByType'] = _updateByType;
     map['appCatg'] = _appCatg;
     map['name'] = _name;
     map['unit'] = _unit;

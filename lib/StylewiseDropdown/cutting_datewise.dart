@@ -1,0 +1,681 @@
+import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
+import 'dart:convert';
+import 'package:http/http.dart' as http;
+import 'package:intl/intl.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
+import '../common/utils/constants/baseurl.dart';
+
+class CuttingDetail {
+  final String buyer;
+  final String order;
+  final String style;
+  final int cutQty;
+  final double plannedPerCost;
+  final int revenue;
+  final int totalCutQty;
+  final int totalRevenue;
+
+  CuttingDetail({
+    required this.buyer,
+    required this.order,
+    required this.style,
+    required this.cutQty,
+    required this.plannedPerCost,
+    required this.revenue,
+    required this.totalCutQty,
+    required this.totalRevenue,
+  });
+
+  factory CuttingDetail.fromJson(Map<String, dynamic> json) {
+
+    return CuttingDetail(
+      buyer: json['Buyer'],
+      order: json['OrderNo'],
+      style: json['StyleNo'],
+      cutQty: (json['CutQty'] as num?)?.toInt() ?? 0,
+      plannedPerCost: double.tryParse((json['PlannedPerCost'] as num?)?.toStringAsFixed(2) ?? '0.00') ?? 0.00,
+      revenue: (json['Revneue'] as num?)?.toInt() ?? 0,
+      totalCutQty: (json['TotalCutQty'] as num?)?.toInt() ?? 0,
+      totalRevenue: (json['TotalRevenue'] as num?)?.toInt() ?? 0,
+    );
+  }
+}
+
+Future<List<CuttingDetail>> fetchCuttingData(String to, String unit) async {
+  DateTime now = DateTime.now();
+  String from = DateTime(now.year, now.month, 1).toIso8601String().split('T')[0];
+
+  final response = await http.get(
+    Uri.parse('${TBaseURL.baseUrl}stylewise?type=CUTTING&unit=$unit&from=$from&to=$to'),
+  );
+  print('${TBaseURL.baseUrl}stylewise?type=CUTTING&unit=$unit&from=$from&to=$to');
+
+  if (response.statusCode == 200) {
+    List jsonResponse = json.decode(response.body);
+    return jsonResponse.map((data) => CuttingDetail.fromJson(data)).toList();
+  } else {
+    throw Exception('Failed to load data');
+  }
+}
+
+
+void navigateToCutting(BuildContext context, String fromDate, String toDate,String unit) {
+  Navigator.push(
+    context,
+    MaterialPageRoute(builder: (context) => CuttingStyleDropPage(fromDate: fromDate, toDate: toDate,unit: unit)),
+  );
+}
+
+class CuttingTable extends StatelessWidget {
+  final List<CuttingDetail> data;
+
+  CuttingTable({required this.data});
+
+  late int lent = 0;
+  Map<String, dynamic> calculateTotals() {
+    int cost = 0;
+    int totalCutQty = 0;
+    int revenue = 0;
+    int totalRevenue = 0;
+
+    for (var item in data) {
+      cost += item.cutQty;
+      totalCutQty += item.totalCutQty;
+      totalRevenue += item.totalRevenue;
+      revenue += item.revenue;
+    }
+    // Return a map with property names as keys and sums as values
+    return {
+      'cost': cost,
+      'totalCutQty': totalCutQty,
+      'revenue': revenue,
+      'totalRevenue': totalRevenue,
+      // Add more sums for other properties
+    };
+  }
+
+
+  @override
+  Widget build(BuildContext context) {
+    Map<String, dynamic> totals = calculateTotals();
+    Widget buildCell(int value, {bool isTotal = false}) {
+      return Padding(
+        padding: const EdgeInsets.only(right: 4),
+        child: Text(
+          value.toString(),
+          textAlign: TextAlign.end,
+          style: TextStyle(
+            color: value < 0 ? Colors.red : Colors.green,
+            fontWeight: isTotal ? FontWeight.w600 : FontWeight.normal,
+          ),
+        ),
+      );
+    }
+
+    return InteractiveViewer(
+        panEnabled: true,
+        scaleEnabled: true,
+        panAxis: PanAxis.free,
+        minScale: 1.0,
+        maxScale: 4.0,
+        child: Row(
+            children:[
+              Expanded(
+                child: SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: Column(
+                    children: [
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          SingleChildScrollView(
+                            scrollDirection: Axis.vertical,
+                            child: IntrinsicWidth(
+                              child: Table(
+                                border: TableBorder.all(color: Colors.black45),
+                                defaultColumnWidth: const IntrinsicColumnWidth(),
+                                children: [
+                                  const TableRow(
+                                    decoration: BoxDecoration(color: Color(0xFF08B9AA)),
+                                    children: [
+                                      TableCell(
+                                        child: Padding(
+                                          padding: EdgeInsets.only(left: 8.0, right : 8),
+                                          child: Center(
+                                            child: Text(
+                                              "Buyer",
+                                              textAlign: TextAlign.center,style: TextStyle(
+                                                color: Colors.white
+                                            ),
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                      TableCell(
+                                        child: Padding(
+                                          padding: EdgeInsets.only(left: 8.0, right : 8),
+                                          child: Center(
+                                            child: Text(
+                                              "Style",
+                                              textAlign: TextAlign.center,style: TextStyle(
+                                                color: Colors.white
+                                            ),
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                      TableCell(
+                                        child: Padding(
+                                          padding: EdgeInsets.only(left: 8.0, right : 8),
+                                          child: Center(
+                                            child: Text(
+                                              'Order',
+                                              textAlign: TextAlign.center,style: TextStyle(
+                                                color: Colors.white
+                                            ),
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                      TableCell(
+                                        child: Padding(
+                                          padding: EdgeInsets.only(left: 8.0, right : 8),
+                                          child: Center(
+                                            child: Text(
+                                              'Planned\nCost',
+                                              textAlign: TextAlign.center,style: TextStyle(
+                                                color: Colors.white
+                                            ),
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                      TableCell(
+                                        child: Padding(
+                                          padding: EdgeInsets.only(left: 8.0, right : 8),
+                                          child: Center(
+                                            child: Text(
+                                              "Today Cutting\nCost",
+                                              textAlign: TextAlign.center,style: TextStyle(
+                                                color: Colors.white
+                                            ),
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                      TableCell(
+                                        child: Padding(
+                                          padding: EdgeInsets.only(left: 8.0, right : 8),
+                                          child: Center(
+                                            child: Text(
+                                              "Total Cutting\nCost",
+                                              textAlign: TextAlign.center,style: TextStyle(
+                                                color: Colors.white
+                                            ),
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                      TableCell(
+                                        child: Padding(
+                                          padding: EdgeInsets.only(left: 8.0, right : 8),
+                                          child: Center(
+                                            child: Text(
+                                              'Today\nRevenue',
+                                              textAlign: TextAlign.center,style: TextStyle(
+                                                color: Colors.white
+                                            ),
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                      TableCell(
+                                        child: Padding(
+                                          padding: EdgeInsets.only(left: 8.0, right : 8),
+                                          child: Center(
+                                            child: Text(
+                                              "Total\nRevenue",
+                                              textAlign: TextAlign.center,style: TextStyle(
+                                                color: Colors.white
+                                            ),
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+
+                                    ],
+                                  ),
+                                  for (var item in data)
+                                    TableRow(
+                                      decoration: const BoxDecoration(
+                                        color : Colors.transparent,
+                                      ),
+                                      children: [
+                                        TableCell(
+                                          child: Padding(
+                                            padding: const EdgeInsets.only(left: 8.0, right: 8),
+                                            child: Text(
+                                              item.buyer.length > 15 ? '${item.buyer.substring(0, 15)}..' : item.buyer,
+                                              textAlign: TextAlign.start,
+                                            ),
+                                          ),
+                                        ),
+                                        TableCell(child:Padding(
+                                          padding: const EdgeInsets.only(left: 8.0,right: 8),
+                                          child: Text(item.style.toString(),textAlign: TextAlign.start,),
+                                        )),
+                                        TableCell(child:Padding(
+                                          padding: const EdgeInsets.only(left: 8.0,right: 8),
+                                          child: Text(item.order.toString(),textAlign: TextAlign.start, ),
+                                        )),
+                                        TableCell(child: Padding(
+                                          padding: const EdgeInsets.only(right: 8),
+                                          child: Text(item.plannedPerCost.toString(),textAlign: TextAlign.end),
+                                        )),
+                                        TableCell(child: Padding(
+                                          padding: const EdgeInsets.only(right: 8),
+                                          child: Text(item.cutQty.toString(),textAlign: TextAlign.end),
+                                        )),
+                                        TableCell(child: Padding(
+                                          padding: const EdgeInsets.only(right: 8),
+                                          child: Text(item.totalCutQty.toString(),textAlign: TextAlign.end),
+                                        )),
+                                        TableCell(child: Padding(
+                                          padding: const EdgeInsets.only(right: 8),
+                                          child: Text(item.revenue.toString(),textAlign: TextAlign.end),
+                                        )),
+                                        TableCell(child: Padding(
+                                          padding: const EdgeInsets.only(right: 8),
+                                          child: Text(item.totalRevenue.toString(),textAlign: TextAlign.end),
+                                        )),
+                                      ],
+                                    ),
+                                  TableRow(
+                                    decoration: BoxDecoration(color: Colors.green[300]),
+                                    children: [
+                                      const TableCell(child:Padding(
+                                        padding: EdgeInsets.only(right: 4),
+                                        child: Text('',textAlign: TextAlign.end,style: TextStyle(
+                                            fontWeight: FontWeight.w600
+                                        ),),
+                                      )),
+                                      const TableCell(child:Padding(
+                                        padding: EdgeInsets.only(right: 4),
+                                        child: Text('',textAlign: TextAlign.end,style: TextStyle(
+                                            fontWeight: FontWeight.w600
+                                        ),),
+                                      )),
+                                      const TableCell(child:Padding(
+                                        padding: EdgeInsets.only(right: 4),
+                                        child: Text('',textAlign: TextAlign.end,style: TextStyle(
+                                            fontWeight: FontWeight.w600
+                                        ),),
+                                      )),
+                                      const TableCell(child:Padding(
+                                        padding: EdgeInsets.only(right: 4),
+                                        child: Text('',textAlign: TextAlign.end,style: TextStyle(
+                                            fontWeight: FontWeight.w600
+                                        ),),
+                                      )),
+                                      TableCell(child: Padding(
+                                        padding: const EdgeInsets.only(right: 4),
+                                        child: Text(totals['cost'].toString(),textAlign: TextAlign.end,style: const TextStyle(
+                                            fontWeight: FontWeight.w600
+                                        ),),
+                                      )),
+                                      TableCell(child: Padding(
+                                        padding: const EdgeInsets.only(right: 4),
+                                        child: Text(totals['totalCutQty'].toString(),textAlign: TextAlign.end,style: const TextStyle(
+                                            fontWeight: FontWeight.w600
+                                        ),),
+                                      )),
+                                      TableCell(child: Padding(
+                                        padding: const EdgeInsets.only(right: 4),
+                                        child: Text(totals['revenue'].toString(),textAlign: TextAlign.end,style: const TextStyle(
+                                            fontWeight: FontWeight.w600
+                                        ),),
+                                      )),
+                                      TableCell(child: Padding(
+                                        padding: const EdgeInsets.only(right: 4),
+                                        child: Text(totals['totalRevenue'].toString(),textAlign: TextAlign.end,style: const TextStyle(
+                                            fontWeight: FontWeight.w600
+                                        ),),
+                                      )),
+                                    ],
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ]
+        )
+    );
+  }
+}
+
+class CuttingModel {
+  final unfocusNode = FocusNode();
+  DateTime? datePicked1;
+  DateTime? datePicked2;
+  String? dropDownValue;
+  final fromDateController = TextEditingController();
+  final toDateController = TextEditingController();
+  List<String> dropDownOptions = [];
+
+
+  void dispose() {
+    unfocusNode.dispose();
+    fromDateController.dispose();
+    toDateController.dispose();
+  }
+}
+CuttingModel createModel(BuildContext context, CuttingModel Function() modelBuilder) {
+  return modelBuilder();
+}
+class CuttingStyleDropPage extends StatefulWidget {
+  final String fromDate;
+  final String toDate;
+  final String unit;
+
+  CuttingStyleDropPage({super.key, required this.fromDate, required this.toDate, required this.unit});
+
+  @override
+  _CuttingStyleDropPageState createState() => _CuttingStyleDropPageState();
+}
+
+class _CuttingStyleDropPageState extends State<CuttingStyleDropPage> {
+  late CuttingModel _model;
+  late DateTime fromDate;
+  late DateTime toDate;
+  late TextEditingController fromDateController;
+  late TextEditingController toDateController;
+  final scaffoldKey = GlobalKey<ScaffoldState>();
+  String? management;
+  String? _selectedUnit;
+  List<String> _dropDownOptions = [];
+  Map<String, String> _unitMap = {};
+  String? _loginId;
+  String? _unit;
+  Future<List<CuttingDetail>>? _cuttingDetailsFuture;
+
+  @override
+  void initState() {
+    super.initState();
+    _model = createModel(context, () => CuttingModel());
+    fromDateController = TextEditingController();
+    toDateController = TextEditingController();
+    // Parse the initial dates from the widget
+    fromDate = DateTime.parse(widget.fromDate);
+    toDate = DateTime.parse(widget.toDate);
+
+    print('$fromDate $toDate + widget.unit');
+    // Set the initial dates in the controllers
+    fromDateController.text = DateFormat('yyyy-MM-dd').format(fromDate);
+    toDateController.text = DateFormat('yyyy-MM-dd').format(toDate);
+
+    _loadLoginIdAndFetchData();
+  }
+
+  @override
+  void dispose() {
+    _model.dispose();
+    super.dispose();
+  }
+
+  Future<void> _loadLoginIdAndFetchData() async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() {
+      _loginId = prefs.getString('login_id');
+      _unit = prefs.getString('unit');
+    });
+    if (_loginId != null) {
+      await _fetchDropDownOptions();
+    }
+  }
+
+  Future<void> _fetchDropDownOptions() async {
+    final String url = 'http://14.142.248.34:10008/unit?type=permissions&user=$_loginId';
+    final response = await http.get(Uri.parse(url));
+
+    if (response.statusCode == 200) {
+      final List<dynamic> data = jsonDecode(response.body);
+      setState(() {
+        _dropDownOptions = data.map((e) => e['UnitShortCode'].toString()).toList();
+        _unitMap = {for (var item in data) item['UnitShortCode'].toString(): item['UnitCode'].toString()};
+
+        // Set the selected unit based on the provided widget.unit
+        if (_dropDownOptions.contains(widget.unit)) {
+          _selectedUnit = widget.unit;
+        } else {
+          _selectedUnit = _dropDownOptions.isNotEmpty ? _dropDownOptions[0] : null;
+        }
+
+        saveUnitMapToSharedPreferences(_unitMap);
+        _fetchData();
+      });
+    } else {
+      if (kDebugMode) {
+        print('Failed to load options');
+      }
+    }
+  }
+
+  Future<void> saveUnitMapToSharedPreferences(Map<String, String> unitMap) async {
+    final SharedPreferences prefs = await SharedPreferences.getInstance();
+    prefs.setString('unitMap', jsonEncode(unitMap));
+  }
+
+  void _fetchData() {
+    String to = toDateController.text;
+    String selectedUnitCode = _unitMap[_selectedUnit]!;
+
+    if (_selectedUnit != null) {
+      setState(() {
+        _cuttingDetailsFuture = fetchCuttingData(to, selectedUnitCode);
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        backgroundColor: Color(0xFF5FE3D3),
+        automaticallyImplyLeading: false,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_rounded, color: Colors.white, size: 22),
+          onPressed: () {
+            Navigator.of(context).pop();
+          },
+        ),
+        title: const Text('Cutting Profit & Loss', style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
+        centerTitle: true,
+        elevation: 2,
+      ),
+      body: SafeArea(
+          top: true,
+          child: InteractiveViewer(
+            panEnabled: true,
+            scaleEnabled: true,
+            panAxis: PanAxis.free,
+            minScale: 1.0,
+            maxScale: 4.0,
+            child: Column(
+                mainAxisSize: MainAxisSize.max,
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.max,
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Expanded(
+                          flex: 5,
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+                            child: SizedBox(height: 40,
+                              child: DropdownButtonFormField<String>(
+                                value: _selectedUnit,
+                                items: _dropDownOptions.map<DropdownMenuItem<String>>((String value) {
+                                  return DropdownMenuItem<String>(
+                                    value: value,
+                                    child: Text(
+                                      value,
+                                      style: const TextStyle(
+                                        fontFamily: 'Readex Pro',
+                                        color: Color(0xFF13171A),
+                                        fontSize: 16,
+                                        letterSpacing: 0,
+                                      ),
+                                    ),
+                                  );
+                                }).toList(),
+                                onChanged: (String? newValue) {
+                                  setState(() {
+                                    _selectedUnit = newValue!;
+                                  });
+                                },
+                                decoration: InputDecoration(
+                                  labelText: 'Select Unit', // Add your label text here
+                                  labelStyle: TextStyle(
+                                    fontSize: 16,
+                                    color: Colors.grey[600], // Adjust label color
+                                  ),
+                                  filled: true,
+                                  fillColor: const Color(0xFFF5EFEF),
+                                  border: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(8),
+                                    borderSide: const BorderSide(color: Color(0xFF605E5E)),
+                                  ),
+                                  focusedBorder: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(8),
+                                    borderSide: const BorderSide(color: Colors.black54, width: 2),
+                                  ),
+                                  contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                                ),
+                                icon: const Icon(Icons.keyboard_arrow_down_rounded, color: Colors.grey),
+                              ),
+                            ),
+                          ),
+                        ),
+                        Expanded(
+                          flex: 5,
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 6),
+                            child: Container(
+                              height: 40,
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(8),
+                                border: Border.all(color: Colors.black54, width: 2),
+                              ),
+                              child: Padding(
+                                padding: const EdgeInsets.symmetric(horizontal: 6),
+                                child: Row(
+                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    Expanded(
+                                      child: TextField(
+                                        controller: toDateController,
+                                        decoration: const InputDecoration(
+                                          hintText: 'To Date',
+                                          border: InputBorder.none,
+                                        ),
+                                        readOnly: true,
+                                      ),
+                                    ),
+                                    InkWell(
+                                      onTap: () async {
+                                        final DateTime? datePicked2 = await showDatePicker(
+                                          context: context,
+                                          initialDate: toDate,
+                                          firstDate: DateTime(1900),
+                                          lastDate: DateTime(2050),
+                                        );
+                                        if (datePicked2 != null) {
+                                          setState(() {
+                                            toDate = datePicked2;
+                                            toDateController.text = DateFormat('yyyy-MM-dd').format(toDate);
+                                          });
+                                        }
+                                      },
+                                      child: const Icon(Icons.date_range_outlined, color: Colors.grey, size: 24),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                        Expanded(
+                          flex: 2,
+                          child: SizedBox(
+                            height: 40,
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(horizontal: 6),
+                              child: ElevatedButton(
+                                onPressed: _fetchData,
+                                style: ElevatedButton.styleFrom(
+
+                                  backgroundColor: const Color(0xFF16DE48),
+                                  padding: const EdgeInsets.symmetric(horizontal: 0),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                ),
+                                child: const Text(
+                                  'Go',
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 16,
+                                    fontFamily: 'Readex Pro',
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.max,
+                      children: [
+
+                      ],
+                    ),
+                  ),
+                  Expanded(
+                    child: SingleChildScrollView(
+                      child: FutureBuilder<List<CuttingDetail>>(
+                        future: _cuttingDetailsFuture,
+                        builder: (context, snapshot) {
+                          if (snapshot.connectionState == ConnectionState.waiting) {
+                            return CircularProgressIndicator();
+                          } else if (snapshot.hasError) {
+                            return Text('Error: ${snapshot.error}');
+                          } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
+                            return Text('No data available');
+                          } else {
+                            return CuttingTable(data: snapshot.data!); // Display the table if data is available
+                          }
+                        },
+                      ),
+                    ),
+                  ),
+                ]
+            ),
+          )
+      ),
+    );
+  }
+}

@@ -1,46 +1,66 @@
+import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:get/get.dart';
-import 'package:mysql1/mysql1.dart';
-import 'package:ppms/home_page1_widget.dart';
-import 'package:ppms/sql.dart';
+import 'package:intl/intl.dart';
+import 'package:ppms/MainMenu/home_page1_widget.dart';
 import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:http/http.dart' as http;
+import 'dart:math';
 
-
+import 'ExtraFunction/uuid.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   SharedPreferences prefs = await SharedPreferences.getInstance();
-  bool isLoggedIn = prefs.getBool('isLoggedIn') ?? false;
 
-  runApp(MyApp(isLoggedIn: isLoggedIn));
+  // Get current date
+  DateFormat('yyyy-MM-dd').format(DateTime.now());
+  prefs.remove('uniqueID');
+  // Get stored last login date
+  prefs.getString('lastLoginDate');
+
+  String uuid = await PersistentUUID.getOrCreateUUID();
+  print('Persistent UUID: $uuid');
+
+
+  runApp(MyApp( uniqueID: uuid));
 }
 
 class MyApp extends StatelessWidget {
-  final bool isLoggedIn;
+  final String? uniqueID;
 
-  const MyApp({super.key, required this.isLoggedIn});
+  const MyApp({super.key, required this.uniqueID});
+
 
   @override
   Widget build(BuildContext context) {
+    print(uniqueID);
+    SystemChrome.setPreferredOrientations([
+      DeviceOrientation.portraitUp,
+      DeviceOrientation.portraitDown,
+      DeviceOrientation.landscapeLeft,
+      DeviceOrientation.landscapeRight,
+    ]);
     return GetMaterialApp(
-      title: 'Flutter Demo',
+      title: 'Flutter',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.orangeAccent),
         useMaterial3: true,
+        fontFamily: 'tahoma',
       ),
-      home: isLoggedIn ? HomePage1Widget() : MyHomePage(title: 'Flutter Demo Home Page'),
+      home: MyHomePage(title: 'Main Page', uniqueID: uniqueID),
     );
   }
 }
 
 class MyHomePage extends StatefulWidget {
-  const MyHomePage({super.key, required this.title});
-
-
   final String title;
+  final String? uniqueID;
+
+  const MyHomePage({super.key, required this.title, required this.uniqueID});
 
   @override
   State<MyHomePage> createState() => _MyHomePageState();
@@ -48,11 +68,9 @@ class MyHomePage extends StatefulWidget {
 
 class _MyHomePageState extends State<MyHomePage> {
   final unfocusNode = FocusNode();
-  // State field(s) for TextField widget.
   FocusNode? textFieldFocusNode1;
   TextEditingController? textController1;
   String? Function(BuildContext, String?)? textController1Validator;
-  // State field(s) for TextField widget.
   FocusNode? textFieldFocusNode2;
   TextEditingController? textController2;
   late bool passwordVisibility;
@@ -64,55 +82,79 @@ class _MyHomePageState extends State<MyHomePage> {
     textController1 = TextEditingController();
     textController2 = TextEditingController();
     passwordVisibility = false;
-    _checkLoginStatus(); // Check if the user is already logged in
+    _checkLoginStatus();
   }
 
   void _checkLoginStatus() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     bool isLoggedIn = prefs.getBool('isLoggedIn') ?? false;
+    prefs.setString('uniqueID', widget.uniqueID!);
     if (isLoggedIn) {
-      // If user is already logged in, navigate to HomePage1Widget
       Navigator.pushReplacement(
         context,
-        MaterialPageRoute(builder: (context) => HomePage1Widget()),
+        MaterialPageRoute(builder: (context) => const HomePage1Widget()),
       );
     }
   }
 
-  @override
-  void dispose() {
-    unfocusNode.dispose();
-    textFieldFocusNode1?.dispose();
-    textController1?.dispose();
-    textFieldFocusNode2?.dispose();
-    textController2?.dispose();
-    super.dispose();
+  Future<void> clearLoginData() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+
+    print("Stored SharedPreferences data:");
+    prefs.getKeys().forEach((key) {
+      print("$key: ${prefs.get(key)}");
+    });
+    // Remove specific keys
+    await prefs.remove('login_id');
+    await prefs.remove('unit');
+    await prefs.remove('unitCode');
+    await prefs.remove('name');
+    await prefs.remove('line_id');
+    await prefs.remove('line_name');
+    await prefs.remove('line_ids');
+    await prefs.remove('unit_code');
   }
 
   bool isPresent = false;
-  Future<void> fetchData(String user, String password) async {
+  Future<void> fetchData(String user, String password, String id) async {
     try {
-      final url = 'http://172.16.0.5:10008/login?user_id=$user&password=$password';
-      // final url = 'http://172.16.10.11:8000/login?user_id=$user&password=$password';
-      print('Fetching data from: $url');
-
+      final url = 'http://14.142.248.34:10008/new_login?user_id=$user&password=$password&id=$id';
       final response = await http.get(Uri.parse(url));
+      if (kDebugMode) {
+        print(url);
+      }
 
       if (response.statusCode == 200) {
         var data = jsonDecode(response.body);
-        print('Data received: $data');
+        clearLoginData();
+        setState(() {
 
+        });
         if (data != null && data.isNotEmpty) {
-          String loginId = data[0]['Login_id'];
-          String unit = data[0]['Unit'];
-          print(unit);
+          String? loginId;
+          String? unit;
+          String? unitCode;
+          String? name;
+          int? lineId;
+          String? lineCode;
+          String? lineName;
+          setState(() {
+            loginId = data[0]['Login_id'];
+            unit = data[0]['Unit'];
+            unitCode = data[0]['UnitCode'] ?? '';
+            name = data[0]['Employee_Name'];
+            lineId = data[0]['LineId'] ?? 0;
+            lineCode = data[0]['LineCode'] ?? '';
+            lineName = data[0]['LineName'] ?? '';
 
-          // Save login_id to shared preferences
-          SharedPreferences prefs = await SharedPreferences.getInstance();
-          await prefs.setString('login_id', loginId);
-          await prefs.setString('unit', unit);
+            if (kDebugMode) {
+              print(data);print(unitCode);
+            }
+          });
 
-          print('Login_id saved: $loginId');
+          Future.delayed(const Duration(milliseconds: 100),(){
+            saveSharedPref(loginId!,unit!,name!,lineCode!,lineName!,lineId!,unitCode!);
+          });
 
           setState(() {
             isPresent = true;
@@ -123,34 +165,45 @@ class _MyHomePageState extends State<MyHomePage> {
           });
         }
       } else {
-        print('Failed to load data with status code: ${response.statusCode}');
         throw Exception('Failed to load data');
       }
     } catch (e) {
-      print('Error fetching data: $e');
+      if (kDebugMode) {
+        print('Error fetching data: $e');
+      }
     }
   }
 
+  Future<void> saveSharedPref(String loginId,String unit,String name,String lineCode,String lineName,int lineId,String unitCode) async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    await prefs.setString('login_id', loginId);
+    await prefs.setString('unit', unit);
+    await prefs.setString('unitCode', unitCode);
+    await prefs.setString('name', name);
+    await prefs.setString('line_id', lineCode);
+    await prefs.setString('line_name', lineName);
+    await prefs.setInt('line_ids', lineId);
+    await prefs.setString('unit_code', unitCode);
+  }
+
+
   void getB() async {
     try {
-      const url = 'http://172.16.0.123:12008/api/HRISM/GeteLeaveApplicationHistory';
-      print('Fetching data from: $url');
+      const url = 'http://14.142.248.34:12008/api/HRISM/GeteLeaveApplicationHistory';
 
-      // Define the headers and body
       Map<String, String> headers = {
         'Content-Type': 'application/json',
         'Accept': 'application/json',
       };
 
       Map<String, dynamic> body = {
-        "employeeCode":"9970",
-        "yearNo":"2024",
-        "monthNo":"6",
-        "appStatus":"All",
-        "appType":"Leave"
+        "employeeCode": "9970",
+        "yearNo": "2024",
+        "monthNo": "6",
+        "appStatus": "All",
+        "appType": "Leave",
       };
 
-      // Send the POST request
       final response = await http.post(
         Uri.parse(url),
         headers: headers,
@@ -159,50 +212,55 @@ class _MyHomePageState extends State<MyHomePage> {
 
       if (response.statusCode == 200) {
         var data = jsonDecode(response.body);
-        print('Data received: $data');
+        if (kDebugMode) {
+          print('Data received: $data');
+        }
       } else {
-        print('Failed to load data with status code: ${response.statusCode}');
+        if (kDebugMode) {
+          print('Failed to load data with status code: ${response.statusCode}');
         print('Response body: ${response.body}');
+        }
       }
     } catch (e) {
-      print('Error fetching data: $e');
+      if (kDebugMode) {
+        print('Error fetching data: $e');
+      }
     }
-  }
-
-// Assuming this function is part of a StatefulWidget
-  void setState(VoidCallback fn) {
-    // Implement this function to update the state in your widget
   }
 
   void _login() async {
     String? userId = textController1?.text.trim();
     String? password = textController2?.text.trim();
+    String? id = widget.uniqueID;
+    print(id);
 
-    fetchData(userId!, password!);
+    if (kDebugMode) {
+      print('Logging In');
+    }
+    fetchData(userId!, password!, id!);
 
-    final response = await http.get(Uri.parse('http://172.16.0.5:10008/login?user_id=$userId&password=$password'));
+    final response = await http.get(Uri.parse('http://14.142.248.34:10008/new_login?user_id=$userId&password=$password&id=$id'));
 
     if (response.statusCode == 200) {
       var data = jsonDecode(response.body);
       if (data != null && data.isNotEmpty) {
-        print(data);
-        // If login is successful, set isLoggedIn to true and navigate to HomePage1Widget
         SharedPreferences prefs = await SharedPreferences.getInstance();
         prefs.setBool('isLoggedIn', true);
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (context) => HomePage1Widget()),
-        );
+        Future.delayed(const Duration(milliseconds: 200),()
+        {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (context) => const HomePage1Widget()),
+          );
+        });
       } else {
-        // Show error message if login fails
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Invalid user ID or password')),
+          const SnackBar(content: Text('Invalid user ID or password')),
         );
       }
     } else {
-      // Show error message if login fails
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Failed to login. Please try again later.')),
+        const SnackBar(content: Text('Failed to login. Please try again later.')),
       );
     }
   }
@@ -211,202 +269,211 @@ class _MyHomePageState extends State<MyHomePage> {
   Widget build(BuildContext context) {
     return Scaffold(
       body: Container(
-        decoration: BoxDecoration(
-        gradient: LinearGradient(
-        colors: [Color(0xB2B9F6F3),Color(0xFFFFFFFF)],
-    begin: Alignment(0.1,1.0),
-    end: Alignment(-0.1,0.0),
-    ),
-    ),
-      child: SafeArea(
-        child: // Generated code for this Column Widget...
-        Align(
-          alignment: AlignmentDirectional(0, 0),
-          child: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.max,
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Text(
-                  'Welcome To PPMS',style: TextStyle(
-    fontSize: 28,
-    letterSpacing: 0,
-    fontWeight: FontWeight.w800,
-    ),),
-                Padding(
-                  padding: EdgeInsetsDirectional.fromSTEB(0, 0, 0, 50),
-                  child: Text(
-                    'ID: ',
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            colors: [Color(0xB2B9F6F3), Color(0xFFFFFFFF)],
+            begin: Alignment(0.1, 1.0),
+            end: Alignment(-0.1, 0.0),
+          ),
+        ),
+        child: SafeArea(
+          child: Align(
+            alignment: const AlignmentDirectional(0, 0),
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.max,
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Text(
+                    'Welcome To PPMS',
                     style: TextStyle(
-    letterSpacing: 0
-    ),
+                      fontSize: 28,
+                      letterSpacing: 0,
+                      fontWeight: FontWeight.w800,
+                    ),
                   ),
-                ),
-                Padding(
-                  padding: EdgeInsetsDirectional.fromSTEB(38, 10, 38, 10),
-                  child: TextFormField(
-                    controller: textController1,
-                    autofocus: false,
-                    obscureText: false,
-                    decoration: InputDecoration(
-                      labelText: 'User ID',
-                      hintStyle: TextStyle(
+                  Padding(
+                    padding: const EdgeInsetsDirectional.fromSTEB(0, 0, 0, 50),
+                    child: Text(
+                      'ID: ${widget.uniqueID}',
+                      style: const TextStyle(letterSpacing: 0),
+                    ),
+                  ),
+                  Padding(
+                    padding: const EdgeInsetsDirectional.fromSTEB(38, 10, 38, 10),
+                    child: TextFormField(
+                      controller: textController1,
+                      autofocus: false,
+                      obscureText: false,
+                      decoration: InputDecoration(
+                        labelText: 'User ID',
+                        hintStyle: const TextStyle(
+                          fontFamily: 'Inter',
+                          color: Color(0xFF101518),
+                          fontSize: 16,
+                          letterSpacing: 0,
+                          fontWeight: FontWeight.normal,
+                        ),
+                        enabledBorder: OutlineInputBorder(
+                          borderSide: const BorderSide(
+                            color: Color(0xFF06D5CD),
+                            width: 2,
+                          ),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderSide: const BorderSide(
+                            color: Color(0xFF199A7B),
+                            width: 2,
+                          ),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        errorBorder: OutlineInputBorder(
+                          borderSide: const BorderSide(
+                            color: Colors.redAccent,
+                            width: 2,
+                          ),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        focusedErrorBorder: OutlineInputBorder(
+                          borderSide: const BorderSide(
+                            color: Colors.redAccent,
+                            width: 2,
+                          ),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        contentPadding: const EdgeInsetsDirectional.fromSTEB(20, 24, 20, 24),
+                        prefixIcon: const Icon(
+                          Icons.person,
+                        ),
+                      ),
+                      style: const TextStyle(
                         fontFamily: 'Inter',
                         color: Color(0xFF101518),
-                        fontSize: 16,
+                        fontSize: 18,
                         letterSpacing: 0,
                         fontWeight: FontWeight.normal,
                       ),
-                      enabledBorder: OutlineInputBorder(
-                        borderSide: BorderSide(
-                          color: Color(0xFF06D5CD),
-                          width: 2,
-                        ),
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      focusedBorder: OutlineInputBorder(
-                        borderSide: BorderSide(
-                          color: Color(0xFF199A7B),
-                          width: 2,
-                        ),
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      errorBorder: OutlineInputBorder(
-                        borderSide: BorderSide(
-                          color: Colors.redAccent,
-                          width: 2,
-                        ),
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      focusedErrorBorder: OutlineInputBorder(
-                        borderSide: BorderSide(
-                          color: Colors.redAccent,
-                          width: 2,
-                        ),
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      contentPadding: EdgeInsetsDirectional.fromSTEB(20, 24, 20, 24),
-                      prefixIcon: Icon(
-                        Icons.person,
-                      ),
-                    ),
-                    style: TextStyle(
-                      fontFamily: 'Inter',
-                      color: Color(0xFF101518),
-                      fontSize: 18,
-                      letterSpacing: 0,
-                      fontWeight: FontWeight.normal,
                     ),
                   ),
-                ),
-                Padding(
-                  padding: EdgeInsetsDirectional.fromSTEB(38, 10, 38, 10),
-                  child: TextFormField(
-                    controller: textController2,
-                    focusNode: textFieldFocusNode2,
-                    autofocus: false,
-                    obscureText: true,
-                    decoration: InputDecoration(
-                      labelText: 'Password',
-                      hintStyle: TextStyle(
+                  Padding(
+                    padding: const EdgeInsetsDirectional.fromSTEB(38, 10, 38, 10),
+                    child: TextFormField(
+                      controller: textController2,
+                      autofocus: false,
+                      obscureText: !passwordVisibility,
+                      decoration: InputDecoration(
+                        labelText: 'Password',
+                        hintStyle: const TextStyle(
+                          fontFamily: 'Inter',
+                          color: Color(0xFF101518),
+                          fontSize: 16,
+                          letterSpacing: 0,
+                          fontWeight: FontWeight.normal,
+                        ),
+                        enabledBorder: OutlineInputBorder(
+                          borderSide: const BorderSide(
+                            color: Color(0xFF06D5CD),
+                            width: 2,
+                          ),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderSide: const BorderSide(
+                            color: Color(0xFF199A7B),
+                            width: 2,
+                          ),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        errorBorder: OutlineInputBorder(
+                          borderSide: const BorderSide(
+                            color: Colors.redAccent,
+                            width: 2,
+                          ),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        focusedErrorBorder: OutlineInputBorder(
+                          borderSide: const BorderSide(
+                            color: Colors.redAccent,
+                            width: 2,
+                          ),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        contentPadding: const EdgeInsetsDirectional.fromSTEB(20, 24, 20, 24),
+                        prefixIcon: const Icon(
+                          Icons.lock,
+                        ),
+                        suffixIcon: InkWell(
+                          onTap: () => setState(
+                                () => passwordVisibility = !passwordVisibility,
+                          ),
+                          focusNode: FocusNode(skipTraversal: true),
+                          child: Icon(
+                            passwordVisibility ? Icons.visibility_outlined : Icons.visibility_off_outlined,
+                            color: const Color(0xFF757575),
+                            size: 22,
+                          ),
+                        ),
+                      ),
+                      style: const TextStyle(
                         fontFamily: 'Inter',
                         color: Color(0xFF101518),
-                        fontSize: 16,
+                        fontSize: 18,
                         letterSpacing: 0,
                         fontWeight: FontWeight.normal,
                       ),
-                      enabledBorder: OutlineInputBorder(
-                        borderSide: BorderSide(
-                          color: Color(0xFF06D5CD),
-                          width: 2,
-                        ),
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      focusedBorder: OutlineInputBorder(
-                        borderSide: BorderSide(
-                          color: Color(0xFF199A7B),
-                          width: 2,
-                        ),
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      errorBorder: OutlineInputBorder(
-                        borderSide: BorderSide(
-                          color: Colors.redAccent,
-                          width: 2,
-                        ),
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      focusedErrorBorder: OutlineInputBorder(
-                        borderSide: BorderSide(
-                          color: Colors.redAccent,
-                          width: 2,
-                        ),
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      contentPadding: EdgeInsetsDirectional.fromSTEB(20, 24, 20, 24),
-                      prefixIcon: Icon(
-                        Icons.password_sharp,
-                      ),
-
-                    ),
-                    style: TextStyle(
-                      fontFamily: 'Inter',
-                      color: Color(0xFF101518),
-                      fontSize: 18,
-                      letterSpacing: 0,
-                      fontWeight: FontWeight.normal,
                     ),
                   ),
-                ),
-                Padding(
-                  padding: EdgeInsetsDirectional.fromSTEB(0, 30, 0, 10),
-                  child: ElevatedButton(
-                    onPressed: _login,
-                    // onLongPress: getB,
-                    child : Text('Login' ,style: TextStyle(
-                      fontFamily: 'Tahoma'
-                    ),),
-                    style: ButtonStyle(
-                      backgroundColor: MaterialStateProperty.resolveWith<Color>(
-                            (Set<MaterialState> states) {
-                          if (states.contains(MaterialState.pressed)) {
-                            return Color(0xFF06D5CD); // Color when button is pressed
-                          }
-                          return Color(0xFF06D5CD); // Default color
-                        },
-                      ),
-                      padding: MaterialStateProperty.all<EdgeInsetsGeometry>(
-                        EdgeInsets.symmetric(vertical: 10.0, horizontal: 40.0),
-                      ),
-                      textStyle: MaterialStateProperty.all<TextStyle>(
-                        TextStyle(fontSize: 20),
-                      ),
-                      foregroundColor: MaterialStateProperty.all<Color>(Colors.white), // Text color
-                      shape: MaterialStateProperty.all<RoundedRectangleBorder>(
-                        RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(10.0),
-                          side: BorderSide(color: Color(0xD02CE0CA),width: 2.0), // Border color and width
-                        ),
-                      ),
-                      elevation: MaterialStateProperty.resolveWith<double>(
-                            (Set<MaterialState> states) {
-                          if (states.contains(MaterialState.pressed)) {
-                            return 15.0; // Elevation when pressed
-                          } else if (states.contains(MaterialState.hovered)) {
-                            return 10.0; // Elevation when hovered
-                          }
-                          return 5.0;
-                        },
+              Padding(
+                padding: const EdgeInsetsDirectional.fromSTEB(0, 30, 0, 10),
+                child: ElevatedButton(
+                  onPressed: _login,
+                  // onLongPress: getB,
+                  style: ButtonStyle(
+                    backgroundColor: WidgetStateProperty.resolveWith<Color>(
+                          (Set<WidgetState> states) {
+                        if (states.contains(WidgetState.pressed)) {
+                          return const Color(0xFF06D5CD);
+                        }
+                        return const Color(0xFF06D5CD);
+                      },
+                    ),
+                    padding: WidgetStateProperty.all<EdgeInsetsGeometry>(
+                      const EdgeInsets.symmetric(vertical: 10.0, horizontal: 40.0),
+                    ),
+                    textStyle: WidgetStateProperty.all<TextStyle>(
+                      const TextStyle(fontSize: 20),
+                    ),
+                    foregroundColor: WidgetStateProperty.all<Color>(Colors.white),
+                    shape: WidgetStateProperty.all<RoundedRectangleBorder>(
+                      RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10.0),
+                        side: const BorderSide(color: Color(0xD02CE0CA), width: 2.0),
                       ),
                     ),
+                    elevation: WidgetStateProperty.resolveWith<double>(
+                          (Set<WidgetState> states) {
+                        if (states.contains(WidgetState.pressed)) {
+                          return 15.0;
+                        } else if (states.contains(WidgetState.hovered)) {
+                          return 10.0;
+                        }
+                        return 5.0;
+                      },
+                    ),
                   ),
-                ),
-              ],
+                  child: const Text(
+                    'Login',
+                    style: TextStyle(fontFamily: 'Tahoma'),
+                  ),
+                ))
+                ],
+              ),
             ),
           ),
-        )
-      )
+        ),
       ),
     );
   }
 }
+
