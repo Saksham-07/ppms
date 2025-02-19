@@ -28,9 +28,9 @@ class _MonthlyAttendanceState extends State<MonthlyAttendance> {
 
   LinkedScrollControllerGroup controllerGroup = LinkedScrollControllerGroup();
 
-  ScrollController? headerScrollControler;
+  ScrollController? headerScrollController;
   ScrollController? dataScrollController;
-  String? unit;
+  String? unit,id,loginId;
 
   @override
   void initState() {
@@ -38,7 +38,7 @@ class _MonthlyAttendanceState extends State<MonthlyAttendance> {
     super.initState();
 
     ///Initialyze individual Controller to Group
-    headerScrollControler = controllerGroup.addAndGet();
+    headerScrollController = controllerGroup.addAndGet();
     dataScrollController = controllerGroup.addAndGet();
 
     getYearList();
@@ -147,7 +147,7 @@ class _MonthlyAttendanceState extends State<MonthlyAttendance> {
       };
 
       Map<String, dynamic> body = {
-        "employeeCode": prefs.getString('login_id').toString(),
+        "employeeCode": id ?? prefs.getString('login_id').toString(),
         "yearNo": selectedYear.toString(),
         "monthNo": selectedMonth.toString(),
       };
@@ -165,6 +165,7 @@ class _MonthlyAttendanceState extends State<MonthlyAttendance> {
         for (Map i in data) {
           setState(() {
             lstAttendanceDetails.add(Attendancemodel.fromJson(i));
+            loginId = prefs.getString('login_id').toString();
           });
         }
         return lstAttendanceDetails;
@@ -222,10 +223,49 @@ class _MonthlyAttendanceState extends State<MonthlyAttendance> {
       _attendanceFuture = getAttendanceDetails();
     });
   }
+
+  void _showSearchDialog(BuildContext context) {
+    TextEditingController searchController = TextEditingController();
+
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text("Enter"),
+          content: TextField(
+            controller: searchController,
+            decoration: const InputDecoration(
+              hintText: "Type Here...",
+              border: OutlineInputBorder(),
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.pop(context); // Close dialog without action
+              },
+              child: const Text("Cancel"),
+            ),
+            TextButton(
+              onPressed: () {
+                setState(() {
+                  id = searchController.text.trim();
+                });
+                Navigator.pop(context); // Close dialog
+                _updateAttendanceDetails(); // Run function with entered text
+              },
+              child: const Text("OK"),
+            ),
+          ],
+        );
+      },
+    );
+  }
   @override
   Widget build(BuildContext context) {
     final totalLateMinutes = calculateTotalLateMinutes();
     final totalEarlyMinutes = calculateTotalEarlyOutMinutes();
+
 
     return Scaffold(
         appBar: AppBar(
@@ -241,6 +281,18 @@ class _MonthlyAttendanceState extends State<MonthlyAttendance> {
               Navigator.of(context).pop();
             },
           ),
+          actions: [
+            if(loginId == '0552482')
+            Padding(
+              padding: const EdgeInsets.all(14.0),
+              child: GestureDetector(
+                onTap: () {
+                  _showSearchDialog(context);
+                },
+                child: const Icon(Icons.search,color: Color(0xFF5FE3D3),size: 10,)
+              ),
+            ),
+          ],
           title: const Text(
             'Monthly Attendance',
             style: TextStyle(

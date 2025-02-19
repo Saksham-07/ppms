@@ -338,7 +338,7 @@ class _AuditMenuState extends State<AuditMenu>
           imagePath: 'assets/images/fashion.png',
           label: 'Finish Audit',
           onTap: () async {
-            if (await checkRights('MobileApplication', 'MobileSewingAudit')) {
+            if (await checkRights('MobileApplication', 'MobileFinishingAudit')) {
               Navigator.push(
                 context,
                 MaterialPageRoute(
