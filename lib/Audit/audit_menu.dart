@@ -312,7 +312,6 @@ class _AuditMenuState extends State<AuditMenu>
       ),
     );
 
-    if(id == '0552482' || id == '0552445' || id == '0552297' || id == '0551723') {
       items.add(
         Item(
           imagePath: 'assets/images/fashion.png',
@@ -322,7 +321,7 @@ class _AuditMenuState extends State<AuditMenu>
               Navigator.push(
                 context,
                 MaterialPageRoute(
-                  builder: (context) => SewingAuditSelection(),
+                  builder: (context) => const SewingAuditSelection(),
                 ),
               );
             }
@@ -333,12 +332,14 @@ class _AuditMenuState extends State<AuditMenu>
         ),
       );
 
+    if(id == '0552482' || id == '0552445' || id == '0552297' || id == '0551723') {
       items.add(
         Item(
           imagePath: 'assets/images/fashion.png',
           label: 'Finish Audit',
           onTap: () async {
-            if (await checkRights('MobileApplication', 'MobileFinishingAudit')) {
+            if (await checkRights(
+                'MobileApplication', 'MobileFinishingAudit')) {
               Navigator.push(
                 context,
                 MaterialPageRoute(

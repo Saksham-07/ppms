@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:package_info_plus/package_info_plus.dart';
+import 'package:ppms/Audit/Finishing_audit/finish_audit.dart';
 import 'package:ppms/Audit/Sewing_Audit/sewing_audit.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:http/http.dart' as http;
@@ -138,7 +139,7 @@ class FinishAuditSelectionState extends State<FinishAuditSelection> {
 
   List<String> generateHourlyIntervals(String startTime, String currentTime) {
     String date = DateTime.now().toIso8601String().split('T')[0];
-    String nextDate = DateTime.now().add(Duration(days: 1)).toIso8601String().split('T')[0];
+    String nextDate = DateTime.now().add(const Duration(days: 1)).toIso8601String().split('T')[0];
     DateTime startDateTime = DateTime.parse("$date $startTime");
     DateTime now = DateTime.parse("$date $currentTime");
 
@@ -146,8 +147,8 @@ class FinishAuditSelectionState extends State<FinishAuditSelection> {
     int count = 1;
 
     while (startDateTime.isBefore(DateTime.parse("$nextDate 00:30:00"))) {
-      if (startDateTime.isAfter(now.subtract(Duration(hours: 1))) &&
-          startDateTime.isBefore(now.add(Duration(hours: 1)))) {
+      if (startDateTime.isAfter(now.subtract(const Duration(hours: 1))) &&
+          startDateTime.isBefore(now.add(const Duration(hours: 1)))) {
         intervals.add(count.toString());
       }
 
@@ -191,7 +192,7 @@ class FinishAuditSelectionState extends State<FinishAuditSelection> {
   }
 
   Future<void> _fetchStyleOptions(String unit) async {
-    String url = '${TBaseURL.auditLocalUrl}sewing_audit?type=Style&unit=$unit&style=&color=&lineId=&line_Id=&orderNo=';
+    String url = '${TBaseURL.auditUrl}finishing_audit?type=Style&unit=$unit&style=&color=&lineId=&line_Id=&orderNo=';
     final response = await http.get(Uri.parse(url));
 
     if (kDebugMode) {
@@ -213,7 +214,7 @@ class FinishAuditSelectionState extends State<FinishAuditSelection> {
   }
 
   Future<void> _fetchAuditOptions(String unit) async {
-    String url = '${TBaseURL.auditLocalUrl}sewing_audit?type=AuditNo&unit=$unit&style=&color=&lineId=&line_Id=&orderNo=';
+    String url = '${TBaseURL.auditUrl}finishing_audit?type=AuditNo&unit=$unit&style=&color=&lineId=&line_Id=&orderNo=';
     final response = await http.get(Uri.parse(url));
 
     if (kDebugMode) {
@@ -235,7 +236,7 @@ class FinishAuditSelectionState extends State<FinishAuditSelection> {
   }
 
   Future<void> _fetchReAuditDataOptions(String unit,String audit) async {
-    String url = '${TBaseURL.auditLocalUrl}sewing_audit?type=ReAudit&unit=$unit&style=&color=&lineId=&line_Id=&orderNo=&AuditNo=$audit';
+    String url = '${TBaseURL.auditUrl}sewing_audit?type=ReAudit&unit=$unit&style=&color=&lineId=&line_Id=&orderNo=&AuditNo=$audit';
     final response = await http.get(Uri.parse(url));
 
     if (kDebugMode) {
@@ -276,7 +277,7 @@ class FinishAuditSelectionState extends State<FinishAuditSelection> {
   }
 
   Future<void> _fetchStartTime(String unit) async {
-    String url = '${TBaseURL.auditLocalUrl}sewing_audit?type=StartTime&unit=$unit&style=&color=&lineId=&line_Id=&orderNo=';
+    String url = '${TBaseURL.auditUrl}finishing_audit?type=StartTime&unit=$unit&style=&color=&lineId=&line_Id=&orderNo=';
     final response = await http.get(Uri.parse(url));
 
     if (kDebugMode) {
@@ -290,7 +291,7 @@ class FinishAuditSelectionState extends State<FinishAuditSelection> {
         startTime = data[0]['UnitStartTime'];
         print(startTime);
       });
-      Future.delayed(Duration(milliseconds: 300),(){
+      Future.delayed(const Duration(milliseconds: 300),(){
         String currentTime = DateFormat("HH:mm:ss").format(DateTime.now());
         hourIntervals = generateHourlyIntervals("08:30:00", currentTime);
 
@@ -308,7 +309,7 @@ class FinishAuditSelectionState extends State<FinishAuditSelection> {
   }
 
   Future<void> _fetchBuyerOptions(String unit, String style) async {
-    String url = '${TBaseURL.auditLocalUrl}sewing_audit?type=Buyer&unit=$unit&style=$style&color=&lineId=&line_Id=&orderNo=';
+    String url = '${TBaseURL.auditUrl}finishing_audit?type=Buyer&unit=$unit&style=$style&color=&lineId=&line_Id=&orderNo=';
     final response = await http.get(Uri.parse(url));
 
     if (kDebugMode) {
@@ -334,7 +335,7 @@ class FinishAuditSelectionState extends State<FinishAuditSelection> {
   }
 
   Future<void> _fetchOrderOptions(String unit, String style) async {
-    String url = '${TBaseURL.auditLocalUrl}sewing_audit?type=Order&unit=$unit&style=$style&color=&lineId=&line_Id=&orderNo=';
+    String url = '${TBaseURL.auditUrl}finishing_audit?type=Order&unit=$unit&style=$style&color=&lineId=&line_Id=&orderNo=';
     final response = await http.get(Uri.parse(url));
 
     if (kDebugMode) {
@@ -356,7 +357,7 @@ class FinishAuditSelectionState extends State<FinishAuditSelection> {
   }
 
   Future<void> _fetchColorOptions(String unit, String style) async {
-    String url = '${TBaseURL.auditLocalUrl}sewing_audit?type=Color&unit=$unit&style=$style&color=&lineId=&line_Id=&orderNo=';
+    String url = '${TBaseURL.auditUrl}finishing_audit?type=Color&unit=$unit&style=$style&color=&lineId=&line_Id=&orderNo=';
     final response = await http.get(Uri.parse(url));
 
     if (kDebugMode) {
@@ -379,7 +380,7 @@ class FinishAuditSelectionState extends State<FinishAuditSelection> {
   }
 
   Future<void> _fetchLineOptions(String unit, String style,String color) async {
-    String url = '${TBaseURL.auditLocalUrl}sewing_audit?type=Line&unit=$unit&style=$style&color=$color&lineId=&line_Id=&orderNo=';
+    String url = '${TBaseURL.auditUrl}finishing_audit?type=Line&unit=$unit&style=$style&color=$color&lineId=&line_Id=&orderNo=';
     final response = await http.get(Uri.parse(url));
 
     if (kDebugMode) {
@@ -405,7 +406,7 @@ class FinishAuditSelectionState extends State<FinishAuditSelection> {
   }
 
   Future<void> _fetchFloorOptions(String unit, String style,String color,String line) async {
-    String url = '${TBaseURL.auditLocalUrl}sewing_audit?type=Floor&unit=$unit&style=$style&color=$color&lineId=$line&line_Id=&orderNo=';
+    String url = '${TBaseURL.auditUrl}finishing_audit?type=Floor&unit=$unit&style=$style&color=$color&lineId=$line&line_Id=&orderNo=';
     final response = await http.get(Uri.parse(url));
 
     if (kDebugMode) {
@@ -424,7 +425,7 @@ class FinishAuditSelectionState extends State<FinishAuditSelection> {
         lineId = lineIDMap[selectedFloor];
       });
 
-      await _fetchQtyOptions(_selectedUnit!, selectedStyleNo!,selectedColor!,lineId!,lineMap[selectedLine]!);
+      await _fetchQtyOptions(_selectedUnit!, selectedStyleNo!,selectedColor!,lineId!,lineMap[selectedLine]!,selectedOrderNo!);
       if (kDebugMode) {
         print(lineIDMap);
       }
@@ -436,7 +437,7 @@ class FinishAuditSelectionState extends State<FinishAuditSelection> {
   }
 
   Future<void> _fetchVendorOptions(String line) async {
-    String url = '${TBaseURL.auditLocalUrl}sewing_audit?type=Vendor&unit=&style=&color=&lineId=$line&line_Id=&orderNo=';
+    String url = '${TBaseURL.auditUrl}finishing_audit?type=Vendor&unit=&style=&color=&lineId=$line&line_Id=&orderNo=';
     final response = await http.get(Uri.parse(url));
 
     if (kDebugMode) {
@@ -461,8 +462,8 @@ class FinishAuditSelectionState extends State<FinishAuditSelection> {
     }
   }
 
-  Future<void> _fetchQtyOptions(String unit, String style,String color,String line,String lineId) async {
-    String url = '${TBaseURL.auditLocalUrl}sewing_audit?type=Qty&unit=$unit&style=$style&color=$color&line_Id=$line&lineId=$lineId&orderNo=';
+  Future<void> _fetchQtyOptions(String unit, String style,String color,String line,String lineId,String order) async {
+    String url = '${TBaseURL.auditUrl}finishing_audit?type=Qty&unit=$unit&style=$style&color=$color&line_Id=$line&lineId=$lineId&orderNo=$order';
     final response = await http.get(Uri.parse(url));
 
     if (kDebugMode) {
@@ -488,7 +489,7 @@ class FinishAuditSelectionState extends State<FinishAuditSelection> {
   }
 
   Future<void> _fetchSupervisorOptions(String unit) async {
-    String url = '${TBaseURL.auditLocalUrl}sewing_audit?type=Supervisor&unit=$unit&style=&color=&lineId=&line_Id=&orderNo=';
+    String url = '${TBaseURL.auditUrl}finishing_audit?type=Supervisor&unit=$unit&style=&color=&lineId=&line_Id=&orderNo=';
     final response = await http.get(Uri.parse(url));
 
     if (kDebugMode) {
@@ -510,7 +511,7 @@ class FinishAuditSelectionState extends State<FinishAuditSelection> {
   }
 
   Future<void> _fetchQAOptions(String unit) async {
-    String url = '${TBaseURL.auditLocalUrl}sewing_audit?type=QA&unit=$unit&style=&color=&lineId=&line_Id=&orderNo=';
+    String url = '${TBaseURL.auditUrl}finishing_audit?type=QA&unit=$unit&style=&color=&lineId=&line_Id=&orderNo=';
     final response = await http.get(Uri.parse(url));
 
     if (kDebugMode) {
@@ -532,7 +533,7 @@ class FinishAuditSelectionState extends State<FinishAuditSelection> {
   }
 
   Future<void> _fetchCheckerOptions(String unit) async {
-    String url = '${TBaseURL.auditLocalUrl}sewing_audit?type=Checker&unit=$unit&style=&color=&lineId=&line_Id=&orderNo=';
+    String url = '${TBaseURL.auditUrl}finishing_audit?type=Checker&unit=$unit&style=&color=&lineId=&line_Id=&orderNo=';
     final response = await http.get(Uri.parse(url));
 
     if (kDebugMode) {
@@ -554,7 +555,7 @@ class FinishAuditSelectionState extends State<FinishAuditSelection> {
   }
 
   Future<void> _fetchProductOptions() async {
-    String url = '${TBaseURL.auditLocalUrl}sewing_audit?type=Product&unit=&style=&color=&lineId=&line_Id=&orderNo=';
+    String url = '${TBaseURL.auditUrl}finishing_audit?type=Product&unit=&style=&color=&lineId=&line_Id=&orderNo=';
     final response = await http.get(Uri.parse(url));
 
     if (kDebugMode) {
@@ -925,7 +926,7 @@ class FinishAuditSelectionState extends State<FinishAuditSelection> {
                           });
                           String? lineId = lineIDMap[newValue];
 
-                          await _fetchQtyOptions(_selectedUnit!, selectedStyleNo!,selectedColor!,lineId!,lineMap[newValue]!);
+                          await _fetchQtyOptions(_selectedUnit!, selectedStyleNo!,selectedColor!,lineId!,lineMap[newValue]!,selectedOrderNo!);
                           await _fetchFloorOptions(_selectedUnit!, selectedStyleNo!,selectedColor!,lineMap[newValue]!);
                           await _fetchVendorOptions(lineMap[selectedLine]!);
                         },
@@ -1475,11 +1476,16 @@ class FinishAuditSelectionState extends State<FinishAuditSelection> {
                     print(issueQtyValue);
                     print(pcsChkdValue);
                     print(recValue);
-                    if(issueQtyValue + pcsChkdValue < recValue){
+                    if(issueQtyValue - pcsChkdValue < recValue){
                       ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text("Received Qty is Exceeding balance Qty."))
+                          const SnackBar(content: Text("Received Qty is Exceeding Issue/Balance Qty."))
                       );
                       return;
+                    }
+                    else if(issueQtyValue < recValue){
+                      ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text("Received Qty is Exceeding Issue Qty."))
+                      );
                     }
                     else if (selectedStyleNo == null || selectedStyleNo == "----" ||
                         selectedColor == null || selectedColor == "----" ||
@@ -1585,7 +1591,6 @@ class FinishAuditSelectionState extends State<FinishAuditSelection> {
                 style: ElevatedButton.styleFrom(backgroundColor: const Color(0xC27CF378)),
                 child: const Text('Start Audit', style: TextStyle(color: Colors.white), textAlign: TextAlign.center),
               )
-
               )
             ],
           ),
@@ -1598,7 +1603,7 @@ class FinishAuditSelectionState extends State<FinishAuditSelection> {
     await Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => SewingAuditPage(
+        builder: (context) => FinishingAuditPage(
           tableData: tableData,
           textFieldData: textData,
           allData: allData,

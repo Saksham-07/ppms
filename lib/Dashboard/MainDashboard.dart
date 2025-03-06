@@ -88,6 +88,20 @@ class _MainDashboardWidgetState extends State<MainDashboardWidget> {
     checkForR();
   }
 
+  Future<void> runFunction() async{
+    await _loadLoginIdAndFetchData();
+    await _calculateDates();
+    await _setInitialDates();
+    await _fetchProfitData();
+    await _fetchAsking();
+    await _fetchSam('SamProduced');
+    await _fetchSam('MMR');
+    await _fetchSam('EnergyCost');
+    await _fetchSam('TailorSummary');
+    await _fetchSam('Efficiency');
+    await checkForR();
+  }
+
   Future<void> checkForR() async {
     final prefs = await SharedPreferences.getInstance();
     setState(() {
@@ -111,7 +125,7 @@ class _MainDashboardWidgetState extends State<MainDashboardWidget> {
       throw Exception('Failed to load data');
     }
   }
-  void _calculateDates() {
+  Future<void> _calculateDates() async {
     DateTime now = DateTime.now();
     toDate = now.subtract(const Duration(days: 1));
 
@@ -273,8 +287,7 @@ Future<void> _fetchSam(String type) async {
     return value < 0 ? Colors.red : Colors.green;
   }
 
-
-  void _setInitialDates() {
+  Future<void> _setInitialDates() async {
     fromDateController.text = DateFormat('yyyy-MM-dd').format(fromDate);
     toDateController.text = DateFormat('yyyy-MM-dd').format(toDate);
   }

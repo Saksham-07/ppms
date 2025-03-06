@@ -14,20 +14,20 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../Installation/dio.dart';
 import '../../common/utils/constants/baseurl.dart';
 
-class FinishAuditPage extends StatefulWidget {
+class FinishingAuditPage extends StatefulWidget {
   final Map<String, dynamic> tableData;
   final Map<String, dynamic> textFieldData;
   final Map<String, dynamic> allData;
 
-  const FinishAuditPage({super.key, required this.tableData, required this.textFieldData, required this.allData});
+  const FinishingAuditPage({super.key, required this.tableData, required this.textFieldData, required this.allData});
 
   @override
-  FinishAuditPageState createState() => FinishAuditPageState();
+  FinishingAuditPageState createState() => FinishingAuditPageState();
 }
 
-class FinishAuditPageState extends State<FinishAuditPage> {
+class FinishingAuditPageState extends State<FinishingAuditPage> {
   late TextEditingController receivedQty,sampleSize,sampleAccept,pcsChecked,remark;
-  int pass = 0,reject = 0,docId = 0;
+  int pass = 0,reject = 0,detailDocId = 0,docId = 0;
   bool isReject = false,isFinish = false,isFinal = true;
   late List<Map<String, String>> defectOptions = [],reasonOptions = [];
   List<String> selectedDefects = [],selectedReasons = [];
@@ -53,10 +53,10 @@ class FinishAuditPageState extends State<FinishAuditPage> {
       fetchData();
       _apiTimer = Timer.periodic(const Duration(seconds: 30), (timer) async {
         print('Start');
-          if (dataMap.isNotEmpty) {
-            await sendDataToApis(dataMap);
-          }
-        });
+        if (dataMap.isNotEmpty) {
+          await sendDataToApis(dataMap);
+        }
+      });
     });
     _versionTimer = Timer.periodic(const Duration(minutes: 30), (timer)
     {
@@ -213,14 +213,28 @@ class FinishAuditPageState extends State<FinishAuditPage> {
     List<dynamic> dataMaps = await fetchDataMap();
     if(dataMaps.isNotEmpty) {
       setState(() {
-        print(dataMap);
         print('dataMap');
         dataMap = dataMaps;
+        print(dataMap);
+        int? docId = getDocId(
+          style: widget.allData['Style'],
+          line: widget.allData['LineId'],
+          color: widget.allData['Color'],
+          order: widget.allData['Order'],
+          floor: widget.allData['Floor'],
+        );
+
+        if (docId != null) {
+          print("Matching DocId: $docId");
+        } else {
+          print("No matching DocId found.");
+        }
       });
     }
+    else{
+      _fetchDocId();
+    }
   }
-
-
 
   Future<List<dynamic>> fetchDataMap() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
@@ -232,6 +246,25 @@ class FinishAuditPageState extends State<FinishAuditPage> {
     } else {
       return [];
     }
+  }
+
+  int? getDocId({
+    required String style,
+    required String line,
+    required String color,
+    required String order,
+    required String floor,
+  }) {
+    for (var item in dataMap) {
+      if (item["Style"] == style &&
+          item["LineId"] == line &&
+          item["Color"] == color &&
+          item["Order"] == order &&
+          item["Floor"] == floor) {
+        return item["docId"];
+      }
+    }
+    return null;  // Return null if no match found
   }
 
   Future<List<Map<String, String>>> _fetchDefectOptions() async {
@@ -312,11 +345,11 @@ class FinishAuditPageState extends State<FinishAuditPage> {
     TextEditingController searchController = TextEditingController();
     List<Map<String, String>> filteredDefectOptions = List.from(defectOptions);
     await showDialog(
-        context: context,
-        barrierDismissible: false, // Prevent dismissing by tapping outside
-        builder: (context) {
-          return StatefulBuilder(
-            builder: (context, setDialogState) {
+      context: context,
+      barrierDismissible: false, // Prevent dismissing by tapping outside
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
             return WillPopScope(
               onWillPop: () async => false, // Prevent back button dismissal
               child: AlertDialog(
@@ -370,61 +403,54 @@ class FinishAuditPageState extends State<FinishAuditPage> {
                   ],
                 ),
                 actions: [
-                    TextButton(
-                      onPressed: () {
-                        Navigator.pop(context);
-                        setState(() {
-                          if (selectedReasonsWithDefects.isNotEmpty) {
-                            // Create a new defect entry with a unique docId
-                            int newDocId = docId + 1;
-                            defectData['defectData $newDocId'] = {
-                              'selectedReasonsWithDefects': Map.from(selectedReasonsWithDefects),
-                              'defectCounter': newDocId
-                            };
+                  TextButton(
+                    onPressed: () {
+                      Navigator.pop(context);
+                      setState(() {
+                        if (selectedReasonsWithDefects.isNotEmpty) {
+                          int newDocId = detailDocId + 1;
+                          defectData['defectData $newDocId'] = {
+                            'selectedReasonsWithDefects': Map.from(selectedReasonsWithDefects),
+                            'defectCounter': newDocId
+                          };
 
-                            String date = DateTime.now().toString();
+                          String date = DateTime.now().toString();
 
-                            // Append new defects without overwriting existing ones
-                            selectedReasonsWithDefects.forEach((comp, defects) {
-                              defectFinalData.add({
-                                'defect': comp,
-                                'operation': List.from(defects),
-                                'defectCounter': newDocId, // Assign new counter
-                                'date': date,
-                              });
+                          selectedReasonsWithDefects.forEach((comp, defects) {
+                            defectFinalData.add({
+                              'defect': comp,
+                              'operation': List.from(defects),
+                              'defectCounter': newDocId,
+                              'date': date,
                             });
+                          });
 
-                            final data = widget.allData;
-                            setState(() {
-                              data['defectData'] = List.from(defectFinalData);
-                            });
+                          print('Defect Data: $defectFinalData');
+                        }
 
-                            print('Defect Data: $defectFinalData');
-                          }
+                        if (selectedReasonsWithDefects.isNotEmpty) {
+                          detailDocId++;
+                          reject++;
+                          pcsChecked.text = (pass + reject).toString();
 
-                          if (selectedReasonsWithDefects.isNotEmpty) {
-                            docId++;
-                            reject++;
-                            pcsChecked.text = (pass + reject).toString();
+                          Future.delayed(Duration(milliseconds: 400), () {
+                            getVariable();
+                            selectedReasons.clear();
+                            selectedDefects.clear();
+                            selectedReasonsWithDefects = {};
+                          });
+                        }
+                      });
+                    },
 
-                            Future.delayed(Duration(milliseconds: 400), () {
-                              getVariable();
-                              selectedReasons.clear();
-                              selectedDefects.clear();
-                              selectedReasonsWithDefects = {};
-                            });
-                          }
-                        });
-                      },
-
-                      child: const Text('Done'),
-                    ),
+                    child: const Text('Done'),
+                  ),
                 ],
               ),
 
             );
-            },///
-            );
+          },///
+        );
       },
     );
   }
@@ -439,69 +465,69 @@ class FinishAuditPageState extends State<FinishAuditPage> {
       builder: (context) {
         return StatefulBuilder(
           builder: (context, setDialogState) {
-                return WillPopScope(
-                  onWillPop: () async => false, // Prevent back button dismissal
-                  child: AlertDialog(
-                    title: const Text('Select Operations'),
-                    content: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        TextField(
-                          controller: searchController,
-                          onChanged: (value) {
-                            setDialogState(() {
-                              filteredDefectOptions = reasonOptions
-                                  .where((defect) => defect['OperationName']!
-                                  .toLowerCase()
-                                  .contains(value.toLowerCase()))
-                                  .toList();
-                            });
-                          },
-                          decoration: const InputDecoration(
-                            labelText: 'Search',
-                            prefixIcon: Icon(Icons.search),
-                          ),
-                        ),
-                        Expanded(
-                          child: SingleChildScrollView(
-                            child: Column(
-                              mainAxisSize: MainAxisSize.min,
-                              children: filteredDefectOptions.map((defect) {
-                                return CheckboxListTile(
-                                  title: Text(defect['OperationName']!),
-                                  value: selectedDefects.contains(defect['OperationCode']),
-                                  onChanged: (bool? value) {
-                                    setDialogState(() {
-                                      if (value == true) {
-                                        selectedDefects.add(defect['OperationCode']!);
-                                      } else {
-                                        selectedDefects.remove(defect['OperationCode']!);
-                                      }
-                                    });
-                                  },
-                                );
-                              }).toList(),
-                            ),
-                          ),
-                        ),
-                      ],
+            return WillPopScope(
+              onWillPop: () async => false, // Prevent back button dismissal
+              child: AlertDialog(
+                title: const Text('Select Operations'),
+                content: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    TextField(
+                      controller: searchController,
+                      onChanged: (value) {
+                        setDialogState(() {
+                          filteredDefectOptions = reasonOptions
+                              .where((defect) => defect['OperationName']!
+                              .toLowerCase()
+                              .contains(value.toLowerCase()))
+                              .toList();
+                        });
+                      },
+                      decoration: const InputDecoration(
+                        labelText: 'Search',
+                        prefixIcon: Icon(Icons.search),
+                      ),
                     ),
-                    actions: [
-                        TextButton(
-                          onPressed: () {
-                            if (selectedDefects.isNotEmpty && selectedReasons.isNotEmpty) {
-                              String currentReason = selectedReasons.first;
-                              selectedReasonsWithDefects[currentReason] = selectedDefects.toList();
-                              Navigator.pop(context);
-                              _showReasonPopup(); // Go back to reason popup
-                            } else {
-                            }
-                          },
-                          child: const Text('Done'),
+                    Expanded(
+                      child: SingleChildScrollView(
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: filteredDefectOptions.map((defect) {
+                            return CheckboxListTile(
+                              title: Text(defect['OperationName']!),
+                              value: selectedDefects.contains(defect['OperationCode']),
+                              onChanged: (bool? value) {
+                                setDialogState(() {
+                                  if (value == true) {
+                                    selectedDefects.add(defect['OperationCode']!);
+                                  } else {
+                                    selectedDefects.remove(defect['OperationCode']!);
+                                  }
+                                });
+                              },
+                            );
+                          }).toList(),
                         ),
-                    ],
+                      ),
+                    ),
+                  ],
+                ),
+                actions: [
+                  TextButton(
+                    onPressed: () {
+                      if (selectedDefects.isNotEmpty && selectedReasons.isNotEmpty) {
+                        String currentReason = selectedReasons.first;
+                        selectedReasonsWithDefects[currentReason] = selectedDefects.toList();
+                        Navigator.pop(context);
+                        _showReasonPopup(); // Go back to reason popup
+                      } else {
+                      }
+                    },
+                    child: const Text('Done'),
                   ),
-                );
+                ],
+              ),
+            );
           },
         );
       },
@@ -549,12 +575,37 @@ class FinishAuditPageState extends State<FinishAuditPage> {
     }
   }
 
+  Future<void> _fetchDocId() async {
+    String url = '${TBaseURL.auditLocalUrl}sewing_audit?type=Doc&unit=&style=${widget.allData['Style']}&color=${widget.allData['Color']}&lineId=${widget.allData['LineId']}&line_Id=&orderNo=${widget.allData['Order']}&AuditNo=';
+    final response = await http.get(Uri.parse(url));
+
+    if (kDebugMode) {
+      print(url);
+    }
+
+    if (response.statusCode == 200) {
+      final List<dynamic> data = jsonDecode(response.body);
+      if (kDebugMode) {
+        print(data);
+      }
+
+      setState(() {
+        docId = data[0]['DocId'];
+        print(docId);
+      });
+    } else {
+      if (kDebugMode) {
+        print('Failed to load Buyer options');
+      }
+    }
+  }
+
   Future<void> sendTransformedData(List<dynamic> data) async {
 
     String jsonPayload = jsonEncode(data);
 
 
-    String apiUrl = "${TBaseURL.auditUrl}insert_audit";
+    String apiUrl = "${TBaseURL.auditLocalUrl}insert_audit";
     Map<String, dynamic> data1 = {
       "key1": jsonPayload,
     };
@@ -646,7 +697,7 @@ class FinishAuditPageState extends State<FinishAuditPage> {
           },
         ),
         title: const Text(
-          'Finish Audit',
+          'Finishing Audit',
           style: TextStyle(
             color: Colors.white,
             fontSize: 16,
@@ -874,55 +925,55 @@ class FinishAuditPageState extends State<FinishAuditPage> {
                 const SizedBox(height: 20),
 
                 if(sampleAccept.text != '')
-                if(!isFinish)
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                  children: [
-                    Expanded(
-                      flex: 1,
-                      child: ElevatedButton(
-                        onPressed: () {
-                          setState(() {
-                            pass++;
-                            pcsChecked.text = (pass + reject).toString();
-                          });
-                          getVariable();
-                        },
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.green, // Green for Pass
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(8), // Rounded corners
+                  if(!isFinish)
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                      children: [
+                        Expanded(
+                          flex: 1,
+                          child: ElevatedButton(
+                            onPressed: () {
+                              setState(() {
+                                pass++;
+                                pcsChecked.text = (pass + reject).toString();
+                              });
+                              getVariable();
+                            },
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.green, // Green for Pass
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(8), // Rounded corners
+                              ),
+                              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12), // Button size
+                            ),
+                            child: Text(
+                              'Pass : $pass',
+                              style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                            ),
                           ),
-                          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12), // Button size
                         ),
-                        child: Text(
-                          'Pass : $pass',
-                          style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 10,),
-                    Expanded(
-                      flex: 1,
-                      child: ElevatedButton(
-                        onPressed: () {
-                          _showReasonPopup();
-                        },
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.red, // Red for Reject
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(8),
+                        const SizedBox(width: 10,),
+                        Expanded(
+                          flex: 1,
+                          child: ElevatedButton(
+                            onPressed: () {
+                              _showReasonPopup();
+                            },
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.red, // Red for Reject
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                            ),
+                            child: Text(
+                              'Fail : $reject',
+                              style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                            ),
                           ),
-                          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
                         ),
-                        child: Text(
-                          'Fail : $reject',
-                          style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-                        ),
-                      ),
+                      ],
                     ),
-                  ],
-                ),
                 if(isFinish)
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceEvenly,
@@ -946,31 +997,34 @@ class FinishAuditPageState extends State<FinishAuditPage> {
                                     'SampleSize' : sampleSize.text,
                                     'SampleAccept' : sampleAccept.text,
                                     'Time': DateTime.now().toString(),
+                                    'defectData': List.from(defectFinalData),
+                                    'docId' : docId + 1
                                   });
 
                                   receivedQty.text = '';
                                   sampleSize.text = '';
                                   sampleAccept.text = '';
                                   pcsChecked.text = '';
-                                  docId = 0;
+                                  detailDocId = 0;
                                   remark.text = '';
                                   isFinal = false;
                                   isFinish = false;
                                   pass = 0;
                                   reject = 0;
+                                  docId = docId + 1;
                                 });
                                 setState(() {
-                                  dataMap.add(data);
+                                  dataMap.add(Map<String, dynamic>.from(data));
                                 });
                                 print('$dataMap');
                                 saveCatchData(dataMap);
-                                Future.delayed(Duration(milliseconds: 300),(){
+                                Future.delayed(const Duration(milliseconds: 300),(){
                                   onDataReceived();
                                 });
                               });
                             },
                             style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.green, // Green for Final Pass
+                              backgroundColor: Colors.green,
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(8),
                               ),
@@ -987,7 +1041,7 @@ class FinishAuditPageState extends State<FinishAuditPage> {
                         flex: 1,
                         child: ElevatedButton(
                           onPressed: () {
-                            final data = Map<String, dynamic>.from(widget.allData); // Clone the map
+                            final data = Map<String, dynamic>.from(widget.allData);
                             showConfirmationDialog(context, 'Reject', () {
                               setState(() {
                                 data.addAll({
@@ -1001,19 +1055,22 @@ class FinishAuditPageState extends State<FinishAuditPage> {
                                   'SampleSize': sampleSize.text,
                                   'SampleAccept': sampleAccept.text,
                                   'Time': DateTime.now().toString(),
+                                  'defectData': List.from(defectFinalData),
+                                  'docId' : docId + 1
                                 });
 
                                 receivedQty.text = '';
                                 sampleSize.text = '';
                                 sampleAccept.text = '';
                                 pcsChecked.text = '';
-                                docId = 0;
+                                detailDocId = 0;
                                 isFinal = false;
                                 isFinish = false;
                                 isReject = false;
                                 remark.text = '';
                                 pass = 0;
                                 reject = 0;
+                                docId = docId + 1;
                               });
                               setState(() {
                                 dataMap.add(Map<String, dynamic>.from(data)); // Add a new copy of data
@@ -1040,64 +1097,67 @@ class FinishAuditPageState extends State<FinishAuditPage> {
                         ),
                       ),
                       if(widget.allData['IsReAudit'] == 1)
-                      const SizedBox(width: 10),
+                        const SizedBox(width: 10),
                       if(widget.allData['IsReAudit'] == 1)
-                      Expanded(
-                        flex: 1,
-                        child: ElevatedButton(
-                          onPressed: () {
-                            final data = Map<String, dynamic>.from(widget.allData); // Clone the map
-                            showConfirmationDialog(context, 'Reject', () {
-                              setState(() {
-                                data.addAll({
-                                  'ReceivedQty': receivedQty.text,
-                                  'FinalResult': 'Rejected',
-                                  'Pass': 0,
-                                  'Fail': 1,
-                                  'PassQty': pass,
-                                  'FailQty': reject,
-                                  'Remark': remark.text,
-                                  'SampleSize': sampleSize.text,
-                                  'SampleAccept': sampleAccept.text,
-                                  'Time': DateTime.now().toString(),
+                        Expanded(
+                          flex: 1,
+                          child: ElevatedButton(
+                            onPressed: () {
+                              final data = Map<String, dynamic>.from(widget.allData); // Clone the map
+                              showConfirmationDialog(context, 'Reject', () {
+                                setState(() {
+                                  data.addAll({
+                                    'ReceivedQty': receivedQty.text,
+                                    'FinalResult': 'Rejected',
+                                    'Pass': 0,
+                                    'Fail': 1,
+                                    'PassQty': pass,
+                                    'FailQty': reject,
+                                    'Remark': remark.text,
+                                    'SampleSize': sampleSize.text,
+                                    'SampleAccept': sampleAccept.text,
+                                    'Time': DateTime.now().toString(),
+                                    'defectData': List.from(defectFinalData),
+                                    'docId' : docId + 1
+                                  });
+
+                                  receivedQty.text = '';
+                                  sampleSize.text = '';
+                                  sampleAccept.text = '';
+                                  pcsChecked.text = '';
+                                  detailDocId = 0;
+                                  isFinal = false;
+                                  isFinish = false;
+                                  isReject = false;
+                                  remark.text = '';
+                                  pass = 0;
+                                  reject = 0;
+                                  docId = docId + 1;
                                 });
 
-                                receivedQty.text = '';
-                                sampleSize.text = '';
-                                sampleAccept.text = '';
-                                pcsChecked.text = '';
-                                docId = 0;
-                                isFinal = false;
-                                isFinish = false;
-                                isReject = false;
-                                remark.text = '';
-                                pass = 0;
-                                reject = 0;
+                                setState(() {
+                                  dataMap.add(Map<String, dynamic>.from(data));
+                                });
+                                log('$dataMap');
+                                saveCatchData(dataMap);
+                                Future.delayed(const Duration(milliseconds: 300),(){
+                                  onDataReceived();
+                                });
                               });
-                              setState(() {
-                                dataMap.add(Map<String, dynamic>.from(data)); // Add a new copy of data
-                              });
-
-                              print(' $dataMap');
-                              saveCatchData(dataMap);
-                              Future.delayed(Duration(milliseconds: 300),(){
-                                onDataReceived();
-                              });
-                            });
-                          },
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.orangeAccent,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(8),
+                            },
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.orangeAccent,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
                             ),
-                            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                          ),
-                          child: const Text(
-                            'Final Reject',
-                            style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                            child: const Text(
+                              'Final Reject',
+                              style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                            ),
                           ),
                         ),
-                      ),
                     ],
                   ),
 
@@ -1113,9 +1173,9 @@ class FinishAuditPageState extends State<FinishAuditPage> {
                 children: [
                   Expanded(
                     child: Container(
-                      padding : EdgeInsets.all(6),
+                      padding : const EdgeInsets.all(6),
                       decoration: BoxDecoration(
-                        border: Border.all(color: Colors.white)
+                          border: Border.all(color: Colors.white)
                       ),
                       child: Text(
                         'Supervisor\n${widget.allData['SupervisorName']}',

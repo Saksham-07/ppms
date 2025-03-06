@@ -191,7 +191,7 @@ class SewingAuditSelectionState extends State<SewingAuditSelection> {
   }
 
   Future<void> _fetchStyleOptions(String unit) async {
-    String url = '${TBaseURL.auditLocalUrl}sewing_audit?type=Style&unit=$unit&style=&color=&lineId=&line_Id=&orderNo=';
+    String url = '${TBaseURL.auditUrl}sewing_audit?type=Style&unit=$unit&style=&color=&lineId=&line_Id=&orderNo=';
     final response = await http.get(Uri.parse(url));
 
     if (kDebugMode) {
@@ -213,7 +213,7 @@ class SewingAuditSelectionState extends State<SewingAuditSelection> {
   }
 
   Future<void> _fetchAuditOptions(String unit) async {
-    String url = '${TBaseURL.auditLocalUrl}sewing_audit?type=AuditNo&unit=$unit&style=&color=&lineId=&line_Id=&orderNo=';
+    String url = '${TBaseURL.auditUrl}sewing_audit?type=AuditNo&unit=$unit&style=&color=&lineId=&line_Id=&orderNo=';
     final response = await http.get(Uri.parse(url));
 
     if (kDebugMode) {
@@ -235,7 +235,7 @@ class SewingAuditSelectionState extends State<SewingAuditSelection> {
   }
 
   Future<void> _fetchReAuditDataOptions(String unit,String audit) async {
-    String url = '${TBaseURL.auditLocalUrl}sewing_audit?type=ReAudit&unit=$unit&style=&color=&lineId=&line_Id=&orderNo=&AuditNo=$audit';
+    String url = '${TBaseURL.auditUrl}sewing_audit?type=ReAudit&unit=$unit&style=&color=&lineId=&line_Id=&orderNo=&AuditNo=$audit';
     final response = await http.get(Uri.parse(url));
 
     if (kDebugMode) {
@@ -265,7 +265,7 @@ class SewingAuditSelectionState extends State<SewingAuditSelection> {
         selectedChecker = checkerMap.keys.firstWhere((key) => checkerMap[key] == data[0]['Checker']);
         orderQty.text = (data[0]['OrderQty']).toString();
         issueQty.text = (data[0]['IssueQty']).toString();
-        pcsChkd.text = (data[0]['PCs_Chked']).toString();
+        pcsChkd.text = (data[0]['PCS_CHKED']).toString();
         receivedQty.text = (data[0]['ReceivedQty']).toString();
       });
     } else {
@@ -276,7 +276,7 @@ class SewingAuditSelectionState extends State<SewingAuditSelection> {
   }
 
   Future<void> _fetchStartTime(String unit) async {
-    String url = '${TBaseURL.auditLocalUrl}sewing_audit?type=StartTime&unit=$unit&style=&color=&lineId=&line_Id=&orderNo=';
+    String url = '${TBaseURL.auditUrl}sewing_audit?type=StartTime&unit=$unit&style=&color=&lineId=&line_Id=&orderNo=';
     final response = await http.get(Uri.parse(url));
 
     if (kDebugMode) {
@@ -308,7 +308,7 @@ class SewingAuditSelectionState extends State<SewingAuditSelection> {
   }
 
   Future<void> _fetchBuyerOptions(String unit, String style) async {
-    String url = '${TBaseURL.auditLocalUrl}sewing_audit?type=Buyer&unit=$unit&style=$style&color=&lineId=&line_Id=&orderNo=';
+    String url = '${TBaseURL.auditUrl}sewing_audit?type=Buyer&unit=$unit&style=$style&color=&lineId=&line_Id=&orderNo=';
     final response = await http.get(Uri.parse(url));
 
     if (kDebugMode) {
@@ -334,7 +334,7 @@ class SewingAuditSelectionState extends State<SewingAuditSelection> {
   }
 
   Future<void> _fetchOrderOptions(String unit, String style) async {
-    String url = '${TBaseURL.auditLocalUrl}sewing_audit?type=Order&unit=$unit&style=$style&color=&lineId=&line_Id=&orderNo=';
+    String url = '${TBaseURL.auditUrl}sewing_audit?type=Order&unit=$unit&style=$style&color=&lineId=&line_Id=&orderNo=';
     final response = await http.get(Uri.parse(url));
 
     if (kDebugMode) {
@@ -356,7 +356,7 @@ class SewingAuditSelectionState extends State<SewingAuditSelection> {
   }
 
   Future<void> _fetchColorOptions(String unit, String style) async {
-    String url = '${TBaseURL.auditLocalUrl}sewing_audit?type=Color&unit=$unit&style=$style&color=&lineId=&line_Id=&orderNo=';
+    String url = '${TBaseURL.auditUrl}sewing_audit?type=Color&unit=$unit&style=$style&color=&lineId=&line_Id=&orderNo=';
     final response = await http.get(Uri.parse(url));
 
     if (kDebugMode) {
@@ -379,7 +379,7 @@ class SewingAuditSelectionState extends State<SewingAuditSelection> {
   }
 
   Future<void> _fetchLineOptions(String unit, String style,String color) async {
-    String url = '${TBaseURL.auditLocalUrl}sewing_audit?type=Line&unit=$unit&style=$style&color=$color&lineId=&line_Id=&orderNo=';
+    String url = '${TBaseURL.auditUrl}sewing_audit?type=Line&unit=$unit&style=$style&color=$color&lineId=&line_Id=&orderNo=';
     final response = await http.get(Uri.parse(url));
 
     if (kDebugMode) {
@@ -405,7 +405,7 @@ class SewingAuditSelectionState extends State<SewingAuditSelection> {
   }
 
   Future<void> _fetchFloorOptions(String unit, String style,String color,String line) async {
-    String url = '${TBaseURL.auditLocalUrl}sewing_audit?type=Floor&unit=$unit&style=$style&color=$color&lineId=$line&line_Id=&orderNo=';
+    String url = '${TBaseURL.auditUrl}sewing_audit?type=Floor&unit=$unit&style=$style&color=$color&lineId=$line&line_Id=&orderNo=';
     final response = await http.get(Uri.parse(url));
 
     if (kDebugMode) {
@@ -424,7 +424,7 @@ class SewingAuditSelectionState extends State<SewingAuditSelection> {
         lineId = lineIDMap[selectedFloor];
       });
 
-      await _fetchQtyOptions(_selectedUnit!, selectedStyleNo!,selectedColor!,lineId!,lineMap[selectedLine]!);
+      await _fetchQtyOptions(_selectedUnit!, selectedStyleNo!,selectedColor!,lineId!,lineMap[selectedLine]!,selectedOrderNo!);
       if (kDebugMode) {
         print(lineIDMap);
       }
@@ -436,7 +436,7 @@ class SewingAuditSelectionState extends State<SewingAuditSelection> {
   }
 
   Future<void> _fetchVendorOptions(String line) async {
-    String url = '${TBaseURL.auditLocalUrl}sewing_audit?type=Vendor&unit=&style=&color=&lineId=$line&line_Id=&orderNo=';
+    String url = '${TBaseURL.auditUrl}sewing_audit?type=Vendor&unit=&style=&color=&lineId=$line&line_Id=&orderNo=';
     final response = await http.get(Uri.parse(url));
 
     if (kDebugMode) {
@@ -461,8 +461,8 @@ class SewingAuditSelectionState extends State<SewingAuditSelection> {
     }
   }
 
-  Future<void> _fetchQtyOptions(String unit, String style,String color,String line,String lineId) async {
-    String url = '${TBaseURL.auditLocalUrl}sewing_audit?type=Qty&unit=$unit&style=$style&color=$color&line_Id=$line&lineId=$lineId&orderNo=';
+  Future<void> _fetchQtyOptions(String unit, String style,String color,String line,String lineId,String order) async {
+    String url = '${TBaseURL.auditUrl}sewing_audit?type=Qty&unit=$unit&style=$style&color=$color&line_Id=$line&lineId=$lineId&orderNo=$order';
     final response = await http.get(Uri.parse(url));
 
     if (kDebugMode) {
@@ -488,7 +488,7 @@ class SewingAuditSelectionState extends State<SewingAuditSelection> {
   }
 
   Future<void> _fetchSupervisorOptions(String unit) async {
-    String url = '${TBaseURL.auditLocalUrl}sewing_audit?type=Supervisor&unit=$unit&style=&color=&lineId=&line_Id=&orderNo=';
+    String url = '${TBaseURL.auditUrl}sewing_audit?type=Supervisor&unit=$unit&style=&color=&lineId=&line_Id=&orderNo=';
     final response = await http.get(Uri.parse(url));
 
     if (kDebugMode) {
@@ -510,7 +510,7 @@ class SewingAuditSelectionState extends State<SewingAuditSelection> {
   }
 
   Future<void> _fetchQAOptions(String unit) async {
-    String url = '${TBaseURL.auditLocalUrl}sewing_audit?type=QA&unit=$unit&style=&color=&lineId=&line_Id=&orderNo=';
+    String url = '${TBaseURL.auditUrl}sewing_audit?type=QA&unit=$unit&style=&color=&lineId=&line_Id=&orderNo=';
     final response = await http.get(Uri.parse(url));
 
     if (kDebugMode) {
@@ -532,7 +532,7 @@ class SewingAuditSelectionState extends State<SewingAuditSelection> {
   }
 
   Future<void> _fetchCheckerOptions(String unit) async {
-    String url = '${TBaseURL.auditLocalUrl}sewing_audit?type=Checker&unit=$unit&style=&color=&lineId=&line_Id=&orderNo=';
+    String url = '${TBaseURL.auditUrl}sewing_audit?type=Checker&unit=$unit&style=&color=&lineId=&line_Id=&orderNo=';
     final response = await http.get(Uri.parse(url));
 
     if (kDebugMode) {
@@ -554,7 +554,7 @@ class SewingAuditSelectionState extends State<SewingAuditSelection> {
   }
 
   Future<void> _fetchProductOptions() async {
-    String url = '${TBaseURL.auditLocalUrl}sewing_audit?type=Product&unit=&style=&color=&lineId=&line_Id=&orderNo=';
+    String url = '${TBaseURL.auditUrl}sewing_audit?type=Product&unit=&style=&color=&lineId=&line_Id=&orderNo=';
     final response = await http.get(Uri.parse(url));
 
     if (kDebugMode) {
@@ -925,7 +925,7 @@ class SewingAuditSelectionState extends State<SewingAuditSelection> {
                           });
                           String? lineId = lineIDMap[newValue];
 
-                          await _fetchQtyOptions(_selectedUnit!, selectedStyleNo!,selectedColor!,lineId!,lineMap[newValue]!);
+                          await _fetchQtyOptions(_selectedUnit!, selectedStyleNo!,selectedColor!,lineId!,lineMap[newValue]!,selectedOrderNo!);
                           await _fetchFloorOptions(_selectedUnit!, selectedStyleNo!,selectedColor!,lineMap[newValue]!);
                           await _fetchVendorOptions(lineMap[selectedLine]!);
                         },
@@ -1469,13 +1469,13 @@ class SewingAuditSelectionState extends State<SewingAuditSelection> {
               ElevatedButton(
                 onPressed: () {
                   setState(() {
-                    int issueQtyValue = int.tryParse(issueQty.text) ?? 0;
-                    int pcsChkdValue = int.tryParse(pcsChkd.text) ?? 0;
-                    int recValue = int.tryParse(receivedQty.text) ?? 0;
-                    print(issueQtyValue);
-                    print(pcsChkdValue);
-                    print(recValue);
-                    if(issueQtyValue + pcsChkdValue < recValue){
+                    int issueQtyValue = int.tryParse(issueQty.text.trim()) ?? 0;
+                    int pcsChkdValue = int.tryParse(pcsChkd.text.trim()) ?? 0;
+                    int recValue = int.tryParse(receivedQty.text.trim()) ?? 0;
+
+                    print("Issue Qty: $issueQtyValue, Pcs Checked: $pcsChkdValue, Received Qty: $recValue");
+
+                    if (issueQtyValue - pcsChkdValue < recValue) {
                       ScaffoldMessenger.of(context).showSnackBar(
                           const SnackBar(content: Text("Received Qty is Exceeding balance Qty."))
                       );

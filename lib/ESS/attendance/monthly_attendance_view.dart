@@ -282,7 +282,7 @@ class _MonthlyAttendanceState extends State<MonthlyAttendance> {
             },
           ),
           actions: [
-            if(loginId == '0552482')
+            if(loginId == '0552482' || loginId == '0552297')
             Padding(
               padding: const EdgeInsets.all(14.0),
               child: GestureDetector(

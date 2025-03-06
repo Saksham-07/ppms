@@ -70,48 +70,59 @@ class AuditPageState extends State<AuditPage> {
   String uuid = '';
 
   @override
-  initState() {
+  void initState() {
     super.initState();
-    _isLoading = true;
-    getUid();
-    _deleteSharedPrefOnce();
-    Future.delayed(const Duration(milliseconds: 300),() {
-      getVersionNo();
-      fetchPermDataAndCheckDate();
-      Future.delayed(const Duration(milliseconds:300),() async {
-        await _loadSelectedRadioIndex();
-        _fetchTableData().then((_) {
-          if (_tableData.isNotEmpty) {
-            _onRadioButtonChanged(selectedRadioIndex);
-          }
-        });
-        fetchData();
-        await _fetchDefectOptionsAndReasons();
-        _isLoading = false;
-        Future.delayed(const Duration(milliseconds: 200), () {
-          _apiTimer = Timer.periodic(const Duration(seconds: 30), (timer) {
-            setState(() {
-              isPageDisabledNotifier.value = true;
-            });
-            Future.delayed(const Duration(milliseconds: 800),(){
-              saveData();
-            });
-            Future.delayed(const Duration(seconds: 5), () {
-              setState(() {
-                isPageDisabledNotifier.value = false;
-              });
-            });
-          });
-        });
+    runFunction();
+
+    // App version check every 30 minutes
+    _versionTimer = Timer.periodic(const Duration(minutes: 30), (timer) {
+      _fetchAppVersion();
+    });
+  }
+
+  void runFunction() async {
+    setState(() {
+      _isLoading = true;
+    });
+
+    await getUid();
+    await _deleteSharedPrefOnce();
+    await getVersionNo();
+    await fetchPermDataAndCheckDate();
+    await _loadSelectedRadioIndex();
+    await fetchData();
+    await _fetchDefectOptionsAndReasons();
+
+    await _fetchTableData();
+
+    if (_tableData.isNotEmpty) {
+      await _onRadioButtonChanged(selectedRadioIndex);
+    }
+
+    setState(() {
+      _isLoading = false;
+    });
+
+    _startApiTimer();
+  }
+
+  void _startApiTimer() {
+    _apiTimer = Timer.periodic(const Duration(seconds: 30), (timer) async {
+      setState(() {
+        isPageDisabledNotifier.value = true;
       });
-      _versionTimer = Timer.periodic(const Duration(minutes: 30), (timer)
-      {
-        _fetchAppVersion();
+
+      await Future.delayed(const Duration(milliseconds: 800));
+      await saveData();
+
+      await Future.delayed(const Duration(seconds: 5));
+      setState(() {
+        isPageDisabledNotifier.value = false;
       });
     });
   }
 
-  void getUid() async {
+  Future<void> getUid() async {
     WidgetsFlutterBinding.ensureInitialized();
 
     String id = await PersistentUUID.getOrCreateUUID();
@@ -124,7 +135,7 @@ class AuditPageState extends State<AuditPage> {
 
   Future<void> saveData() async {
     await sendDataToApis();
-    Future.delayed(Duration(milliseconds: 800),(){
+    await Future.delayed(Duration(milliseconds: 800),(){
       _fetchTableData();
     });
   }
@@ -312,7 +323,7 @@ class AuditPageState extends State<AuditPage> {
     reasonOptions = await _fetchReasonsOptions();
   }
 
-  void fetchData() async {
+  Future<void> fetchData() async {
     List<dynamic> dataMaps = await fetchDataMap();
     List<dynamic> permDatas = await fetchPermMap();
     List<dynamic> hourlyDatas = await fetchHourlyMap();

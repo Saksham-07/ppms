@@ -27,7 +27,7 @@ class SewingAuditPage extends StatefulWidget {
 
 class SewingAuditPageState extends State<SewingAuditPage> {
   late TextEditingController receivedQty,sampleSize,sampleAccept,pcsChecked,remark;
-  int pass = 0,reject = 0,docId = 0;
+  int pass = 0,reject = 0,detailDocId = 0,docId = 0;
   bool isReject = false,isFinish = false,isFinal = true;
   late List<Map<String, String>> defectOptions = [],reasonOptions = [];
   List<String> selectedDefects = [],selectedReasons = [];
@@ -213,14 +213,28 @@ class SewingAuditPageState extends State<SewingAuditPage> {
     List<dynamic> dataMaps = await fetchDataMap();
     if(dataMaps.isNotEmpty) {
       setState(() {
-        print(dataMap);
         print('dataMap');
         dataMap = dataMaps;
+        print(dataMap);
+        int? docId = getDocId(
+          style: widget.allData['Style'],
+          line: widget.allData['LineId'],
+          color: widget.allData['Color'],
+          order: widget.allData['Order'],
+          floor: widget.allData['Floor'],
+        );
+
+        if (docId != null) {
+          print("Matching DocId: $docId");
+        } else {
+          print("No matching DocId found.");
+        }
       });
     }
+    else{
+      _fetchDocId();
+    }
   }
-
-
 
   Future<List<dynamic>> fetchDataMap() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
@@ -232,6 +246,25 @@ class SewingAuditPageState extends State<SewingAuditPage> {
     } else {
       return [];
     }
+  }
+
+  int? getDocId({
+    required String style,
+    required String line,
+    required String color,
+    required String order,
+    required String floor,
+  }) {
+    for (var item in dataMap) {
+      if (item["Style"] == style &&
+          item["LineId"] == line &&
+          item["Color"] == color &&
+          item["Order"] == order &&
+          item["Floor"] == floor) {
+        return item["docId"];
+      }
+    }
+    return null;  // Return null if no match found
   }
 
   Future<List<Map<String, String>>> _fetchDefectOptions() async {
@@ -375,8 +408,7 @@ class SewingAuditPageState extends State<SewingAuditPage> {
                         Navigator.pop(context);
                         setState(() {
                           if (selectedReasonsWithDefects.isNotEmpty) {
-                            // Create a new defect entry with a unique docId
-                            int newDocId = docId + 1;
+                            int newDocId = detailDocId + 1;
                             defectData['defectData $newDocId'] = {
                               'selectedReasonsWithDefects': Map.from(selectedReasonsWithDefects),
                               'defectCounter': newDocId
@@ -384,26 +416,20 @@ class SewingAuditPageState extends State<SewingAuditPage> {
 
                             String date = DateTime.now().toString();
 
-                            // Append new defects without overwriting existing ones
                             selectedReasonsWithDefects.forEach((comp, defects) {
                               defectFinalData.add({
                                 'defect': comp,
                                 'operation': List.from(defects),
-                                'defectCounter': newDocId, // Assign new counter
+                                'defectCounter': newDocId,
                                 'date': date,
                               });
-                            });
-
-                            final data = widget.allData;
-                            setState(() {
-                              data['defectData'] = List.from(defectFinalData);
                             });
 
                             print('Defect Data: $defectFinalData');
                           }
 
                           if (selectedReasonsWithDefects.isNotEmpty) {
-                            docId++;
+                            detailDocId++;
                             reject++;
                             pcsChecked.text = (pass + reject).toString();
 
@@ -549,12 +575,37 @@ class SewingAuditPageState extends State<SewingAuditPage> {
     }
   }
 
+  Future<void> _fetchDocId() async {
+    String url = '${TBaseURL.auditLocalUrl}sewing_audit?type=Doc&unit=&style=${widget.allData['Style']}&color=${widget.allData['Color']}&lineId=${widget.allData['LineId']}&line_Id=&orderNo=${widget.allData['Order']}&AuditNo=';
+    final response = await http.get(Uri.parse(url));
+
+    if (kDebugMode) {
+      print(url);
+    }
+
+    if (response.statusCode == 200) {
+      final List<dynamic> data = jsonDecode(response.body);
+      if (kDebugMode) {
+        print(data);
+      }
+
+      setState(() {
+        docId = data[0]['DocId'] ?? 0;
+        print(docId);
+      });
+    } else {
+      if (kDebugMode) {
+        print('Failed to load Buyer options');
+      }
+    }
+  }
+
   Future<void> sendTransformedData(List<dynamic> data) async {
 
     String jsonPayload = jsonEncode(data);
 
 
-    String apiUrl = "${TBaseURL.auditUrl}insert_audit";
+    String apiUrl = "${TBaseURL.auditLocalUrl}insert_audit";
     Map<String, dynamic> data1 = {
       "key1": jsonPayload,
     };
@@ -946,31 +997,34 @@ class SewingAuditPageState extends State<SewingAuditPage> {
                                     'SampleSize' : sampleSize.text,
                                     'SampleAccept' : sampleAccept.text,
                                     'Time': DateTime.now().toString(),
+                                    'defectData': List.from(defectFinalData),
+                                    'docId' : docId + 1
                                   });
 
                                   receivedQty.text = '';
                                   sampleSize.text = '';
                                   sampleAccept.text = '';
                                   pcsChecked.text = '';
-                                  docId = 0;
+                                  detailDocId = 0;
                                   remark.text = '';
                                   isFinal = false;
                                   isFinish = false;
                                   pass = 0;
                                   reject = 0;
+                                  docId = docId + 1;
                                 });
                                 setState(() {
-                                  dataMap.add(data);
+                                  dataMap.add(Map<String, dynamic>.from(data));
                                 });
                                 print('$dataMap');
                                 saveCatchData(dataMap);
-                                Future.delayed(Duration(milliseconds: 300),(){
+                                Future.delayed(const Duration(milliseconds: 300),(){
                                   onDataReceived();
                                 });
                               });
                             },
                             style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.green, // Green for Final Pass
+                              backgroundColor: Colors.green,
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(8),
                               ),
@@ -987,7 +1041,7 @@ class SewingAuditPageState extends State<SewingAuditPage> {
                         flex: 1,
                         child: ElevatedButton(
                           onPressed: () {
-                            final data = Map<String, dynamic>.from(widget.allData); // Clone the map
+                            final data = Map<String, dynamic>.from(widget.allData);
                             showConfirmationDialog(context, 'Reject', () {
                               setState(() {
                                 data.addAll({
@@ -1001,19 +1055,22 @@ class SewingAuditPageState extends State<SewingAuditPage> {
                                   'SampleSize': sampleSize.text,
                                   'SampleAccept': sampleAccept.text,
                                   'Time': DateTime.now().toString(),
+                                  'defectData': List.from(defectFinalData),
+                                  'docId' : docId + 1
                                 });
 
                                 receivedQty.text = '';
                                 sampleSize.text = '';
                                 sampleAccept.text = '';
                                 pcsChecked.text = '';
-                                docId = 0;
+                                detailDocId = 0;
                                 isFinal = false;
                                 isFinish = false;
                                 isReject = false;
                                 remark.text = '';
                                 pass = 0;
                                 reject = 0;
+                                docId = docId + 1;
                               });
                               setState(() {
                                 dataMap.add(Map<String, dynamic>.from(data)); // Add a new copy of data
@@ -1060,27 +1117,30 @@ class SewingAuditPageState extends State<SewingAuditPage> {
                                   'SampleSize': sampleSize.text,
                                   'SampleAccept': sampleAccept.text,
                                   'Time': DateTime.now().toString(),
+                                  'defectData': List.from(defectFinalData),
+                                  'docId' : docId + 1
                                 });
 
                                 receivedQty.text = '';
                                 sampleSize.text = '';
                                 sampleAccept.text = '';
                                 pcsChecked.text = '';
-                                docId = 0;
+                                detailDocId = 0;
                                 isFinal = false;
                                 isFinish = false;
                                 isReject = false;
                                 remark.text = '';
                                 pass = 0;
                                 reject = 0;
-                              });
-                              setState(() {
-                                dataMap.add(Map<String, dynamic>.from(data)); // Add a new copy of data
+                                docId = docId + 1;
                               });
 
-                              print(' $dataMap');
+                              setState(() {
+                                dataMap.add(Map<String, dynamic>.from(data));
+                              });
+                              log('$dataMap');
                               saveCatchData(dataMap);
-                              Future.delayed(Duration(milliseconds: 300),(){
+                              Future.delayed(const Duration(milliseconds: 300),(){
                                 onDataReceived();
                               });
                             });
@@ -1113,7 +1173,7 @@ class SewingAuditPageState extends State<SewingAuditPage> {
                 children: [
                   Expanded(
                     child: Container(
-                      padding : EdgeInsets.all(6),
+                      padding : const EdgeInsets.all(6),
                       decoration: BoxDecoration(
                         border: Border.all(color: Colors.white)
                       ),

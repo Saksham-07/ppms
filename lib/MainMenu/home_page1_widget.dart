@@ -48,20 +48,13 @@ class _HomePage1WidgetState extends State<HomePage1Widget>
   bool isLoading = false;
   Map<String, dynamic> fetchedCounters = {};
   Uri appStoreUrl = Uri.parse('https://apps.apple.com/app/ppms-ios/id6504535323');
-  String uuid = '';
+  String uuid = '',androidId='';
 
 
   @override
   void initState() {
     super.initState();
-    getDetail();
-    _fetchAppVersion();
-    getBuildId();
-    getUid();
-    getEmployeeProfileByEmployeeCode();
-    _initializeRights();
-    updateCounters();
-
+    runFunction();
     Timer.periodic(const Duration(minutes: 5), (timer) {
       if (mounted) {
         updateCounters();
@@ -84,21 +77,38 @@ class _HomePage1WidgetState extends State<HomePage1Widget>
         ],
       ),
     });
-    // checkForAllocat();
-    // checkForkpi();
-    // checkForEss();
   }
 
-  void getUid() async {
+  Future<void> runFunction ()async{
+    await getDetail();
+    await _fetchAppVersion();
+    await getUid();
+    await getEmployeeProfileByEmployeeCode();
+    await _initializeRights();
+    await updateCounters();
+  }
+
+  Future<void> getUid() async {
     WidgetsFlutterBinding.ensureInitialized();
-
-    String id = await PersistentUUID.getOrCreateUUID();
-    setState(() {
-      uuid = id;
-    });
-
-    print('Persistent UUID: $uuid');
-
+    if (Platform.isAndroid) {
+      final deviceInfo = DeviceInfoPlugin();
+      final androidInfo = await deviceInfo.androidInfo;
+      print('android ${androidInfo.id}');
+      if (Platform.isAndroid) {
+        setState(() {
+          uuid = androidInfo.id;
+        });
+      }
+    }
+    else{
+      String id = await PersistentUUID.getOrCreateUUID();
+      setState(() {
+        uuid = id;
+      });
+    }
+    if (kDebugMode) {
+      print('Persistent UUID: $uuid');
+    }
   }
 
   Future<void> updateCounters() async {
@@ -139,29 +149,6 @@ class _HomePage1WidgetState extends State<HomePage1Widget>
     return null;
   }
 
-  // void getId() async {
-  //   final String? deviceId = await getDeviceId();
-  //   log("Device ID: $deviceId");
-  // }
-
-  Future<String?> getBuildId() async {
-    final DeviceInfoPlugin deviceInfo = DeviceInfoPlugin();
-    final packageInfo = await PackageInfo.fromPlatform();
-
-    if (Theme.of(context).platform == TargetPlatform.android) {
-      final AndroidDeviceInfo androidInfo = await deviceInfo.androidInfo;
-      print('id: ${androidInfo.id}');
-      return androidInfo.id;
-    } else if (Platform.isIOS) {
-      final IosDeviceInfo iosInfo = await deviceInfo.iosInfo;
-      print('id: ${iosInfo.identifierForVendor}');
-      return iosInfo.identifierForVendor;
-    }
-    return null;
-  }
-
-  // Persistent UUID: fe92aab0
-
   Future<void> _fetchAppVersion() async {
     final packageInfo = await PackageInfo.fromPlatform();
 
@@ -169,10 +156,10 @@ class _HomePage1WidgetState extends State<HomePage1Widget>
       if (Platform.isAndroid) {
         appVersion = packageInfo.version;
       } else if (Platform.isIOS) {
-        appVersion = packageInfo.buildNumber;
+        appVersion = packageInfo.version;
       }
       if (kDebugMode) {
-        print(appVersion);
+        print('version $appVersion');
       }
       getVersion(appVersion);
     });
@@ -181,7 +168,7 @@ class _HomePage1WidgetState extends State<HomePage1Widget>
 
   Future<void> getVersion(String version) async {
     try {
-      final response = await http.get(Uri.parse('http://14.142.248.34:10008/version?version=$version'));
+      final response = await http.get(Uri.parse('${TBaseURL.baseUrl}version?version=$version'));
       if (response.statusCode == 200) {
         var data = jsonDecode(response.body);
         if (kDebugMode) {
@@ -212,7 +199,7 @@ class _HomePage1WidgetState extends State<HomePage1Widget>
 
   Future<void> getFile() async {
     try {
-      final response = await http.get(Uri.parse('http://14.142.248.34:10008/version_file_path'));
+      final response = await http.get(Uri.parse('${TBaseURL.baseUrl}version_file_path'));
       if (kDebugMode) {
         print(response);
       }
@@ -288,7 +275,7 @@ class _HomePage1WidgetState extends State<HomePage1Widget>
   Future<bool> checkRights(String mod, String page) async {
     final prefs = await SharedPreferences.getInstance();
     var loginId = prefs.getString('login_id');
-    final String url = 'http://14.142.248.34:10008/base?user=$loginId&module=$mod&page=$page';
+    final String url = '${TBaseURL.baseUrl}base?user=$loginId&module=$mod&page=$page';
     if (kDebugMode) {
       print(url);
     }
@@ -317,7 +304,7 @@ class _HomePage1WidgetState extends State<HomePage1Widget>
   Future<void> checkForkpi() async {
     final prefs = await SharedPreferences.getInstance();
     var loginId = prefs.getString('login_id');
-    final String url = 'http://14.142.248.34:10008/base?user=$loginId&module=MobileApplication&page=MobileKpi';
+    final String url = '${TBaseURL.baseUrl}base?user=$loginId&module=MobileApplication&page=MobileKpi';
 
     final response = await http.get(Uri.parse(url));
 
@@ -338,7 +325,7 @@ class _HomePage1WidgetState extends State<HomePage1Widget>
   Future<void> checkForEss() async {
     final prefs = await SharedPreferences.getInstance();
     var loginId = prefs.getString('login_id');
-    final String url = 'http://14.142.248.34:10008/base?user=$loginId&module=MobileApplication&page=MobileEss';
+    final String url = '${TBaseURL.baseUrl}base?user=$loginId&module=MobileApplication&page=MobileEss';
     if (kDebugMode) {
       print(url);
     }
@@ -449,7 +436,7 @@ class _HomePage1WidgetState extends State<HomePage1Widget>
   Future<bool> _checkUserRights(String page) async {
     final prefs = await SharedPreferences.getInstance();
     var loginId = prefs.getString('login_id');
-    final String url = 'http://14.142.248.34:10008/base?user=$loginId&module=MobileApplication&page=$page';
+    final String url = '${TBaseURL.baseUrl}base?user=$loginId&module=MobileApplication&page=$page';
     print(url);
 
     final response = await http.get(Uri.parse(url));
@@ -561,7 +548,7 @@ class _HomePage1WidgetState extends State<HomePage1Widget>
                     SharedPreferences prefs = await SharedPreferences.getInstance();
                     prefs.setBool('isLoggedIn', false);
                     String? unique;
-                    unique = prefs.getString('uniqueID');
+                    unique = prefs.getString('uniqueId');
                     Navigator.pushReplacement(
                       context,
                       MaterialPageRoute(builder: (context) => MyHomePage(title: 'Flutter', uniqueID: unique,)),
@@ -696,7 +683,7 @@ class _HomePage1WidgetState extends State<HomePage1Widget>
                           SharedPreferences prefs = await SharedPreferences.getInstance();
                           prefs.setBool('isLoggedIn', false);
                           String? unique;
-                          unique = prefs.getString('uniqueID');
+                          unique = prefs.getString('uniqueId');
                           Navigator.pushReplacement(
                             context,
                             MaterialPageRoute(builder: (context) => MyHomePage(title: 'Flutter', uniqueID: unique,)),

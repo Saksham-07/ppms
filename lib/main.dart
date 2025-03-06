@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -15,17 +17,23 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   SharedPreferences prefs = await SharedPreferences.getInstance();
 
-  // Get current date
   DateFormat('yyyy-MM-dd').format(DateTime.now());
-  prefs.remove('uniqueID');
-  // Get stored last login date
   prefs.getString('lastLoginDate');
+  String? uuid;
+  prefs.remove('uniqueID');
 
-  String uuid = await PersistentUUID.getOrCreateUUID();
-  print('Persistent UUID: $uuid');
+  if (Platform.isAndroid) {
+    uuid = prefs.getString('uniqueId');
+    uuid ??= (Random().nextInt(900000) + 100000).toString();
+  }
+  else if(Platform.isIOS){
+    uuid = await PersistentUUID.getOrCreateUUID();
+  }
+  if (kDebugMode) {
+    print('Persistent UUID: $uuid');
+  }
 
-
-  runApp(MyApp( uniqueID: uuid));
+  runApp(MyApp(uniqueID: uuid));
 }
 
 class MyApp extends StatelessWidget {
@@ -67,7 +75,7 @@ class MyHomePage extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage> {
-  final unfocusNode = FocusNode();
+  final unFocusNode = FocusNode();
   FocusNode? textFieldFocusNode1;
   TextEditingController? textController1;
   String? Function(BuildContext, String?)? textController1Validator;
@@ -88,7 +96,7 @@ class _MyHomePageState extends State<MyHomePage> {
   void _checkLoginStatus() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     bool isLoggedIn = prefs.getBool('isLoggedIn') ?? false;
-    prefs.setString('uniqueID', widget.uniqueID!);
+    prefs.setString('uniqueId', widget.uniqueID!);
     if (isLoggedIn) {
       Navigator.pushReplacement(
         context,
@@ -100,9 +108,13 @@ class _MyHomePageState extends State<MyHomePage> {
   Future<void> clearLoginData() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
 
-    print("Stored SharedPreferences data:");
+    if (kDebugMode) {
+      print("Stored SharedPreferences data:");
+    }
     prefs.getKeys().forEach((key) {
-      print("$key: ${prefs.get(key)}");
+      if (kDebugMode) {
+        print("$key: ${prefs.get(key)}");
+      }
     });
     // Remove specific keys
     await prefs.remove('login_id');
@@ -232,7 +244,9 @@ class _MyHomePageState extends State<MyHomePage> {
     String? userId = textController1?.text.trim();
     String? password = textController2?.text.trim();
     String? id = widget.uniqueID;
-    print(id);
+    if (kDebugMode) {
+      print(id);
+    }
 
     if (kDebugMode) {
       print('Logging In');
@@ -253,12 +267,14 @@ class _MyHomePageState extends State<MyHomePage> {
             MaterialPageRoute(builder: (context) => const HomePage1Widget()),
           );
         });
-      } else {
+      }
+      else {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Invalid user ID or password')),
         );
       }
-    } else {
+    }
+    else {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Failed to login. Please try again later.')),
       );

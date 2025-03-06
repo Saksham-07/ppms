@@ -1,6 +1,7 @@
 
 import 'dart:convert';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:ppms/ESS/essdashboard.dart';
@@ -22,11 +23,11 @@ class PoApproval extends StatefulWidget {
 class _PoApprovalState extends State<PoApproval> {
   String? reportDataType;
   String? subReportDataType;
-  String? poNo;
+  String? poNo,loginId,id;
   List<Map<String, dynamic>> _tableData = [];
   List<Map<String, dynamic>> _filteredTableData = [];
   bool _isLoading = false;
-  TextEditingController _searchController = TextEditingController();
+  final TextEditingController _searchController = TextEditingController();
   final FocusNode _searchFocusNode = FocusNode(); // Add FocusNode
 
   @override
@@ -66,8 +67,9 @@ class _PoApprovalState extends State<PoApproval> {
 
   // Function for getting data
   Future<void> _gettingMainData () async {
+    _tableData.clear();
     setState(() {
-      _isLoading = true;  // Start loading
+      _isLoading = true;
     });
     List<Map<String, dynamic>> specialRigths = [];
 
@@ -75,14 +77,17 @@ class _PoApprovalState extends State<PoApproval> {
     var pageName = widget.pageName.toString();
 
     final prefs = await SharedPreferences.getInstance();
-    var loginId = prefs.getString('login_id');
-    final String url1 = '${TBaseURL.baseUrl}/special?user=$loginId&module=MobileApplication&page=$pageName';
-    print(url1);
+    var loginIds = prefs.getString('login_id');
+    final String url1 = '${TBaseURL.baseUrl}/special?user=${id ?? loginIds}&module=MobileApplication&page=$pageName';
+    if (kDebugMode) {
+      print(url1);
+    }
     final response1 = await http.get(Uri.parse(url1));
     if (response1.statusCode == 200) {
       final List<dynamic> data = jsonDecode(response1.body);
       setState(() {
         specialRigths = List<Map<String, dynamic>>.from(data);
+        loginId = prefs.getString('login_id');
       });
     }else{
       throw Exception('Failed to get permissions.');
@@ -99,8 +104,10 @@ class _PoApprovalState extends State<PoApproval> {
     if (special_rigths.contains('AllowAllPO')){
       isAll = 1;
     }
-    final String url = '${TBaseURL.baseUrl}po_approval_new?type=$reportDataType&subReportType=$subReportDataType&pageName=${widget.pageName.toString()}&user=$loginId&isAll=$isAll';
-    print(url);
+    final String url = '${TBaseURL.baseUrl}po_approval_new?type=$reportDataType&subReportType=$subReportDataType&pageName=${widget.pageName.toString()}&user=${id ?? loginIds}&isAll=$isAll';
+    if (kDebugMode) {
+      print(url);
+    }
     final response = await http.get(Uri.parse(url));
     if (response.statusCode == 200) {
       final List<dynamic> data = jsonDecode(response.body);
@@ -141,7 +148,7 @@ class _PoApprovalState extends State<PoApproval> {
   }
 
   // function for navigate to detail
-  Future<void> _navigateToDtl (BuildContext context, String poNo, String approvalFor, String Amount) async {
+  Future<void> _navigateToDtl (BuildContext context, String poNo, String approvalFor, String amount) async {
     if (widget.pageName == 'ProductionPo'){
       final result = await Navigator.push(
         context,
@@ -149,7 +156,7 @@ class _PoApprovalState extends State<PoApproval> {
               ProductionPoApprovalsDtl(poNo : poNo,
                   approvalFor: approvalFor,
                   pageName: widget.pageName.toString(),
-                  Amount : Amount.toString()
+                  Amount : amount.toString()
               )
           )
       );
@@ -158,7 +165,7 @@ class _PoApprovalState extends State<PoApproval> {
       }
     }else{
       final result = await Navigator.push(context,
-          MaterialPageRoute(builder: (context) => PoApprovalDtl(poNo : poNo, approvalFor: approvalFor, pageName: widget.pageName.toString(), Amount : Amount.toString()))
+          MaterialPageRoute(builder: (context) => PoApprovalDtl(poNo : poNo, approvalFor: approvalFor, pageName: widget.pageName.toString(), Amount : amount.toString()))
       );
       if (result == true) {
         _gettingMainData ();
@@ -166,6 +173,45 @@ class _PoApprovalState extends State<PoApproval> {
     }
 
   }
+
+  void _showSearchDialog(BuildContext context) {
+    TextEditingController searchController = TextEditingController();
+
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text("Enter"),
+          content: TextField(
+            controller: searchController,
+            decoration: const InputDecoration(
+              hintText: "Type Here...",
+              border: OutlineInputBorder(),
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.pop(context); // Close dialog without action
+              },
+              child: const Text("Cancel"),
+            ),
+            TextButton(
+              onPressed: () {
+                setState(() {
+                  id = searchController.text.trim();
+                });
+                Navigator.pop(context); // Close dialog
+                _gettingMainData(); // Run function with entered text
+              },
+              child: const Text("OK"),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
 
   @override
   Widget build(BuildContext context) {
@@ -184,9 +230,21 @@ class _PoApprovalState extends State<PoApproval> {
             Navigator.of(context).pop();
           },
         ),
+        actions: [
+          if(loginId == '0552482' || loginId == '0552297')
+            Padding(
+              padding: const EdgeInsets.all(14.0),
+              child: GestureDetector(
+                  onTap: () {
+                    _showSearchDialog(context);
+                  },
+                  child: const Icon(Icons.search,color: Color(0xFF5FE3D3),size: 16,)
+              ),
+            ),
+        ],
         title: Text(
           '$pageType Approval',
-          style: TextStyle(
+          style: const TextStyle(
             color: Colors.white,
             fontSize: 20,
             fontWeight: FontWeight.bold,
@@ -202,17 +260,17 @@ class _PoApprovalState extends State<PoApproval> {
         minScale: 1.0,
         maxScale: 4.0,
         child: Padding(
-          padding: EdgeInsets.all(8.0),
+          padding: const EdgeInsets.all(8.0),
           child: Column(
             children: [
               Padding(
                 padding: const EdgeInsets.symmetric(vertical: 8.0),
-                child: Container(
+                child: SizedBox(
                   height: 40,
                   child: TextField(
                     controller: _searchController,
                     focusNode: _searchFocusNode, // Attach FocusNode
-                    decoration: InputDecoration(
+                    decoration: const InputDecoration(
                       labelText: 'Search',
                       prefixIcon: Icon(Icons.search),
                       border: OutlineInputBorder(),
@@ -224,7 +282,7 @@ class _PoApprovalState extends State<PoApproval> {
               ),
               Expanded(
                 child: _isLoading
-                    ? Center(
+                    ? const Center(
                   child: CircularProgressIndicator(
                     strokeWidth: 5.0,
                   ),
@@ -234,30 +292,30 @@ class _PoApprovalState extends State<PoApproval> {
                     scrollDirection: Axis.horizontal,
                     child: Table(
                       border: TableBorder.all(),
-                      defaultColumnWidth: IntrinsicColumnWidth(),
+                      defaultColumnWidth: const IntrinsicColumnWidth(),
                       children: [
                         TableRow(
                           decoration: BoxDecoration(
                               color: Colors.lightBlue[200]),
                           children: [
-                            Padding(
+                            const Padding(
                                 padding: EdgeInsets.all(6.0), child: Text('')),
-                            Padding(padding: EdgeInsets.all(6.0),
+                            const Padding(padding: EdgeInsets.all(6.0),
                                 child: Text('Po No')),
                             Visibility(
-                              child: Padding(padding: EdgeInsets.all(6.0),
-                                  child: Text('Process')),
                               visible: widget.pageName == 'ProductionPo',
+                              child: const Padding(padding: EdgeInsets.all(6.0),
+                                  child: Text('Process')),
                             ),
-                            Padding(padding: EdgeInsets.all(6.0),
+                            const Padding(padding: EdgeInsets.all(6.0),
                                 child: Text('Date')),
-                            Padding(padding: EdgeInsets.all(6.0),
+                            const Padding(padding: EdgeInsets.all(6.0),
                                 child: Text('Qty')),
-                            Padding(padding: EdgeInsets.all(6.0),
+                            const Padding(padding: EdgeInsets.all(6.0),
                                 child: Text('Po Amt')),
-                            Padding(padding: EdgeInsets.all(6.0),
+                            const Padding(padding: EdgeInsets.all(6.0),
                                 child: Text('Supplier')),
-                            Padding(padding: EdgeInsets.all(6.0),
+                            const Padding(padding: EdgeInsets.all(6.0),
                                 child: Text('First Approver')),
                           ],
                         ),
@@ -269,12 +327,12 @@ class _PoApprovalState extends State<PoApproval> {
                           var item = entry.value;
                           return TableRow(
                             children: [
-                              Padding(padding: EdgeInsets.all(6.0),
+                              Padding(padding: const EdgeInsets.all(6.0),
                                   child: Text(index.toString(),
                                       style: const TextStyle(fontSize: 12))),
                               GestureDetector(
                                 child: Padding(
-                                  padding: EdgeInsets.all(6.0),
+                                  padding: const EdgeInsets.all(6.0),
                                   child: Text(
                                     item['PO_NO'].toString(),
                                     style: const TextStyle(fontSize: 12,
@@ -289,26 +347,26 @@ class _PoApprovalState extends State<PoApproval> {
                                         item['PO_AMOUNT'].toString()),
                               ),
                               Visibility(
-                                child: Padding(padding: EdgeInsets.all(6.0),
+                                visible: widget.pageName == 'ProductionPo',
+                                child: Padding(padding: const EdgeInsets.all(6.0),
                                     child: Text(item['PROCESS'].toString(),
                                         style: const TextStyle(fontSize: 12))),
-                                visible: widget.pageName == 'ProductionPo',
                               ),
-                              Padding(padding: EdgeInsets.all(6.0),
+                              Padding(padding: const EdgeInsets.all(6.0),
                                   child: Text(item['PO_DATE'].toString(),
                                       style: const TextStyle(fontSize: 12))),
-                              Padding(padding: EdgeInsets.all(6.0),
+                              Padding(padding: const EdgeInsets.all(6.0),
                                   child: Text(item['PO_QTY'].toString(),
                                       textAlign: TextAlign.right,
                                       style: const TextStyle(fontSize: 12))),
-                              Padding(padding: EdgeInsets.all(6.0),
+                              Padding(padding: const EdgeInsets.all(6.0),
                                   child: Text(item['PO_AMOUNT'].toString(),
                                       textAlign: TextAlign.right,
                                       style: const TextStyle(fontSize: 12))),
-                              Padding(padding: EdgeInsets.all(6.0),
+                              Padding(padding: const EdgeInsets.all(6.0),
                                   child: Text(item['VENDOR_NAME'].toString(),
                                       style: const TextStyle(fontSize: 12))),
-                              Padding(padding: EdgeInsets.all(6.0),
+                              Padding(padding: const EdgeInsets.all(6.0),
                                   child: Text(
                                       (item['APPROVED_BY'] ?? '').toString(),
                                       style: const TextStyle(fontSize: 12))),
