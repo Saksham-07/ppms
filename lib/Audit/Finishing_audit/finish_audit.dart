@@ -28,81 +28,39 @@ class FinishingAuditPage extends StatefulWidget {
 class FinishingAuditPageState extends State<FinishingAuditPage> {
   late TextEditingController receivedQty,sampleSize,sampleAccept,pcsChecked,remark;
   int pass = 0,reject = 0,detailDocId = 0,docId = 0;
-  bool isReject = false,isFinish = false,isFinal = true,isLoading = true,isOutHouse= false;
-  late List<Map<String, String>> defectOptions = [],reasonOptions = [],checkerOptions = [];
-  List<String> selectedDefects = [],selectedReasons = [],selectedCheckers = [];
+  bool isReject = false,isFinish = false,isFinal = true;
+  late List<Map<String, String>> defectOptions = [],reasonOptions = [];
+  List<String> selectedDefects = [],selectedReasons = [];
   Map<String, List<String>> selectedReasonsWithDefects = {};
   List<Map<String, dynamic>>  defectFinalData = [];
   Map<dynamic,dynamic> defectData = {};
   List<dynamic> dataMap = [];
   String appVersion = '',version = '',fileName = '';
   Timer? _apiTimer,_versionTimer;
-  bool showSaveButton = false;
-  Timer? _saveButtonTimer;
-  int orderQty = 0,issueQty = 0,pcsChkd = 0;
 
   @override
   void initState() {
     super.initState();
-    runFunction();
-    buttonTimer();
-  }
-
-  void runFunction() async {
-    await fetchPermDataAndCheckDate();
-    fetchData();
-    String? reAuditNo = widget.allData['ReAuditNo']?.toString();
+    fetchPermDataAndCheckDate();
     receivedQty = TextEditingController(text: widget.textFieldData['Received Qty']);
     pcsChecked = TextEditingController();
     sampleSize = TextEditingController(text: '');
     sampleAccept = TextEditingController(text: '');
     remark = TextEditingController(text: '');
-
-    await _fetchQtyOptions(widget.textFieldData['Buyer'], widget.textFieldData['Received Qty']);
-    await _fetchDefectOptionsAndReasons();
-    Future.delayed(const Duration(milliseconds: 300), () async {
-      await startTimer();
-      await checkReAuditNo(reAuditNo);
-    });
-    await _fetchAppVersion();
-    _versionTimer = Timer.periodic(const Duration(minutes: 30), (timer)
-    async {
-      await _fetchAppVersion();
-    });
-  }
-
-  Future<void> buttonTimer() async{
-    print('start');
-    sampleAccept.addListener(() {
-      if (sampleAccept.text.isEmpty) {
-        _startSaveButtonTimer();
-      } else {
-        _saveButtonTimer?.cancel(); // cancel timer if user starts typing again
-        if (showSaveButton) {
-          setState(() {
-            showSaveButton = false;
-          });
+    _fetchQtyOptions(widget.textFieldData['Buyer'], widget.textFieldData['Received Qty']);
+    _fetchDefectOptionsAndReasons();
+    Future.delayed(const Duration(milliseconds: 400), () {
+      fetchData();
+      _apiTimer = Timer.periodic(const Duration(seconds: 30), (timer) async {
+        print('Start');
+        if (dataMap.isNotEmpty) {
+          await sendDataToApis(dataMap);
         }
-      }
-    });
-  }
-
-  void _startSaveButtonTimer() {
-    _saveButtonTimer?.cancel();
-    _saveButtonTimer = Timer(const Duration(seconds: 10), () {
-      setState(() {
-        showSaveButton = true;
       });
     });
-  }
-
-  Future<void> startTimer() async {
-    _apiTimer?.cancel();
-    _apiTimer = Timer.periodic(const Duration(seconds: 30), (timer) async {
-      print('Start');
-      if (dataMap.isNotEmpty) {
-        await sendDataToApis(dataMap,'Main');
-      }
+    _versionTimer = Timer.periodic(const Duration(minutes: 30), (timer)
+    {
+      _fetchAppVersion();
     });
   }
 
@@ -114,7 +72,6 @@ class FinishingAuditPageState extends State<FinishingAuditPage> {
     pcsChecked.dispose();
     _apiTimer?.cancel();
     _versionTimer?.cancel();
-    _saveButtonTimer?.cancel();
     super.dispose();
   }
 
@@ -141,9 +98,9 @@ class FinishingAuditPageState extends State<FinishingAuditPage> {
 
   Future<void> getVersion(String version) async {
     try {
-      final response = await http.get(Uri.parse('${TBaseURL.baseUrl}version?version=$version'));
+      final response = await http.get(Uri.parse('http://14.142.248.34:10008/version?version=$version'));
       if (kDebugMode) {
-        print('${TBaseURL.baseUrl}version?version=$version');
+        print('http://14.142.248.34:10008/version?version=$version');
       }
       if (response.statusCode == 200) {
         var data = jsonDecode(response.body);
@@ -171,7 +128,7 @@ class FinishingAuditPageState extends State<FinishingAuditPage> {
 
   Future<void> getFile() async {
     try {
-      final response = await http.get(Uri.parse('${TBaseURL.baseUrl}version_file_path'));
+      final response = await http.get(Uri.parse('http://14.142.248.34:10008/version_file_path'));
       if (kDebugMode) {
       }
       if (response.statusCode == 200) {
@@ -192,7 +149,7 @@ class FinishingAuditPageState extends State<FinishingAuditPage> {
   }
 
   void _showUpdateDialog() {
-    String apkUrl = 'http://14.96.24.164:10004/assets/media/$fileName';
+    String apkUrl = 'http://14.142.248.34:10004/assets/media/$fileName';
     if (kDebugMode) {
     }
     if (kDebugMode) {
@@ -252,136 +209,31 @@ class FinishingAuditPageState extends State<FinishingAuditPage> {
     }
   }
 
-  Future<void> checkReAuditNo(reAuditNo) async{
-    if (reAuditNo != null) {
-      isReAuditNoPresent(reAuditNo).then((exists) {
-        if (exists) {
-          // Do something if present
-          if (kDebugMode) {
-            print('ReAuditNo $reAuditNo is present in FinishData');
-            if (dataMap.isNotEmpty) {
-              sendDataToApis(dataMap,'Main');
-            }
-            // Future.delayed(const Duration(milliseconds: 400),(){
-            //   Navigator.pop(context);
-            // });
-          }
+  void fetchData() async {
+    List<dynamic> dataMaps = await fetchDataMap();
+    if(dataMaps.isNotEmpty) {
+      setState(() {
+        print('dataMap');
+        dataMap = dataMaps;
+        print(dataMap);
+        int? docId = getDocId(
+          style: widget.allData['Style'],
+          line: widget.allData['LineId'],
+          color: widget.allData['Color'],
+          order: widget.allData['Order'],
+          floor: widget.allData['Floor'],
+        );
+
+        if (docId != null) {
+          print("Matching DocId: $docId");
         } else {
-          // Do something else if not present
-          if (kDebugMode) {
-            print('ReAuditNo $reAuditNo is NOT present in FinishData');
-          }
+          print("No matching DocId found.");
         }
       });
     }
-  }
-
-  Future<void> _fetchQtysOptions() async {
-    String url = '';
-    if(widget.allData['Type'] == 'Apps') {
-      if(!isOutHouse) {
-        url = '${TBaseURL.auditUrl}finishing_audit_new?type=Qty&unit=${widget
-            .allData['UnitShCode']}&style=${widget
-            .allData['Style']}&color=${widget
-            .allData['Color']}&line_Id=${widget
-            .allData['LineId']}&lineId=${widget
-            .allData['Line']}&orderNo=${widget.allData['Order']}&vendor=';
-      }
-      else{
-        url = '${TBaseURL.auditUrl}finishing_audit_new?type=Qty&unit=${widget
-            .allData['UnitShCode']}&style=${widget
-            .allData['Style']}&color=${widget
-            .allData['Color']}&line_Id=&lineId=${widget
-            .allData['VendorId']}&orderNo=${widget.allData['Order']}&vendor=${widget.allData['VendorId']}';
-      }
-    }
-    else if(widget.allData['Type'] == 'VG'){
-      if(!isOutHouse) {
-        url = '${TBaseURL
-            .auditUrl}finishing_audit_vg_new?type=Qty&Unit=${widget
-            .allData['Unit']}&style=${widget.allData['Style']}&color=${widget
-            .allData['Color']}&line=${widget.allData['Line']}&order=${widget
-            .allData['Order']}&Vendor=${widget.allData['Vendor']}&Party=';
-      }
-      else{
-        url = '${TBaseURL
-            .auditUrl}finishing_audit_vg_new?type=Qty&Unit=${widget
-            .allData['Unit']}&style=${widget.allData['Style']}&color=${widget
-            .allData['Color']}&line=&order=${widget
-            .allData['Order']}&Vendor=${widget.allData['Vendor']}&Party=${widget.allData['VendorId']}';
-      }
-    }
-    final response = await http.get(Uri.parse(url));
-
-    if (kDebugMode) {
-      print(url);
-    }
-
-    if (response.statusCode == 200) {
-      final List<dynamic> data = jsonDecode(response.body);
-      if (kDebugMode) {
-        print(data);
-      }
-
-      setState(() {
-        orderQty = data[0]['ORDER_QTY'];
-        issueQty = data[0]['ISSUE_QTY'];
-        pcsChkd = data[0]['PCS_CHKED'];
-      });
-      print('issue $issueQty');
-      print('pcs $pcsChkd');
-    } else {
-      if (kDebugMode) {
-        print('Failed to load Qty');
-      }
-    }
-  }
-
-  void fetchData() async {
-    List<dynamic> dataMaps = await fetchDataMap();
-    if (dataMaps.isNotEmpty) {
-      dataMap = dataMaps; // Don't need setState just for this
-
-      int? docIds = getDocId(
-        style: widget.allData['Style'],
-        line: widget.allData['LineId'],
-        color: widget.allData['Color'],
-        order: widget.allData['Order'],
-        floor: widget.allData['Floor'],
-      );
-
-      if (kDebugMode) {
-        print('dataMap $dataMap');
-        print("Matching DocId: $docIds");
-      }
-
-      if (docIds != null) {
-        setState(() {
-          docId = docIds;
-          isLoading = false;
-        });
-      } else {
-        _fetchDocId(); // Only fetch from API if no matching docId in cache
-      }
-    }
-    else {
+    else{
       _fetchDocId();
     }
-  }
-
-  Future<bool> isReAuditNoPresent(String reAuditNo) async {
-    final prefs = await SharedPreferences.getInstance();
-    final finishDataString = prefs.getString('FinishData');
-
-    if (finishDataString == null) return false;
-
-    // Decode JSON string to List
-    final List<dynamic> finishDataList = jsonDecode(finishDataString);
-
-    // Check if any map in the list has the matching ReAuditNo
-    return finishDataList.any((item) =>
-    item is Map && item['ReAuditNo'] == reAuditNo
-    );
   }
 
   Future<List<dynamic>> fetchDataMap() async {
@@ -403,22 +255,57 @@ class FinishingAuditPageState extends State<FinishingAuditPage> {
     required String order,
     required String floor,
   }) {
-    List<int> matchingDocIds = [];
     for (var item in dataMap) {
       if (item["Style"] == style &&
           item["LineId"] == line &&
           item["Color"] == color &&
           item["Order"] == order &&
           item["Floor"] == floor) {
-        if (item["docId"] != null) {
-          matchingDocIds.add(item["docId"]);
-        }
+        return item["docId"];
       }
     }
-    if (matchingDocIds.isNotEmpty) {
-      return matchingDocIds.reduce((curr, next) => curr > next ? curr : next);
+    return null;  // Return null if no match found
+  }
+
+  Future<List<Map<String, String>>> _fetchDefectOptions() async {
+    final data = widget.allData;
+    String? lineId;
+    setState(() {
+      lineId = (data['LineId']).toString();
+    });
+    final response = await http.get(Uri.parse('${TBaseURL.auditUrl}defect?type=defect&line_id=$lineId'));
+    if (kDebugMode) {
+      print('${TBaseURL.auditUrl}defect?type=defect&line_id=$lineId');
     }
-    return null;
+    if (response.statusCode == 200) {
+      final List<dynamic> data = json.decode(response.body);
+      return data.map<Map<String, String>>((item) {
+        return {
+          'DefectName': item['DefectName'] as String,
+          'DefectCode': item['DefectCode'] as String,
+        };
+      }).toList();
+    } else {
+      throw Exception('Failed to load defect options');
+    }
+  }
+
+  Future<List<Map<String, String>>> _fetchReasonsOptions() async {
+    final response = await http.get(Uri.parse('${TBaseURL.auditUrl}sewing_operation?type=operation'));
+    if (kDebugMode) {
+      print('${TBaseURL.auditUrl}sewing_operation?type=operation');
+    }
+    if (response.statusCode == 200) {
+      final List<dynamic> data = json.decode(response.body);
+      return data.map<Map<String, String>>((item) {
+        return {
+          'OperationName': item['OperationName'] as String,
+          'OperationCode': item['OperationCode'] as String,
+        };
+      }).toList();
+    } else {
+      throw Exception('Failed to load reasons options');
+    }
   }
 
   Future<void> saveCatchData(List<dynamic> data) async {
@@ -449,70 +336,9 @@ class FinishingAuditPageState extends State<FinishingAuditPage> {
     }
   }
 
-  Future<List<Map<String, String>>> _fetchDefectOptions() async {
-    final data = widget.allData;
-    String? lineId;
-    setState(() {
-      lineId = (data['LineId']).toString();
-    });
-    final response = await http.get(Uri.parse('${TBaseURL.auditUrl}sewing_operation?type=defect&defectType=S'));
-    if (kDebugMode) {
-      print('${TBaseURL.auditUrl}sewing_operation?type=defect&defectType=S');
-    }
-    if (response.statusCode == 200) {
-      final List<dynamic> data = json.decode(response.body);
-      return data.map<Map<String, String>>((item) {
-        return {
-          'DefectName': item['DefectName'] as String,
-          'DefectCode': item['DefectCode'] as String,
-        };
-      }).toList();
-    } else {
-      throw Exception('Failed to load defect options');
-    }
-  }
-
-  Future<List<Map<String, String>>> _fetchReasonsOptions() async {
-    final response = await http.get(Uri.parse('${TBaseURL.auditUrl}sewing_operation?type=operation&defectType='));
-    if (kDebugMode) {
-      print('${TBaseURL.auditUrl}sewing_operation?type=operation&defectType=');
-    }
-    if (response.statusCode == 200) {
-      final List<dynamic> data = json.decode(response.body);
-      return data.map<Map<String, String>>((item) {
-        return {
-          'OperationName': item['OperationName'] as String,
-          'OperationCode': item['OperationCode'] as String,
-        };
-      }).toList();
-    } else {
-      throw Exception('Failed to load reasons options');
-    }
-  }
-
-  Future<List<Map<String, String>>> _fetchCheckerOptions() async {
-    final response = await http.get(Uri.parse('${TBaseURL.auditUrl}finish_audit_vg?type=Checker&Unit=${widget.allData['UnitShCode']}'));
-    if (kDebugMode) {
-      print('${TBaseURL.auditUrl}finish_audit_vg?type=Checker&Unit=${widget.allData['UnitShCode']}');
-    }
-    if (response.statusCode == 200) {
-      final List<dynamic> data = json.decode(response.body);
-      return data.map<Map<String, String>>((item) {
-        return {
-          'Name': '${item['NAME']}(${item['PAY_CODE']})',
-          'PayCode': item['PAY_CODE'] as String,
-        };
-      }).toList();
-    } else {
-      throw Exception('Failed to load checker options');
-    }
-  }
-
-
   Future<void> _fetchDefectOptionsAndReasons() async {
     defectOptions = await _fetchDefectOptions();
     reasonOptions = await _fetchReasonsOptions();
-    checkerOptions = await _fetchCheckerOptions();
   }
 
   Future<void> _showReasonPopup() async {
@@ -580,8 +406,41 @@ class FinishingAuditPageState extends State<FinishingAuditPage> {
                   TextButton(
                     onPressed: () {
                       Navigator.pop(context);
+                      setState(() {
+                        if (selectedReasonsWithDefects.isNotEmpty) {
+                          int newDocId = detailDocId + 1;
+                          defectData['defectData $newDocId'] = {
+                            'selectedReasonsWithDefects': Map.from(selectedReasonsWithDefects),
+                            'defectCounter': newDocId
+                          };
 
-                      _showCheckerPopup();
+                          String date = DateTime.now().toString();
+
+                          selectedReasonsWithDefects.forEach((comp, defects) {
+                            defectFinalData.add({
+                              'defect': comp,
+                              'operation': List.from(defects),
+                              'defectCounter': newDocId,
+                              'date': date,
+                            });
+                          });
+
+                          print('Defect Data: $defectFinalData');
+                        }
+
+                        if (selectedReasonsWithDefects.isNotEmpty) {
+                          detailDocId++;
+                          reject++;
+                          pcsChecked.text = (pass + reject).toString();
+
+                          Future.delayed(Duration(milliseconds: 400), () {
+                            getVariable();
+                            selectedReasons.clear();
+                            selectedDefects.clear();
+                            selectedReasonsWithDefects = {};
+                          });
+                        }
+                      });
                     },
 
                     child: const Text('Done'),
@@ -661,126 +520,7 @@ class FinishingAuditPageState extends State<FinishingAuditPage> {
                         selectedReasonsWithDefects[currentReason] = selectedDefects.toList();
                         Navigator.pop(context);
                         _showReasonPopup(); // Go back to reason popup
-                      }
-                      else {
-                      }
-                    },
-                    child: const Text('Done'),
-                  ),
-                ],
-              ),
-            );
-          },
-        );
-      },
-    );
-  }
-
-  Future<void> _showCheckerPopup() async {
-    TextEditingController searchController = TextEditingController();
-    List<Map<String, String>> filteredCheckerOptions = List.from(checkerOptions);
-    String? selectedCheckerPayCode;
-
-    await showDialog(
-      context: context,
-      barrierDismissible: false, // Prevent dismissing by tapping outside
-      builder: (context) {
-        return StatefulBuilder(
-          builder: (context, setDialogState) {
-            return WillPopScope(
-              onWillPop: () async => false, // Prevent back button dismissal
-              child: AlertDialog(
-                title: const Text('Select Checker'),
-                content: Column(
-                  children: [
-                    TextField(
-                      controller: searchController,
-                      onChanged: (value) {
-                        setDialogState(() {
-                          filteredCheckerOptions = checkerOptions
-                              .where((checker) => checker['Name']!
-                              .toLowerCase()
-                              .contains(value.toLowerCase()))
-                              .toList();
-                        });
-                      },
-                      decoration: const InputDecoration(
-                        labelText: 'Search',
-                        prefixIcon: Icon(Icons.search),
-                      ),
-                    ),
-                    Expanded(
-                      child: SingleChildScrollView(
-                        child: Column(
-                          children: filteredCheckerOptions.map((checker) {
-                            return RadioListTile<String>(
-                              title: Text(checker['Name']!),
-                              value: checker['PayCode']!,
-                              groupValue: selectedCheckerPayCode,
-                              onChanged: (String? value) {
-                                setDialogState(() {
-                                  selectedCheckerPayCode = value!;
-                                });
-                              },
-                            );
-                          }).toList(),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-                actions: [
-                  TextButton(
-                    onPressed: () {
-                      if (selectedCheckerPayCode != null) {
-                        setState(() {
-                          if (selectedReasonsWithDefects.isNotEmpty) {
-                            int newDocId = detailDocId + 1;
-                            defectData['defectData $newDocId'] = {
-                              'selectedReasonsWithDefects': Map.from(selectedReasonsWithDefects),
-                              'defectCounter': newDocId
-                            };
-
-                            String date = DateTime.now().toString();
-
-                            selectedReasonsWithDefects.forEach((comp, defects) {
-                              defectFinalData.add({
-                                'defect': comp,
-                                'operation': List.from(defects),
-                                'defectCounter': newDocId,
-                                'date': date,
-                                'defectChecker' : selectedCheckerPayCode,
-                                'auditType' : 'F'
-                              });
-                            });
-
-                            print('Defect Data: $defectFinalData');
-                          }
-
-                          if (selectedReasonsWithDefects.isNotEmpty) {
-                            detailDocId++;
-                            reject++;
-                            pcsChecked.text = (pass + reject).toString();
-
-                            Future.delayed(Duration(milliseconds: 400), () {
-                              getVariable();
-                              selectedReasons.clear();
-                              selectedDefects.clear();
-                              selectedCheckers.clear();
-                              selectedReasonsWithDefects = {};
-                            });
-                          }
-                          Navigator.pop(context);
-                        });
-
-                      }
-                        else {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text('Please select a checker.'),
-                            duration: Duration(seconds: 2),
-                          ),
-                        );
+                      } else {
                       }
                     },
                     child: const Text('Done'),
@@ -796,11 +536,6 @@ class FinishingAuditPageState extends State<FinishingAuditPage> {
 
   void onDataReceived() {
     setState(() {
-      print('reauditno');
-      print(widget.allData['ReAuditNo']);
-      widget.allData['ReAuditNo'] = null;
-      widget.allData['ReAuditNo'] = '';
-      widget.allData['IsReAudit'] = 0;
       selectedReasons.clear();
       selectedDefects = [];
       selectedReasons = [];
@@ -814,15 +549,7 @@ class FinishingAuditPageState extends State<FinishingAuditPage> {
   }
 
   Future<void> _fetchQtyOptions(String buyer, String qty) async {
-    String url = '';
-    if(widget.allData['Type'] == 'Apps') {
-      url = '${TBaseURL
-          .auditUrl}sewing_sample_accept?type=SampleAccept&buyerCode=$buyer&qty=$qty';
-    }
-    else if(widget.allData['Type'] == 'VG') {
-      url = '${TBaseURL
-          .auditUrl}finish_audit_vg?type=SampleAccept&buyer=$buyer&qty=$qty&Unit=';
-    }
+    String url = '${TBaseURL.auditUrl}sewing_sample_accept?type=SampleAccept&buyerCode=$buyer&qty=$qty';
     final response = await http.get(Uri.parse(url));
 
     if (kDebugMode) {
@@ -849,22 +576,7 @@ class FinishingAuditPageState extends State<FinishingAuditPage> {
   }
 
   Future<void> _fetchDocId() async {
-    String url = '';
-    if(!isOutHouse) {
-      url =
-      '${TBaseURL.auditUrl}sewing_audit_new?type=Doc&unit=&style=${widget
-          .allData['Style']}&color=${widget.allData['Color']}&lineId=${widget
-          .allData['LineId']}&line_Id=&orderNo=${widget
-          .allData['Order']}&AuditNo=&vendor=&vendorType=${widget.allData['Vendor']}';
-    }
-    else{
-      url =
-      '${TBaseURL.auditUrl}sewing_audit_new?type=Doc&unit=&style=${widget
-          .allData['Style']}&color=${widget.allData['Color']}&lineId=&line_Id=&orderNo=${widget
-          .allData['Order']}&AuditNo=&vendor=${widget
-          .allData['VendorId']}&vendorType=${widget.allData['Vendor']}';
-    }
-
+    String url = '${TBaseURL.auditLocalUrl}sewing_audit?type=Doc&unit=&style=${widget.allData['Style']}&color=${widget.allData['Color']}&lineId=${widget.allData['LineId']}&line_Id=&orderNo=${widget.allData['Order']}&AuditNo=';
     final response = await http.get(Uri.parse(url));
 
     if (kDebugMode) {
@@ -878,9 +590,8 @@ class FinishingAuditPageState extends State<FinishingAuditPage> {
       }
 
       setState(() {
-        docId = data[0]['DocId'] ?? 0;
+        docId = data[0]['DocId'];
         print(docId);
-        isLoading = false;
       });
     } else {
       if (kDebugMode) {
@@ -894,7 +605,7 @@ class FinishingAuditPageState extends State<FinishingAuditPage> {
     String jsonPayload = jsonEncode(data);
 
 
-    String apiUrl = "${TBaseURL.auditUrl}insert_audit";
+    String apiUrl = "${TBaseURL.auditLocalUrl}insert_audit";
     Map<String, dynamic> data1 = {
       "key1": jsonPayload,
     };
@@ -907,76 +618,6 @@ class FinishingAuditPageState extends State<FinishingAuditPage> {
       );
       if (response.statusCode == 200) {
         var responseData = json.decode(response.body);
-        print(responseData);
-        int msgType = responseData['MsgType'] ?? 'Unknown';
-
-        if (kDebugMode) {
-          print(' $msgType');
-        }
-
-        var auditNo = responseData['auditNo'];
-        if (auditNo != null && auditNo['Fail'] != null && (auditNo['Fail'] as List).isNotEmpty) {
-          // Show alert dialog
-          showDialog(
-            context: context,
-            builder: (BuildContext context) {
-              return AlertDialog(
-                title: const Text('Failed Audit'),
-                content: Text('Failed audit number: ${auditNo['Fail'].join(", ")}'),
-                actions: [
-                  TextButton(
-                    onPressed: () => Navigator.of(context).pop(),
-                    child: const Text('OK'),
-                  ),
-                ],
-              );
-            },
-          );
-        }
-
-        if(msgType == 1){
-          setState(() {
-            dataMap.clear();
-            dataMap = [];
-          });
-          SharedPreferences prefs = await SharedPreferences.getInstance();
-          await prefs.remove('FinishData');
-        }
-        else if(msgType == 2){
-          _fetchAppVersion();
-        }
-      }
-      else {
-        if (kDebugMode) {
-          print("Error: ${response.statusCode}, ${response.body}");
-        }
-      }
-    } catch (e) {
-      if (kDebugMode) {
-        print("An error occurred:$e");
-      }
-    }
-  }
-
-  Future<void> sendDefectedData(List<dynamic> data) async {
-
-    String jsonPayload = jsonEncode(data);
-
-    String apiUrl = "${TBaseURL.auditUrl}insert_audit_defected";
-    print('swhjcfikdec');
-    Map<String, dynamic> data1 = {
-      "key1": jsonPayload,
-    };
-    log(jsonPayload);
-    try {
-      final response = await http.post(
-        Uri.parse(apiUrl),
-        headers: {"Content-Type": "application/json"},
-        body: jsonPayload,
-      );
-      if (response.statusCode == 200) {
-        var responseData = json.decode(response.body);
-        print(responseData);
         int msgType = responseData['MsgType'] ?? 'Unknown';
 
         if (kDebugMode) {
@@ -1007,28 +648,22 @@ class FinishingAuditPageState extends State<FinishingAuditPage> {
     }
   }
 
-  Future<void> sendDataToApis(List<dynamic> data,String type) async {
-    int len = data.length;
+  Future<void> sendDataToApis(List<dynamic> data) async {
     if (dataMap.isNotEmpty) {
       if (kDebugMode) {
         print('running');
       }
-      Future.delayed(const Duration(milliseconds: 500), () {
-        if(type == 'Main') {
-          sendTransformedData(data);
-        }
-        else{
-          sendDefectedData(data);
-        }
+      Future.delayed(const Duration(milliseconds: 500),(){
+        sendTransformedData(data);
       });
       setState(() {
-        Future.delayed(Duration(seconds: len), () async {
+        Future.delayed(const Duration(seconds: 1),() async {
           if (kDebugMode) {
             print('Removing');
           }
         });
       });
-    } else {
+    }else {
       if (kDebugMode) {
         print('Empty');
       }
@@ -1071,44 +706,8 @@ class FinishingAuditPageState extends State<FinishingAuditPage> {
         ),
         centerTitle: true,
         elevation: 2,
-        actions: [
-          if(dataMap.length > 1)
-            IconButton(
-            onPressed: () async {
-              // Show confirmation dialog
-              final shouldClear = await showDialog<bool>(
-                context: context,
-                builder: (context) => AlertDialog(
-                  title: const Text('Clear Data'),
-                  content: const Text('Do you want to clear the data?'),
-                  actions: [
-                    TextButton(
-                      child: const Text('Cancel'),
-                      onPressed: () => Navigator.of(context).pop(false),
-                    ),
-                    TextButton(
-                      child: const Text('OK'),
-                      onPressed: () => Navigator.of(context).pop(true),
-                    ),
-                  ],
-                ),
-              );
-
-              // If OK is pressed, clear SewingData
-              if (shouldClear == true) {
-                if (dataMap.isNotEmpty) {
-                  sendDataToApis(dataMap, 'Defect');
-                  ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('SewingData has been cleared!'))
-                  );
-                }
-              }
-            },
-            icon: const Icon(Icons.delete_outline, color: Colors.white),
-          ),
-        ],
       ),
-      body: isLoading ? const Center(child : CircularProgressIndicator()) :Column(
+      body: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
@@ -1135,7 +734,7 @@ class FinishingAuditPageState extends State<FinishingAuditPage> {
                       decelerationCurve: Curves.easeOut,
                     ),
                   ),
-                const SizedBox(height: 10,),
+                SizedBox(height: 10,),
 
                 Table(
                   border: TableBorder.all(color: Colors.black),
@@ -1178,19 +777,11 @@ class FinishingAuditPageState extends State<FinishingAuditPage> {
                         child: TextField(
                           keyboardType: TextInputType.number,
                           readOnly: isFinal ? true : false,
-                          onTap: (){
-                            FocusScope.of(context).unfocus();
-                            _fetchQtysOptions();
-
-                          },
                           onEditingComplete: (){
                             FocusScope.of(context).unfocus();
                             if(receivedQty.text.isNotEmpty || receivedQty.text != '') {
                               _fetchQtyOptions(widget.textFieldData['Buyer'],
                                   receivedQty.text);
-                            }
-                            if(issueQty <= pcsChkd){
-                              Navigator.of(context).pop();
                             }
                           },
                           // onTapOutside: (event) {
@@ -1425,16 +1016,10 @@ class FinishingAuditPageState extends State<FinishingAuditPage> {
                                 setState(() {
                                   dataMap.add(Map<String, dynamic>.from(data));
                                 });
-                                log('$dataMap');
+                                print('$dataMap');
                                 saveCatchData(dataMap);
                                 Future.delayed(const Duration(milliseconds: 300),(){
                                   onDataReceived();
-                                  Future.delayed(const Duration(milliseconds: 200),(){
-                                    if (dataMap.isNotEmpty) {
-                                      sendDataToApis(dataMap,'Main');
-                                      startTimer();
-                                    }
-                                  });
                                 });
                               });
                             },
@@ -1491,16 +1076,10 @@ class FinishingAuditPageState extends State<FinishingAuditPage> {
                                 dataMap.add(Map<String, dynamic>.from(data)); // Add a new copy of data
                               });
 
-                              log('$dataMap');
+                              print('$dataMap');
                               saveCatchData(dataMap);
                               Future.delayed(Duration(milliseconds: 300),(){
                                 onDataReceived();
-                                Future.delayed(const Duration(milliseconds: 200),(){
-                                  if (dataMap.isNotEmpty) {
-                                    sendDataToApis(dataMap,'Main');
-                                    startTimer();
-                                  }
-                                });
                               });
                             });
                           },
@@ -1519,7 +1098,7 @@ class FinishingAuditPageState extends State<FinishingAuditPage> {
                       ),
                       if(widget.allData['IsReAudit'] == 1)
                         const SizedBox(width: 10),
-                      if(widget.allData['IsReAudit'] == 1 && isReject)
+                      if(widget.allData['IsReAudit'] == 1)
                         Expanded(
                           flex: 1,
                           child: ElevatedButton(
@@ -1563,12 +1142,6 @@ class FinishingAuditPageState extends State<FinishingAuditPage> {
                                 saveCatchData(dataMap);
                                 Future.delayed(const Duration(milliseconds: 300),(){
                                   onDataReceived();
-                                  Future.delayed(const Duration(milliseconds: 200),(){
-                                    if (dataMap.isNotEmpty) {
-                                      sendDataToApis(dataMap,'Main');
-                                      startTimer();
-                                    }
-                                  });
                                 });
                               });
                             },
@@ -1587,45 +1160,14 @@ class FinishingAuditPageState extends State<FinishingAuditPage> {
                         ),
                     ],
                   ),
-                SizedBox(height: 90,),
-                if(showSaveButton)
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      ElevatedButton(
-                        onPressed: () {
-                          if (dataMap.isNotEmpty) {
-                            sendDataToApis(dataMap, 'Main');
-                            startTimer();
-                          }
 
-                          setState(() {
-                            showSaveButton = false;
-                          });
-                          _startSaveButtonTimer(); // restart the timer after pressing Save
-                        },
-
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.lightBlue,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                        ),
-                        child: const Text(
-                          'Save Data',
-                          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-                        ),
-                      ),
-                    ],
-                  )
               ],
             ),
           ),
           Align(
             alignment: Alignment.bottomCenter,
             child: Container(
-              color: const Color(0xFF5FE3D3),
+              color: Color(0xFF5FE3D3),
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -1655,6 +1197,19 @@ class FinishingAuditPageState extends State<FinishingAuditPage> {
                       ),
                     ),
                   ),
+                  Expanded(
+                    child: Container(
+                      padding : const EdgeInsets.all(6),
+                      decoration: BoxDecoration(
+                          border: Border.all(color: Colors.white)
+                      ),
+                      child: Text(
+                        'Checker\n${widget.allData['CheckerName']}',
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14,color: Colors.white),
+                      ),
+                    ),
+                  ),
                 ],
               ),
             ),
@@ -1663,7 +1218,7 @@ class FinishingAuditPageState extends State<FinishingAuditPage> {
       ),
     );
   }
-  void showConfirmationDialog(BuildContext context, String title, VoidCallback onConfirm) {
+  void showConfirmationDialog(BuildContext context,String title, VoidCallback onConfirm) {
     showDialog(
       context: context,
       builder: (BuildContext context) {
@@ -1678,21 +1233,9 @@ class FinishingAuditPageState extends State<FinishingAuditPage> {
               child: const Text("No"),
             ),
             TextButton(
-              onPressed: () async {
+              onPressed: () {
                 Navigator.of(context).pop(); // Close the dialog
-
-                setState(() {
-                  isLoading = true; // Start loading
-                });
-
-                onConfirm(); // Run the action immediately (not waiting for loading)
-
-                // Keep showing loading for 3 seconds, even if function is done
-                await Future.delayed(const Duration(seconds: 4));
-
-                setState(() {
-                  isLoading = false; // Stop loading
-                });
+                onConfirm(); // Run the confirmation action
               },
               child: const Text("Yes"),
             ),
@@ -1701,5 +1244,4 @@ class FinishingAuditPageState extends State<FinishingAuditPage> {
       },
     );
   }
-
 }

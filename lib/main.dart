@@ -1,127 +1,74 @@
 import 'dart:io';
-import 'dart:convert';
-import 'dart:math';
-import 'package:flutter/cupertino.dart';
+
 import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'package:intl/intl.dart';
-import 'package:lottie/lottie.dart';
-import 'package:package_info_plus/package_info_plus.dart';
-import 'package:ppms/ExtraFunction/lottie_loading.dart';
 import 'package:ppms/MainMenu/home_page1_widget.dart';
-import 'package:provider/provider.dart';
+import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:http/http.dart' as http;
-import 'ExtraFunction/splash_screen.dart';
+import 'dart:math';
+
 import 'ExtraFunction/uuid.dart';
-import 'Theme/app_theme.dart';
-import 'common/utils/constants/baseurl.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  SharedPreferences prefs = await SharedPreferences.getInstance();
 
-  // Start initialization with login check
-  final initializationFuture = _initializeApp();
-
-  runApp(ChangeNotifierProvider(
-    create: (context) => ThemeProvider(),
-    child: MyApp(initializationFuture: initializationFuture),
-  ));
-}
-
-Future<Map<String, dynamic>> _initializeApp() async {
-  // Perform all initialization tasks
-  final prefs = await SharedPreferences.getInstance();
-
-  // Generate device ID
+  DateFormat('yyyy-MM-dd').format(DateTime.now());
+  prefs.getString('lastLoginDate');
   String? uuid;
+  prefs.remove('uniqueID');
+
   if (Platform.isAndroid) {
     uuid = prefs.getString('uniqueId');
     uuid ??= (Random().nextInt(900000) + 100000).toString();
-  } else if (Platform.isIOS) {
+  }
+  else if(Platform.isIOS){
     uuid = await PersistentUUID.getOrCreateUUID();
   }
+  if (kDebugMode) {
+    print('Persistent UUID: $uuid');
+  }
 
-  // Check login status
-  final isLoggedIn = prefs.getBool('isLoggedIn') ?? false;
-
-  // Get app version
-  final packageInfo = await PackageInfo.fromPlatform();
-  final appVersion = packageInfo.version;
-
-  // Ensure splash screen shows for minimum 3 seconds
-  await Future.wait([
-    Future.delayed(const Duration(seconds: 3)),
-  ]);
-
-  return {
-    'uniqueID': uuid,
-    'isLoggedIn': isLoggedIn,
-    'appVersion': appVersion,
-  };
+  runApp(MyApp(uniqueID: uuid));
 }
 
 class MyApp extends StatelessWidget {
-  final Future<Map<String, dynamic>> initializationFuture;
+  final String? uniqueID;
 
-  const MyApp({super.key, required this.initializationFuture});
+  const MyApp({super.key, required this.uniqueID});
+
 
   @override
   Widget build(BuildContext context) {
-    final themeProvider = Provider.of<ThemeProvider>(context);
+    print(uniqueID);
     SystemChrome.setPreferredOrientations([
       DeviceOrientation.portraitUp,
       DeviceOrientation.portraitDown,
       DeviceOrientation.landscapeLeft,
       DeviceOrientation.landscapeRight,
     ]);
-
     return GetMaterialApp(
       title: 'Flutter',
       debugShowCheckedModeBanner: false,
-      theme: themeProvider.lightTheme, // Use light theme from provider
-      darkTheme: themeProvider.darkTheme, // Use dark theme from provider
-      themeMode: themeProvider.themeMode,
-      home: FutureBuilder<Map<String, dynamic>>(
-        future: initializationFuture,
-        builder: (context, snapshot) {
-          // Show splash screen while initializing
-          if (snapshot.connectionState != ConnectionState.done) {
-            return SplashScreen();
-          }
-
-          // Initialization complete - check login status
-          final data = snapshot.data!;
-
-          if (data['isLoggedIn'] == true) {
-            // User is logged in, go directly to home page
-            return const HomePage1Widget();
-          } else {
-            // User not logged in, show login page
-            return MyHomePage(
-              title: 'Main Page',
-              uniqueID: data['uniqueID'],
-              appVersion: data['appVersion'],
-            );
-          }
-        },
+      theme: ThemeData(
+        colorScheme: ColorScheme.fromSeed(seedColor: Colors.orangeAccent),
+        useMaterial3: true,
+        fontFamily: 'tahoma',
       ),
+      home: MyHomePage(title: 'Main Page', uniqueID: uniqueID),
     );
   }
 }
 
-// Rest of your existing MyHomePage implementation remains exactly the same
 class MyHomePage extends StatefulWidget {
   final String title;
   final String? uniqueID;
 
-  const MyHomePage(
-      {super.key,
-      required this.title,
-      required this.uniqueID,
-      required appVersion});
+  const MyHomePage({super.key, required this.title, required this.uniqueID});
 
   @override
   State<MyHomePage> createState() => _MyHomePageState();
@@ -133,7 +80,6 @@ class _MyHomePageState extends State<MyHomePage> {
   TextEditingController? textController1;
   String? Function(BuildContext, String?)? textController1Validator;
   FocusNode? textFieldFocusNode2;
-  String appVersion = '';
   TextEditingController? textController2;
   late bool passwordVisibility;
   String? Function(BuildContext, String?)? textController2Validator;
@@ -145,36 +91,18 @@ class _MyHomePageState extends State<MyHomePage> {
     textController2 = TextEditingController();
     passwordVisibility = false;
     _checkLoginStatus();
-    _fetchAppVersion();
   }
 
   void _checkLoginStatus() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     bool isLoggedIn = prefs.getBool('isLoggedIn') ?? false;
     prefs.setString('uniqueId', widget.uniqueID!);
-    final packageInfo = await PackageInfo.fromPlatform();
-    print(packageInfo.version);
     if (isLoggedIn) {
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(builder: (context) => const HomePage1Widget()),
       );
     }
-  }
-
-  Future<void> _fetchAppVersion() async {
-    final packageInfo = await PackageInfo.fromPlatform();
-
-    setState(() {
-      if (Platform.isAndroid) {
-        appVersion = packageInfo.version;
-      } else if (Platform.isIOS) {
-        appVersion = packageInfo.version;
-      }
-      if (kDebugMode) {
-        print('version $appVersion');
-      }
-    });
   }
 
   Future<void> clearLoginData() async {
@@ -202,8 +130,7 @@ class _MyHomePageState extends State<MyHomePage> {
   bool isPresent = false;
   Future<void> fetchData(String user, String password, String id) async {
     try {
-      final url =
-          '${TBaseURL.baseUrl}new_login?user_id=$user&password=$password&id=$id';
+      final url = 'http://14.142.248.34:10008/new_login?user_id=$user&password=$password&id=$id';
       final response = await http.get(Uri.parse(url));
       if (kDebugMode) {
         print(url);
@@ -212,7 +139,9 @@ class _MyHomePageState extends State<MyHomePage> {
       if (response.statusCode == 200) {
         var data = jsonDecode(response.body);
         clearLoginData();
-        setState(() {});
+        setState(() {
+
+        });
         if (data != null && data.isNotEmpty) {
           String? loginId;
           String? unit;
@@ -231,14 +160,12 @@ class _MyHomePageState extends State<MyHomePage> {
             lineName = data[0]['LineName'] ?? '';
 
             if (kDebugMode) {
-              print(data);
-              print(unitCode);
+              print(data);print(unitCode);
             }
           });
 
-          Future.delayed(const Duration(milliseconds: 100), () {
-            saveSharedPref(loginId!, unit!, name!, lineCode!, lineName!,
-                lineId!, unitCode!);
+          Future.delayed(const Duration(milliseconds: 100),(){
+            saveSharedPref(loginId!,unit!,name!,lineCode!,lineName!,lineId!,unitCode!);
           });
 
           setState(() {
@@ -259,8 +186,7 @@ class _MyHomePageState extends State<MyHomePage> {
     }
   }
 
-  Future<void> saveSharedPref(String loginId, String unit, String name,
-      String lineCode, String lineName, int lineId, String unitCode) async {
+  Future<void> saveSharedPref(String loginId,String unit,String name,String lineCode,String lineName,int lineId,String unitCode) async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     await prefs.setString('login_id', loginId);
     await prefs.setString('unit', unit);
@@ -272,10 +198,10 @@ class _MyHomePageState extends State<MyHomePage> {
     await prefs.setString('unit_code', unitCode);
   }
 
+
   void getB() async {
     try {
-      const url =
-          'http://14.96.24.164:12008/api/HRISM/GeteLeaveApplicationHistory';
+      const url = 'http://14.142.248.34:12008/api/HRISM/GeteLeaveApplicationHistory';
 
       Map<String, String> headers = {
         'Content-Type': 'application/json',
@@ -304,7 +230,7 @@ class _MyHomePageState extends State<MyHomePage> {
       } else {
         if (kDebugMode) {
           print('Failed to load data with status code: ${response.statusCode}');
-          print('Response body: ${response.body}');
+        print('Response body: ${response.body}');
         }
       }
     } catch (e) {
@@ -327,29 +253,30 @@ class _MyHomePageState extends State<MyHomePage> {
     }
     fetchData(userId!, password!, id!);
 
-    final response = await http.get(Uri.parse(
-        '${TBaseURL.baseUrl}new_login?user_id=$userId&password=$password&id=$id'));
+    final response = await http.get(Uri.parse('http://14.142.248.34:10008/new_login?user_id=$userId&password=$password&id=$id'));
 
     if (response.statusCode == 200) {
       var data = jsonDecode(response.body);
       if (data != null && data.isNotEmpty) {
         SharedPreferences prefs = await SharedPreferences.getInstance();
         prefs.setBool('isLoggedIn', true);
-        Future.delayed(const Duration(milliseconds: 200), () {
+        Future.delayed(const Duration(milliseconds: 200),()
+        {
           Navigator.pushReplacement(
             context,
             MaterialPageRoute(builder: (context) => const HomePage1Widget()),
           );
         });
-      } else {
+      }
+      else {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Invalid user ID or password',style: TextStyle(color: Theme.of(context).colorScheme.secondary),),backgroundColor: Theme.of(context).cardColor,),
+          const SnackBar(content: Text('Invalid user ID or password')),
         );
       }
-    } else {
+    }
+    else {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-            content: Text('Failed to login. Please try again later.')),
+        const SnackBar(content: Text('Failed to login. Please try again later.')),
       );
     }
   }
@@ -357,217 +284,212 @@ class _MyHomePageState extends State<MyHomePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Theme.of(context).primaryColor,
-      body: Center(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 24),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              // App Logo/Title
-              Column(
+      body: Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            colors: [Color(0xB2B9F6F3), Color(0xFFFFFFFF)],
+            begin: Alignment(0.1, 1.0),
+            end: Alignment(-0.1, 0.0),
+          ),
+        ),
+        child: SafeArea(
+          child: Align(
+            alignment: const AlignmentDirectional(0, 0),
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.max,
+                mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Container(
-                    width: 220,
-                    height: 80,
-                    decoration: BoxDecoration(
-                      color: Theme.of(context).colorScheme.primary,
-                      borderRadius: BorderRadius.circular(8),
+                  const Text(
+                    'Welcome To PPMS',
+                    style: TextStyle(
+                      fontSize: 28,
+                      letterSpacing: 0,
+                      fontWeight: FontWeight.w800,
                     ),
-                    child: OverflowBox(
-                      maxWidth: 300, // Same as your Lottie size
-                      maxHeight: 140,
-                      child: const LottieLoading(
-                        animationPath: 'assets/animation/logo_grey.json',
-                        size: 150,
+                  ),
+                  Padding(
+                    padding: const EdgeInsetsDirectional.fromSTEB(0, 0, 0, 50),
+                    child: Text(
+                      'ID: ${widget.uniqueID}',
+                      style: const TextStyle(letterSpacing: 0),
+                    ),
+                  ),
+                  Padding(
+                    padding: const EdgeInsetsDirectional.fromSTEB(38, 10, 38, 10),
+                    child: TextFormField(
+                      controller: textController1,
+                      autofocus: false,
+                      obscureText: false,
+                      decoration: InputDecoration(
+                        labelText: 'User ID',
+                        hintStyle: const TextStyle(
+                          fontFamily: 'Inter',
+                          color: Color(0xFF101518),
+                          fontSize: 16,
+                          letterSpacing: 0,
+                          fontWeight: FontWeight.normal,
+                        ),
+                        enabledBorder: OutlineInputBorder(
+                          borderSide: const BorderSide(
+                            color: Color(0xFF06D5CD),
+                            width: 2,
+                          ),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderSide: const BorderSide(
+                            color: Color(0xFF199A7B),
+                            width: 2,
+                          ),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        errorBorder: OutlineInputBorder(
+                          borderSide: const BorderSide(
+                            color: Colors.redAccent,
+                            width: 2,
+                          ),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        focusedErrorBorder: OutlineInputBorder(
+                          borderSide: const BorderSide(
+                            color: Colors.redAccent,
+                            width: 2,
+                          ),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        contentPadding: const EdgeInsetsDirectional.fromSTEB(20, 24, 20, 24),
+                        prefixIcon: const Icon(
+                          Icons.person,
+                        ),
+                      ),
+                      style: const TextStyle(
+                        fontFamily: 'Inter',
+                        color: Color(0xFF101518),
+                        fontSize: 18,
+                        letterSpacing: 0,
+                        fontWeight: FontWeight.normal,
                       ),
                     ),
                   ),
-
-                  const SizedBox(height: 24),
-                  Text(
-                    'PPMS',
-                    style: TextStyle(
-                      fontSize: 32,
-                      fontWeight: FontWeight.bold,
-                      color: Theme.of(context).colorScheme.secondary,
-                      letterSpacing: 1.2,
+                  Padding(
+                    padding: const EdgeInsetsDirectional.fromSTEB(38, 10, 38, 10),
+                    child: TextFormField(
+                      controller: textController2,
+                      autofocus: false,
+                      obscureText: !passwordVisibility,
+                      decoration: InputDecoration(
+                        labelText: 'Password',
+                        hintStyle: const TextStyle(
+                          fontFamily: 'Inter',
+                          color: Color(0xFF101518),
+                          fontSize: 16,
+                          letterSpacing: 0,
+                          fontWeight: FontWeight.normal,
+                        ),
+                        enabledBorder: OutlineInputBorder(
+                          borderSide: const BorderSide(
+                            color: Color(0xFF06D5CD),
+                            width: 2,
+                          ),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderSide: const BorderSide(
+                            color: Color(0xFF199A7B),
+                            width: 2,
+                          ),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        errorBorder: OutlineInputBorder(
+                          borderSide: const BorderSide(
+                            color: Colors.redAccent,
+                            width: 2,
+                          ),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        focusedErrorBorder: OutlineInputBorder(
+                          borderSide: const BorderSide(
+                            color: Colors.redAccent,
+                            width: 2,
+                          ),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        contentPadding: const EdgeInsetsDirectional.fromSTEB(20, 24, 20, 24),
+                        prefixIcon: const Icon(
+                          Icons.lock,
+                        ),
+                        suffixIcon: InkWell(
+                          onTap: () => setState(
+                                () => passwordVisibility = !passwordVisibility,
+                          ),
+                          focusNode: FocusNode(skipTraversal: true),
+                          child: Icon(
+                            passwordVisibility ? Icons.visibility_outlined : Icons.visibility_off_outlined,
+                            color: const Color(0xFF757575),
+                            size: 22,
+                          ),
+                        ),
+                      ),
+                      style: const TextStyle(
+                        fontFamily: 'Inter',
+                        color: Color(0xFF101518),
+                        fontSize: 18,
+                        letterSpacing: 0,
+                        fontWeight: FontWeight.normal,
+                      ),
                     ),
                   ),
-                  Text(
-                    'Paramount Product Management System',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: Theme.of(context)
-                          .colorScheme
-                          .secondary
-                          .withValues(alpha: 0.6),
+              Padding(
+                padding: const EdgeInsetsDirectional.fromSTEB(0, 30, 0, 10),
+                child: ElevatedButton(
+                  onPressed: _login,
+                  // onLongPress: getB,
+                  style: ButtonStyle(
+                    backgroundColor: WidgetStateProperty.resolveWith<Color>(
+                          (Set<WidgetState> states) {
+                        if (states.contains(WidgetState.pressed)) {
+                          return const Color(0xFF06D5CD);
+                        }
+                        return const Color(0xFF06D5CD);
+                      },
+                    ),
+                    padding: WidgetStateProperty.all<EdgeInsetsGeometry>(
+                      const EdgeInsets.symmetric(vertical: 10.0, horizontal: 40.0),
+                    ),
+                    textStyle: WidgetStateProperty.all<TextStyle>(
+                      const TextStyle(fontSize: 20),
+                    ),
+                    foregroundColor: WidgetStateProperty.all<Color>(Colors.white),
+                    shape: WidgetStateProperty.all<RoundedRectangleBorder>(
+                      RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10.0),
+                        side: const BorderSide(color: Color(0xD02CE0CA), width: 2.0),
+                      ),
+                    ),
+                    elevation: WidgetStateProperty.resolveWith<double>(
+                          (Set<WidgetState> states) {
+                        if (states.contains(WidgetState.pressed)) {
+                          return 15.0;
+                        } else if (states.contains(WidgetState.hovered)) {
+                          return 10.0;
+                        }
+                        return 5.0;
+                      },
                     ),
                   ),
+                  child: const Text(
+                    'Login',
+                    style: TextStyle(fontFamily: 'Tahoma'),
+                  ),
+                ))
                 ],
               ),
-
-              const SizedBox(height: 20),
-
-              // Device ID
-              Container(
-                padding:
-                    const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
-                decoration: BoxDecoration(
-                  color: Theme.of(context).cardColor.withValues(alpha: 0.7),
-                  boxShadow: [
-                    BoxShadow(color: Colors.grey[500]!,blurRadius: 1,offset: const Offset(0,2))
-                  ],
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Text(
-                  'Device ID: ${widget.uniqueID}',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    color: Theme.of(context).colorScheme.secondary,
-                    fontSize: 12,
-                  ),
-                ),
-              ),
-
-              const SizedBox(height: 32),
-
-              // Login Form
-              Card(
-                elevation: 4,
-                shadowColor: Colors.grey[400],
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Padding(
-                  padding: const EdgeInsets.all(24),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      Text(
-                        'Login',
-                        style: TextStyle(
-                          fontSize: 22,
-                          fontWeight: FontWeight.bold,
-                          color: Theme.of(context).colorScheme.secondary,
-                        ),
-                      ),
-
-                      const SizedBox(height: 24),
-
-                      // Username Field
-                      TextFormField(
-                        cursorColor: Theme.of(context).colorScheme.secondary,
-                        controller: textController1,
-                        decoration: InputDecoration(
-                          labelText: 'User ID',
-                          labelStyle: TextStyle(
-                              color: Theme.of(context).colorScheme.secondary),
-                          prefixIcon: Icon(Icons.person_outline,
-                              color: Colors.grey[600]),
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(8),
-                            borderSide: BorderSide(color: Colors.grey[500]!),
-                          ),
-                          enabledBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(8),
-                            borderSide: BorderSide(color: Colors.grey[500]!),
-                          ),
-                          filled: true,
-                          fillColor: Theme.of(context).cardColor,
-                        ),
-                        style: TextStyle(
-                            color: Theme.of(context)
-                                .colorScheme
-                                .secondary
-                                .withValues(alpha: 0.9)),
-                      ),
-
-                      const SizedBox(height: 16),
-
-                      // Password Field
-                      TextFormField(
-                        cursorColor: Theme.of(context).colorScheme.secondary,
-                        controller: textController2,
-                        obscureText: !passwordVisibility,
-                        decoration: InputDecoration(
-                          labelText: 'Password',
-                          labelStyle: TextStyle(
-                              color: Theme.of(context).colorScheme.secondary),
-                          prefixIcon: Icon(Icons.lock_outline,
-                              color: Colors.grey[600]),
-                          suffixIcon: IconButton(
-                            icon: Icon(
-                              passwordVisibility
-                                  ? Icons.visibility_outlined
-                                  : Icons.visibility_off_outlined,
-                              color: Colors.grey[600],
-                            ),
-                            onPressed: () => setState(() =>
-                                passwordVisibility = !passwordVisibility),
-                          ),
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(8),
-                            borderSide: BorderSide(color: Colors.grey[500]!),
-                          ),
-                          enabledBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(8),
-                            borderSide: BorderSide(color: Colors.grey[500]!),
-                          ),
-                          filled: true,
-                          fillColor: Theme.of(context).cardColor,
-                        ),
-                        style: TextStyle(
-                            color: Theme.of(context).colorScheme.secondary),
-                      ),
-
-                      const SizedBox(height: 24),
-
-                      // Login Button
-                      ElevatedButton(
-                        onPressed: _login,
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Theme.of(context)
-                              .colorScheme
-                              .primary
-                              .withValues(alpha: 2),
-                          padding: const EdgeInsets.symmetric(vertical: 16),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          elevation: 2,
-                        ),
-                        child: Text(
-                          'LOGIN',
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                            color: Theme.of(context).colorScheme.secondary,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-
-              const SizedBox(height: 24),
-
-              // Version Info
-              Text(
-                'Version: $appVersion',
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  color: Colors.grey[500],
-                  fontSize: 12,
-                ),
-              ),
-            ],
+            ),
           ),
         ),
       ),
     );
   }
 }
+
