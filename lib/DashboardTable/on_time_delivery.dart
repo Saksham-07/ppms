@@ -3,6 +3,9 @@ import 'package:flutter/material.dart';
 import 'package:syncfusion_flutter_datagrid/datagrid.dart';
 import 'package:http/http.dart' as http;
 
+import '../ExtraFunction/lottie_loading.dart';
+import '../common/utils/constants/baseurl.dart';
+
 class OnTimeDetail {
   final int buyerPo;
   final int delayBuyerPo;
@@ -51,7 +54,7 @@ class OnTimeDetail {
 Future<List<OnTimeDetail>> fetchOnTimeData(String from, String to, String units) async {
   final response = await http.get(
     Uri.parse(
-        'http://14.142.248.34:10008/management?proce_type=onTime&from=$from&to=$to&units=$units'),
+        '${TBaseURL.baseUrl}management?proce_type=onTime&from=$from&to=$to&units=$units'),
   );
 
   if (response.statusCode == 200) {
@@ -107,7 +110,7 @@ class OnTimeDataSource extends DataGridSource {
   DataGridRowAdapter buildRow(DataGridRow row) {
     final isTotalRow = row.getCells().first.value == 'Total';
     return DataGridRowAdapter(
-      color: isTotalRow ? Colors.yellowAccent : null,
+      color: isTotalRow ? const Color(0xFF8DEAA3) : null,
       cells: row.getCells().map<Widget>((dataGridCell) {
         Alignment alignment = dataGridCell.columnName == 'UnitShortCode'
             ? Alignment.centerLeft
@@ -121,6 +124,7 @@ class OnTimeDataSource extends DataGridSource {
             style: TextStyle(
               fontSize: 14,
               fontWeight: isTotalRow ? FontWeight.bold : FontWeight.normal,
+              color: Colors.black
             ),
           ),
         );
@@ -180,7 +184,9 @@ class _OnTimeTable1State extends State<OnTimeTable1> {
       future: onTimeDataFuture,
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Center(child: CircularProgressIndicator());
+          return const SizedBox(
+            width: double.infinity,
+              child: LottieLoading(size: 150,animationPath: 'assets/animation/profit.json',));
         } else if (snapshot.hasError) {
           return Center(child: Text('Error: ${snapshot.error}'));
         } else if (snapshot.hasData) {const double rowHeight = 25;
@@ -214,21 +220,21 @@ class _OnTimeTable1State extends State<OnTimeTable1> {
                     StackedHeaderCell(
                       columnNames: ['UnitShortCode'],
                       child: Container(
-                          color: const Color(0xFF5FE3D3),
+                          color: Colors.grey[400],
                           child: const Center(
                               child: Text(
                                 '',
-                                style: TextStyle(color: Colors.white),
+                                style: TextStyle(color: Colors.black87),
                               ))),
                     ),
                     StackedHeaderCell(
                       columnNames: ['Qty', 'PO Cnt'],
                       child: Container(
-                          color: const Color(0xFF5FE3D3),
+                          color: Colors.grey[400],
                           child: const Center(
                               child: Text(
                                 'Total',
-                                style: TextStyle(color: Colors.white),
+                                style: TextStyle(color: Colors.black87),
                               ))),
                     ),
                     StackedHeaderCell(
@@ -239,11 +245,11 @@ class _OnTimeTable1State extends State<OnTimeTable1> {
                         'OnTimeBuyerPo'
                       ],
                       child: Container(
-                          color: const Color(0xFF5FE3D3),
+                          color: Colors.grey[400],
                           child: const Center(
                               child: Text(
                                 'On Time',
-                                style: TextStyle(color: Colors.white),
+                                style: TextStyle(color: Colors.black87),
                               ))),
                     ),
                     StackedHeaderCell(
@@ -254,11 +260,11 @@ class _OnTimeTable1State extends State<OnTimeTable1> {
                         'DelayQtyPerc'
                       ],
                       child: Container(
-                          color: const Color(0xFF5FE3D3),
+                          color: Colors.grey[400],
                           child: const Center(
                               child: Text(
                                 'Delay Details',
-                                style: TextStyle(color: Colors.white),
+                                style: TextStyle(color: Colors.black87),
                               ))),
                     ),
                   ]),
@@ -267,91 +273,91 @@ class _OnTimeTable1State extends State<OnTimeTable1> {
                   GridColumn(
                       columnName: 'UnitShortCode',
                       label: Container(
-                          color: const Color(0xFF5FE3D3),
+                          color: Colors.grey[200],
                           alignment: Alignment.center,
                           child: const Text('Unit',
                               overflow: TextOverflow.clip,
-                              style: TextStyle(color: Colors.white)))),
+                              style: TextStyle(color: Colors.black87)))),
                   GridColumn(
                       columnName: 'Qty',
                       label: Container(
-                          color: const Color(0xFF5FE3D3),
+                          color: Colors.grey[200],
                           alignment: Alignment.center,
                           child: const Text('Qty',
                               overflow: TextOverflow.clip,
-                              style: TextStyle(color: Colors.white)))),
+                              style: TextStyle(color: Colors.black87)))),
                   GridColumn(
                       columnName: 'PO Cnt',
                       label: Container(
-                          color: const Color(0xFF5FE3D3),
+                          color: Colors.grey[200],
                           alignment: Alignment.center,
                           child: const Text('PO Cnt',
                               overflow: TextOverflow.ellipsis,
-                              style: TextStyle(color: Colors.white)))),
+                              style: TextStyle(color: Colors.black87)))),
                   GridColumn(
                       columnName: 'OnTimeQty',
                       label: Container(
-                          color: const Color(0xFF5FE3D3),
+                          color: Colors.grey[200],
                           alignment: Alignment.center,
                           child: const Text('Qty',
                               overflow: TextOverflow.ellipsis,
-                              style: TextStyle(color: Colors.white)))),
+                              style: TextStyle(color: Colors.black87)))),
                   GridColumn(
                       columnName: 'OnTimeBuyerPo',
                       label: Container(
-                          color: const Color(0xFF5FE3D3),
+                          color: Colors.grey[200],
                           alignment: Alignment.center,
                           child: const Text('PO Cnt',
                               overflow: TextOverflow.ellipsis,
-                              style: TextStyle(color: Colors.white)))),
+                              style: TextStyle(color: Colors.black87)))),
                   GridColumn(
                       columnName: 'OnTimeQtyPerc',
                       label: Container(
-                          color: const Color(0xFF5FE3D3),
+                          color: Colors.grey[200],
                           alignment: Alignment.center,
                           child: const Text('Qty(%)',
                               overflow: TextOverflow.ellipsis,
-                              style: TextStyle(color: Colors.white)))),
+                              style: TextStyle(color: Colors.black87)))),
                   GridColumn(
                       columnName: 'OnTimePoPerc',
                       label: Container(
-                          color: const Color(0xFF5FE3D3),
+                          color: Colors.grey[200],
                           alignment: Alignment.center,
                           child: const Text('PO Cnt(%)',
                               overflow: TextOverflow.ellipsis,
-                              style: TextStyle(color: Colors.white)))),
+                              style: TextStyle(color: Colors.black87)))),
                   GridColumn(
                       columnName: 'DelayQty',
                       label: Container(
-                          color: const Color(0xFF5FE3D3),
+                          color: Colors.grey[200],
                           alignment: Alignment.center,
                           child: const Text('Qty',
                               overflow: TextOverflow.ellipsis,
-                              style: TextStyle(color: Colors.white)))),
+                              style: TextStyle(color: Colors.black87)))),
                   GridColumn(
                       columnName: 'DelayBuyerPo',
                       label: Container(
-                          color: const Color(0xFF5FE3D3),
+                          color: Colors.grey[200],
                           alignment: Alignment.center,
                           child: const Text('PO Cnt',
                               overflow: TextOverflow.ellipsis,
-                              style: TextStyle(color: Colors.white)))),
+                              style: TextStyle(color: Colors.black87)))),
                   GridColumn(
                       columnName: 'DelayQtyPerc',
                       label: Container(
-                          color: const Color(0xFF5FE3D3),
+                          color: Colors.grey[200],
                           alignment: Alignment.center,
                           child: const Text('Qty(%)',
                               overflow: TextOverflow.ellipsis,
-                              style: TextStyle(color: Colors.white)))),
+                              style: TextStyle(color: Colors.black87)))),
                   GridColumn(
                       columnName: 'DelayPoPerc',
                       label: Container(
-                          color: const Color(0xFF5FE3D3),
+                          color: Colors.grey[200],
                           alignment: Alignment.center,
                           child: const Text('PO Cnt(%)',
                               overflow: TextOverflow.ellipsis,
-                              style: TextStyle(color: Colors.white)))),
+                              style: TextStyle(color: Colors.black87)))),
                 ],
               ),
             ),

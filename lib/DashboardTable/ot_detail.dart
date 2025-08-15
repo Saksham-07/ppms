@@ -1,7 +1,11 @@
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:syncfusion_flutter_datagrid/datagrid.dart';
 import 'package:http/http.dart' as http;
+
+import '../ExtraFunction/lottie_loading.dart';
+import '../common/utils/constants/baseurl.dart';
 
 class OtDetail {
   final int cuttingOtAmtFTD;
@@ -89,10 +93,14 @@ class OtDetail {
   }
 }
 
-Future<List<OtDetail>> fetchOtData(String from, String to, String units) async {
+Future<List<OtDetail>> fetchOtData(String from, String to, String units,String vgUnit) async {
   final response = await http.get(
-    Uri.parse('http://14.142.248.34:10008/management?proce_type=ot&from=$from&to=$to&units=$units'),
+    Uri.parse('${TBaseURL.baseUrl}mngmnt_review_vg?type=OTDetails&unitVg=$vgUnit&fromDate=$from&toDate=$to&unit=$units&proc_type=MngmntReviewOtDtl'),
   );
+
+  if (kDebugMode) {
+    print('${TBaseURL.baseUrl}mngmnt_review_vg?type=OTDetails&unitVg=$vgUnit&fromDate=$from&toDate=$to&unit=$units&proc_type=MngmntReviewOtDtl');
+  }
 
   if (response.statusCode == 200) {
     List jsonResponse = json.decode(response.body);
@@ -177,7 +185,7 @@ class OTDataSource extends DataGridSource {
   DataGridRowAdapter buildRow(DataGridRow row) {
     final isTotalRow = row.getCells().first.value == 'Total';
     return DataGridRowAdapter(
-      color: isTotalRow ? Colors.yellowAccent : null,
+      color: isTotalRow ? const Color(0xFF8DEAA3) : null,
       cells: row.getCells().map<Widget>((dataGridCell) {
         Alignment alignment = dataGridCell.columnName == 'UnitShortCode'
             ? Alignment.centerLeft
@@ -268,12 +276,14 @@ class OTDataTable extends StatefulWidget {
   final String from;
   final String to;
   final String units;
+  final String vgUnit;
 
   const OTDataTable({
     super.key,
     required this.from,
     required this.to,
     required this.units,
+    required this.vgUnit,
   });
 
   @override
@@ -286,7 +296,7 @@ class _OTDataTableState extends State<OTDataTable> {
   @override
   void initState() {
     super.initState();
-    oTData = fetchOtData(widget.from, widget.to, widget.units);
+    oTData = fetchOtData(widget.from, widget.to, widget.units,widget.vgUnit);
   }
 
   @override
@@ -295,7 +305,9 @@ class _OTDataTableState extends State<OTDataTable> {
       future: oTData,
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Center(child: CircularProgressIndicator());
+          return const SizedBox(
+            width: double.infinity,
+              child: LottieLoading(size: 150,animationPath: 'assets/animation/profit.json',));
         } else if (snapshot.hasError) {
           return Center(child: Text('Error: ${snapshot.error}'));
         } else if (snapshot.hasData) {const double rowHeight = 25;
@@ -330,22 +342,22 @@ class _OTDataTableState extends State<OTDataTable> {
                   StackedHeaderCell(
                     columnNames: ['UnitShortCode'],
                     child: Container(
-                        color: const Color(0xFF5FE3D3),
+                        color: Colors.grey[400],
                         child: const Center(
                             child: Text(
                               '',
-                              style: TextStyle(color: Colors.white),
+                              style: TextStyle(color: Colors.black87),
                             ))),
                   ),
                   StackedHeaderCell(
                     columnNames: ['CutHrsFTD','CutHrsMTD'],
                     child: Container(
-                        color: const Color(0xFF5FE3D3),
+                        color: Colors.grey[400],
                         child: const Center(
                             child: Text(
                               'Cutting\nOT Hrs',
                               textAlign: TextAlign.center,
-                              style: TextStyle(color: Colors.white),
+                              style: TextStyle(color: Colors.black87),
                             ))),
                   ),
                   StackedHeaderCell(
@@ -354,12 +366,12 @@ class _OTDataTableState extends State<OTDataTable> {
                       'CutValMTD',
                     ],
                     child: Container(
-                        color: const Color(0xFF5FE3D3),
+                        color: Colors.grey[400],
                         child: const Center(
                             child: Text(
                               'Cutting\nOT Val',
                               textAlign: TextAlign.center,
-                              style: TextStyle(color: Colors.white),
+                              style: TextStyle(color: Colors.black87),
                             ))),
                   ),
                   StackedHeaderCell(
@@ -368,12 +380,12 @@ class _OTDataTableState extends State<OTDataTable> {
                       'CutPerMTD',
                     ],
                     child: Container(
-                        color: const Color(0xFF5FE3D3),
+                        color: Colors.grey[400],
                         child: const Center(
                             child: Text(
                               'Cutting\nPer/HR OT',
                               textAlign: TextAlign.center,
-                              style: TextStyle(color: Colors.white),
+                              style: TextStyle(color: Colors.black87),
                             ))),
                   ),
                   StackedHeaderCell(
@@ -382,12 +394,12 @@ class _OTDataTableState extends State<OTDataTable> {
                       'StitchHrsMTD',
                     ],
                     child: Container(
-                        color: const Color(0xFF5FE3D3),
+                        color: Colors.grey[400],
                         child: const Center(
                             child: Text(
                               'Bare Stitch\nOT Hrs',
                               textAlign: TextAlign.center,
-                              style: TextStyle(color: Colors.white),
+                              style: TextStyle(color: Colors.black87),
                             ))),
                   ),
                   StackedHeaderCell(
@@ -396,12 +408,12 @@ class _OTDataTableState extends State<OTDataTable> {
                       'StitchValMTD',
                     ],
                     child: Container(
-                        color: const Color(0xFF5FE3D3),
+                        color: Colors.grey[400],
                         child: const Center(
                             child: Text(
                               'Bare Stitch\nOT Val',
                               textAlign: TextAlign.center,
-                              style: TextStyle(color: Colors.white),
+                              style: TextStyle(color: Colors.black87),
                             ))),
                   ),
                   StackedHeaderCell(
@@ -410,12 +422,12 @@ class _OTDataTableState extends State<OTDataTable> {
                       'StitchPerMTD',
                     ],
                     child: Container(
-                        color: const Color(0xFF5FE3D3),
+                        color: Colors.grey[400],
                         child: const Center(
                             child: Text(
                               'Bare Stitch\nPer/HR OT',
                               textAlign: TextAlign.center,
-                              style: TextStyle(color: Colors.white),
+                              style: TextStyle(color: Colors.black87),
                             ))),
                   ),
                   StackedHeaderCell(
@@ -424,12 +436,12 @@ class _OTDataTableState extends State<OTDataTable> {
                       'FinishHrsMTD',
                     ],
                     child: Container(
-                        color: const Color(0xFF5FE3D3),
+                        color: Colors.grey[400],
                         child: const Center(
                             child: Text(
                               'Finishing\nOT Hrs',
                               textAlign: TextAlign.center,
-                              style: TextStyle(color: Colors.white),
+                              style: TextStyle(color: Colors.black87),
                             ))),
                   ),
                   StackedHeaderCell(
@@ -438,12 +450,12 @@ class _OTDataTableState extends State<OTDataTable> {
                       'FinishValMTD',
                     ],
                     child: Container(
-                        color: const Color(0xFF5FE3D3),
+                        color: Colors.grey[400],
                         child: const Center(
                             child: Text(
                               'Finishing\nOT Val',
                               textAlign: TextAlign.center,
-                              style: TextStyle(color: Colors.white),
+                              style: TextStyle(color: Colors.black87),
                             ))),
                   ),
                   StackedHeaderCell(
@@ -452,12 +464,12 @@ class _OTDataTableState extends State<OTDataTable> {
                       'FinishPerMTD',
                     ],
                     child: Container(
-                        color: const Color(0xFF5FE3D3),
+                        color: Colors.grey[400],
                         child: const Center(
                             child: Text(
                               'Finishing\nPer/HR OT',
                               textAlign: TextAlign.center,
-                              style: TextStyle(color: Colors.white),
+                              style: TextStyle(color: Colors.black87),
                             ))),
                   ),
                   StackedHeaderCell(
@@ -466,12 +478,12 @@ class _OTDataTableState extends State<OTDataTable> {
                       'FactoryHrsMTD',
                     ],
                     child: Container(
-                        color: const Color(0xFF5FE3D3),
+                        color: Colors.grey[400],
                         child: const Center(
                             child: Text(
                               'Factory\nOT Hrs',
                               textAlign: TextAlign.center,
-                              style: TextStyle(color: Colors.white),
+                              style: TextStyle(color: Colors.black87),
                             ))),
                   ),
                   StackedHeaderCell(
@@ -480,12 +492,12 @@ class _OTDataTableState extends State<OTDataTable> {
                       'FactoryValMTD',
                     ],
                     child: Container(
-                        color: const Color(0xFF5FE3D3),
+                        color: Colors.grey[400],
                         child: const Center(
                             child: Text(
                               'Factory\nOT Val',
                               textAlign: TextAlign.center,
-                              style: TextStyle(color: Colors.white),
+                              style: TextStyle(color: Colors.black87),
                             ))),
                   ),
                   StackedHeaderCell(
@@ -494,12 +506,12 @@ class _OTDataTableState extends State<OTDataTable> {
                       'FactoryPerMTD',
                     ],
                     child: Container(
-                        color: const Color(0xFF5FE3D3),
+                        color: Colors.grey[400],
                         child: const Center(
                             child: Text(
                               'Factory\nPer/HR OT',
                               textAlign: TextAlign.center,
-                              style: TextStyle(color: Colors.white),
+                              style: TextStyle(color: Colors.black87),
                             ))),
                   ),
                 ]),
@@ -508,228 +520,228 @@ class _OTDataTableState extends State<OTDataTable> {
                 GridColumn(
                     columnName: 'UnitShortCode',
                     label: Container(
-                        color: const Color(0xFF5FE3D3),
+                        color: Colors.grey[200],
                         alignment: Alignment.center,
                         child: const Text('Unit',
                             textAlign: TextAlign.center,
                             overflow: TextOverflow.ellipsis,
-                            style: TextStyle(color: Colors.white)))),
+                            style: TextStyle(color: Colors.black87)))),
                 GridColumn(
                     columnName: 'CutHrsFTD',
                     label: Container(
-                        color: const Color(0xFF5FE3D3),
+                        color: Colors.grey[200],
                         alignment: Alignment.center,
                         child: const Text('FTD',
                             textAlign: TextAlign.center,
                             overflow: TextOverflow.ellipsis,
-                            style: TextStyle(color: Colors.white)))),
+                            style: TextStyle(color: Colors.black87)))),
                 GridColumn(
                     columnName: 'CutHrsMTD',
                     label: Container(
-                        color: const Color(0xFF5FE3D3),
+                        color: Colors.grey[200],
                         alignment: Alignment.center,
                         child: const Text('MTD',
                             textAlign: TextAlign.center,
                             overflow: TextOverflow.ellipsis,
-                            style: TextStyle(color: Colors.white)))),
+                            style: TextStyle(color: Colors.black87)))),
                 GridColumn(
                     columnName: 'CutValFTD',
                     label: Container(
-                        color: const Color(0xFF5FE3D3),
+                        color: Colors.grey[200],
                         alignment: Alignment.center,
                         child: const Text('FTD',
                             textAlign: TextAlign.center,
                             overflow: TextOverflow.ellipsis,
-                            style: TextStyle(color: Colors.white)))),
+                            style: TextStyle(color: Colors.black87)))),
                 GridColumn(
                     columnName: 'CutValMTD',
                     label: Container(
-                        color: const Color(0xFF5FE3D3),
+                        color: Colors.grey[200],
                         alignment: Alignment.center,
                         child: const Text('MTD',
                             textAlign: TextAlign.center,
                             overflow: TextOverflow.ellipsis,
-                            style: TextStyle(color: Colors.white)))),
+                            style: TextStyle(color: Colors.black87)))),
                 GridColumn(
                     columnName: 'CutPerFTD',
                     label: Container(
-                        color: const Color(0xFF5FE3D3),
+                        color: Colors.grey[200],
                         alignment: Alignment.center,
                         child: const Text('FTD',
                             textAlign: TextAlign.center,
                             overflow: TextOverflow.ellipsis,
-                            style: TextStyle(color: Colors.white)))),
+                            style: TextStyle(color: Colors.black87)))),
                 GridColumn(
                     columnName: 'CutPerMTD',
                     label: Container(
-                        color: const Color(0xFF5FE3D3),
+                        color: Colors.grey[200],
                         alignment: Alignment.center,
                         child: const Text('MTD',
                             textAlign: TextAlign.center,
                             overflow: TextOverflow.ellipsis,
-                            style: TextStyle(color: Colors.white)))),
+                            style: TextStyle(color: Colors.black87)))),
                 GridColumn(
                     columnName: 'StitchHrsFTD',
                     label: Container(
-                        color: const Color(0xFF5FE3D3),
+                        color: Colors.grey[200],
                         alignment: Alignment.center,
                         child: const Text('FTD',
                             textAlign: TextAlign.center,
                             overflow: TextOverflow.ellipsis,
-                            style: TextStyle(color: Colors.white)))),
+                            style: TextStyle(color: Colors.black87)))),
                 GridColumn(
                     columnName: 'StitchHrsMTD',
                     label: Container(
-                        color: const Color(0xFF5FE3D3),
+                        color: Colors.grey[200],
                         alignment: Alignment.center,
                         child: const Text('MTD',
                             textAlign: TextAlign.center,
                             overflow: TextOverflow.ellipsis,
-                            style: TextStyle(color: Colors.white)))),
+                            style: TextStyle(color: Colors.black87)))),
                 GridColumn(
                     columnName: 'StitchValFTD',
                     label: Container(
-                        color: const Color(0xFF5FE3D3),
+                        color: Colors.grey[200],
                         alignment: Alignment.center,
                         child: const Text('FTD',
                             textAlign: TextAlign.center,
                             overflow: TextOverflow.ellipsis,
-                            style: TextStyle(color: Colors.white)))),
+                            style: TextStyle(color: Colors.black87)))),
                 GridColumn(
                     columnName: 'StitchValMTD',
                     label: Container(
-                        color: const Color(0xFF5FE3D3),
+                        color: Colors.grey[200],
                         alignment: Alignment.center,
                         child: const Text('MTD',
                             textAlign: TextAlign.center,
                             overflow: TextOverflow.ellipsis,
-                            style: TextStyle(color: Colors.white)))),
+                            style: TextStyle(color: Colors.black87)))),
                 GridColumn(
                     columnName: 'StitchPerFTD',
                     label: Container(
-                        color: const Color(0xFF5FE3D3),
+                        color: Colors.grey[200],
                         alignment: Alignment.center,
                         child: const Text('FTD',
                             textAlign: TextAlign.center,
                             overflow: TextOverflow.ellipsis,
-                            style: TextStyle(color: Colors.white)))),
+                            style: TextStyle(color: Colors.black87)))),
                 GridColumn(
                     columnName: 'StitchPerMTD',
                     label: Container(
-                        color: const Color(0xFF5FE3D3),
+                        color: Colors.grey[200],
                         alignment: Alignment.center,
                         child: const Text('MTD',
                             textAlign: TextAlign.center,
                             overflow: TextOverflow.ellipsis,
-                            style: TextStyle(color: Colors.white)))),
+                            style: TextStyle(color: Colors.black87)))),
                 GridColumn(
                     columnName: 'FinishHrsFTD',
                     label: Container(
-                        color: const Color(0xFF5FE3D3),
+                        color: Colors.grey[200],
                         alignment: Alignment.center,
                         child: const Text('FTD',
                             textAlign: TextAlign.center,
                             overflow: TextOverflow.ellipsis,
-                            style: TextStyle(color: Colors.white)))),
+                            style: TextStyle(color: Colors.black87)))),
                 GridColumn(
                     columnName: 'FinishHrsMTD',
                     label: Container(
-                        color: const Color(0xFF5FE3D3),
+                        color: Colors.grey[200],
                         alignment: Alignment.center,
                         child: const Text('MTD',
                             textAlign: TextAlign.center,
                             overflow: TextOverflow.ellipsis,
-                            style: TextStyle(color: Colors.white)))),
+                            style: TextStyle(color: Colors.black87)))),
                 GridColumn(
                     columnName: 'FinishValFTD',
                     label: Container(
-                        color: const Color(0xFF5FE3D3),
+                        color: Colors.grey[200],
                         alignment: Alignment.center,
                         child: const Text('FTD',
                             textAlign: TextAlign.center,
                             overflow: TextOverflow.ellipsis,
-                            style: TextStyle(color: Colors.white)))),
+                            style: TextStyle(color: Colors.black87)))),
                 GridColumn(
                     columnName: 'FinishValMTD',
                     label: Container(
-                        color: const Color(0xFF5FE3D3),
+                        color: Colors.grey[200],
                         alignment: Alignment.center,
                         child: const Text('MTD',
                             textAlign: TextAlign.center,
                             overflow: TextOverflow.ellipsis,
-                            style: TextStyle(color: Colors.white)))),
+                            style: TextStyle(color: Colors.black87)))),
                 GridColumn(
                     columnName: 'FinishPerFTD',
                     label: Container(
-                        color: const Color(0xFF5FE3D3),
+                        color: Colors.grey[200],
                         alignment: Alignment.center,
                         child: const Text('FTD',
                             textAlign: TextAlign.center,
                             overflow: TextOverflow.ellipsis,
-                            style: TextStyle(color: Colors.white)))),
+                            style: TextStyle(color: Colors.black87)))),
                 GridColumn(
                     columnName: 'FinishPerMTD',
                     label: Container(
-                        color: const Color(0xFF5FE3D3),
+                        color: Colors.grey[200],
                         alignment: Alignment.center,
                         child: const Text('MTD',
                             textAlign: TextAlign.center,
                             overflow: TextOverflow.ellipsis,
-                            style: TextStyle(color: Colors.white)))),
+                            style: TextStyle(color: Colors.black87)))),
                 GridColumn(
                     columnName: 'FactoryHrsFTD',
                     label: Container(
-                        color: const Color(0xFF5FE3D3),
+                        color: Colors.grey[200],
                         alignment: Alignment.center,
                         child: const Text('FTD',
                             textAlign: TextAlign.center,
                             overflow: TextOverflow.ellipsis,
-                            style: TextStyle(color: Colors.white)))),
+                            style: TextStyle(color: Colors.black87)))),
                 GridColumn(
                     columnName: 'FactoryHrsMTD',
                     label: Container(
-                        color: const Color(0xFF5FE3D3),
+                        color: Colors.grey[200],
                         alignment: Alignment.center,
                         child: const Text('MTD',
                             textAlign: TextAlign.center,
                             overflow: TextOverflow.ellipsis,
-                            style: TextStyle(color: Colors.white)))),
+                            style: TextStyle(color: Colors.black87)))),
                 GridColumn(
                     columnName: 'FactoryValFTD',
                     label: Container(
-                        color: const Color(0xFF5FE3D3),
+                        color: Colors.grey[200],
                         alignment: Alignment.center,
                         child: const Text('FTD',
                             textAlign: TextAlign.center,
                             overflow: TextOverflow.ellipsis,
-                            style: TextStyle(color: Colors.white)))),
+                            style: TextStyle(color: Colors.black87)))),
                 GridColumn(
                     columnName: 'FactoryValMTD',
                     label: Container(
-                        color: const Color(0xFF5FE3D3),
+                        color: Colors.grey[200],
                         alignment: Alignment.center,
                         child: const Text('MTD',
                             textAlign: TextAlign.center,
                             overflow: TextOverflow.ellipsis,
-                            style: TextStyle(color: Colors.white)))),
+                            style: TextStyle(color: Colors.black87)))),
                 GridColumn(
                     columnName: 'FactoryPerFTD',
                     label: Container(
-                        color: const Color(0xFF5FE3D3),
+                        color: Colors.grey[200],
                         alignment: Alignment.center,
                         child: const Text('FTD',
                             textAlign: TextAlign.center,
                             overflow: TextOverflow.ellipsis,
-                            style: TextStyle(color: Colors.white)))),
+                            style: TextStyle(color: Colors.black87)))),
                 GridColumn(
                     columnName: 'FactoryPerMTD',
                     label: Container(
-                        color: const Color(0xFF5FE3D3),
+                        color: Colors.grey[200],
                         alignment: Alignment.center,
                         child: const Text('MTD',
                             textAlign: TextAlign.center,
                             overflow: TextOverflow.ellipsis,
-                            style: TextStyle(color: Colors.white)))),
+                            style: TextStyle(color: Colors.black87)))),
               ],
             ),
           ),

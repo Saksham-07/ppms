@@ -1,0 +1,2 @@
+/Users/mac/Documents/ppms1 2/android/app/.cxx/RelWithDebInfo/5m572f4y/arm64-v8a/CMakeFiles/rebuild_cache.dir
+/Users/mac/Documents/ppms1 2/android/app/.cxx/RelWithDebInfo/5m572f4y/arm64-v8a/CMakeFiles/edit_cache.dir

@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:syncfusion_flutter_datagrid/datagrid.dart';
 import 'package:http/http.dart' as http;
 
+import '../ExtraFunction/lottie_loading.dart';
 import '../common/utils/constants/baseurl.dart';
 
 class SamRevisionData {
@@ -158,7 +159,7 @@ class SamRevisionDataSource extends DataGridSource {
         .first
         .value == 'Total';
     return DataGridRowAdapter(
-      color: isTotalRow ? Colors.yellowAccent : null,
+      color: isTotalRow ? const Color(0xFF8DEAA3) : null,
       cells: row.getCells().map<Widget>((dataGridCell) {
         Alignment alignment = dataGridCell.columnName == 'UnitShortCode'
             ? Alignment.centerLeft
@@ -174,6 +175,7 @@ class SamRevisionDataSource extends DataGridSource {
             style: TextStyle(
               fontSize: 14,
               fontWeight: isTotalRow ? FontWeight.bold : FontWeight.normal,
+              color: Colors.black
             ),
           ),
         );
@@ -249,7 +251,9 @@ class _SamRevisionTableState extends State<SamRevisionTable> {
       future: samRevision,
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Center(child: CircularProgressIndicator());
+          return const SizedBox(
+            width: double.infinity,
+              child: LottieLoading(size: 150,animationPath: 'assets/animation/profit.json',));
         } else if (snapshot.hasError) {
           return Center(child: Text('Error: ${snapshot.error}'));
         } else if (snapshot.hasData) {const double rowHeight = 25;
@@ -284,22 +288,22 @@ class _SamRevisionTableState extends State<SamRevisionTable> {
                   StackedHeaderCell(
                     columnNames: ['UnitShortCode'],
                     child: Container(
-                        color: const Color(0xFF5FE3D3),
+                        color: Colors.grey[400],
                         child: const Center(
                             child: Text(
                               '',
-                              style: TextStyle(color: Colors.white),
+                              style: TextStyle(color: Colors.black87),
                             ))),
                   ),
                   StackedHeaderCell(
                     columnNames: ['cuttingTodayReq', 'cuttingTodayDone', 'cuttingMonthReq', 'cuttingMonthDone', 'cuttingYearReq', 'cuttingYearDone'],
                     child: Container(
-                        color: const Color(0xFF5FE3D3),
+                        color: Colors.grey[400],
                         child: const Center(
                             child: Text(
                               'Cutting',
                               textAlign: TextAlign.center,
-                              style: TextStyle(color: Colors.white),
+                              style: TextStyle(color: Colors.black87),
                             ))),
                   ),
                   StackedHeaderCell(
@@ -312,12 +316,12 @@ class _SamRevisionTableState extends State<SamRevisionTable> {
                       'stitchYearDone',
                     ],
                     child: Container(
-                        color: const Color(0xFF5FE3D3),
+                        color: Colors.grey[400],
                         child: const Center(
                             child: Text(
                               'Stitching',
                               textAlign: TextAlign.center,
-                              style: TextStyle(color: Colors.white),
+                              style: TextStyle(color: Colors.black87),
                             ))),
                   ),
                   StackedHeaderCell(
@@ -330,12 +334,12 @@ class _SamRevisionTableState extends State<SamRevisionTable> {
                       'finishYearDone',
                     ],
                     child: Container(
-                        color: const Color(0xFF5FE3D3),
+                        color: Colors.grey[400],
                         child: const Center(
                             child: Text(
                               'Finishing',
                               textAlign: TextAlign.center,
-                              style: TextStyle(color: Colors.white),
+                              style: TextStyle(color: Colors.black87),
                             ))),
                   ),
                 ]),
@@ -344,192 +348,192 @@ class _SamRevisionTableState extends State<SamRevisionTable> {
                 GridColumn(
                     columnName: 'UnitShortCode',
                     label: Container(
-                        color: const Color(0xFF5FE3D3),
+                        color: Colors.grey[200],
                         alignment: Alignment.center,
                         child: const Text('Unit',
                             textAlign: TextAlign.center,
                             overflow: TextOverflow.ellipsis,
-                            style: TextStyle(color: Colors.white)))),
+                            style: TextStyle(color: Colors.black87)))),
                 GridColumn(
                     columnName: 'cuttingTodayReq',
                     minimumWidth: 60,
                     label: Container(
-                        color: const Color(0xFF5FE3D3),
+                        color: Colors.grey[200],
                         alignment: Alignment.center,
                         child: const Text('FTD\n(Entry)',
                             textAlign: TextAlign.center,
                             overflow: TextOverflow.ellipsis,
-                            style: TextStyle(color: Colors.white)))),
+                            style: TextStyle(color: Colors.black87)))),
                 GridColumn(
                     columnName: 'cuttingTodayDone',
                     minimumWidth: 60,
                     label: Container(
-                        color: const Color(0xFF5FE3D3),
+                        color: Colors.grey[200],
                         alignment: Alignment.center,
                         child: const Text('FTD\n(Done)',
                             textAlign: TextAlign.center,
                             overflow: TextOverflow.ellipsis,
-                            style: TextStyle(color: Colors.white)))),
+                            style: TextStyle(color: Colors.black87)))),
                 GridColumn(
                     columnName: 'cuttingMonthReq',
                     minimumWidth: 60,
                     label: Container(
-                        color: const Color(0xFF5FE3D3),
+                        color: Colors.grey[200],
                         alignment: Alignment.center,
                         child: const Text('MTD\n(Entry)',
                             textAlign: TextAlign.center,
                             overflow: TextOverflow.ellipsis,
-                            style: TextStyle(color: Colors.white)))),
+                            style: TextStyle(color: Colors.black87)))),
                 GridColumn(
                     columnName: 'cuttingMonthDone',
                     minimumWidth: 60,
                     label: Container(
-                        color: const Color(0xFF5FE3D3),
+                        color: Colors.grey[200],
                         alignment: Alignment.center,
                         child: const Text('MTD\n(Done)',
                             textAlign: TextAlign.center,
                             overflow: TextOverflow.ellipsis,
-                            style: TextStyle(color: Colors.white)))),
+                            style: TextStyle(color: Colors.black87)))),
                 GridColumn(
                     columnName: 'cuttingYearReq',
                     minimumWidth: 60,
                     label: Container(
-                        color: const Color(0xFF5FE3D3),
+                        color: Colors.grey[200],
                         alignment: Alignment.center,
                         child: const Text('YTD\n(Entry)',
                             textAlign: TextAlign.center,
                             overflow: TextOverflow.ellipsis,
-                            style: TextStyle(color: Colors.white)))),
+                            style: TextStyle(color: Colors.black87)))),
                 GridColumn(
                     columnName: 'cuttingYearDone',
                     minimumWidth: 60,
                     label: Container(
-                        color: const Color(0xFF5FE3D3),
+                        color: Colors.grey[200],
                         alignment: Alignment.center,
                         child: const Text('YTD\n(Done)',
                             textAlign: TextAlign.center,
                             overflow: TextOverflow.ellipsis,
-                            style: TextStyle(color: Colors.white)))),
+                            style: TextStyle(color: Colors.black87)))),
                 GridColumn(
                     columnName: 'stitchTodayReq',
                     minimumWidth: 60,
                     label: Container(
-                        color: const Color(0xFF5FE3D3),
+                        color: Colors.grey[200],
                         alignment: Alignment.center,
                         child: const Text('FTD\n(Entry)',
                             textAlign: TextAlign.center,
                             overflow: TextOverflow.ellipsis,
-                            style: TextStyle(color: Colors.white)))),
+                            style: TextStyle(color: Colors.black87)))),
                 GridColumn(
                     columnName: 'stitchTodayDone',
                     minimumWidth: 60,
                     label: Container(
-                        color: const Color(0xFF5FE3D3),
+                        color: Colors.grey[200],
                         alignment: Alignment.center,
                         child: const Text('FTD\n(Done)',
                             textAlign: TextAlign.center,
                             overflow: TextOverflow.ellipsis,
-                            style: TextStyle(color: Colors.white)))),
+                            style: TextStyle(color: Colors.black87)))),
                 GridColumn(
                     columnName: 'stitchMonthReq',
                     minimumWidth: 60,
                     label: Container(
-                        color: const Color(0xFF5FE3D3),
+                        color: Colors.grey[200],
                         alignment: Alignment.center,
                         child: const Text('MTD\n(Entry)',
                             textAlign: TextAlign.center,
                             overflow: TextOverflow.ellipsis,
-                            style: TextStyle(color: Colors.white)))),
+                            style: TextStyle(color: Colors.black87)))),
                 GridColumn(
                     columnName: 'stitchMonthDone',
                     minimumWidth: 60,
                     label: Container(
-                        color: const Color(0xFF5FE3D3),
+                        color: Colors.grey[200],
                         alignment: Alignment.center,
                         child: const Text('MTD\n(Done)',
                             textAlign: TextAlign.center,
                             overflow: TextOverflow.ellipsis,
-                            style: TextStyle(color: Colors.white)))),
+                            style: TextStyle(color: Colors.black87)))),
                 GridColumn(
                     columnName: 'stitchYearReq',
                     minimumWidth: 60,
                     label: Container(
-                        color: const Color(0xFF5FE3D3),
+                        color: Colors.grey[200],
                         alignment: Alignment.center,
                         child: const Text('YTD\n(Entry)',
                             textAlign: TextAlign.center,
                             overflow: TextOverflow.ellipsis,
-                            style: TextStyle(color: Colors.white)))),
+                            style: TextStyle(color: Colors.black87)))),
                 GridColumn(
                     columnName: 'stitchYearDone',
                     minimumWidth: 60,
                     label: Container(
-                        color: const Color(0xFF5FE3D3),
+                        color: Colors.grey[200],
                         alignment: Alignment.center,
                         child: const Text('YTD\n(Done)',
                             textAlign: TextAlign.center,
                             overflow: TextOverflow.ellipsis,
-                            style: TextStyle(color: Colors.white)))),
+                            style: TextStyle(color: Colors.black87)))),
                 GridColumn(
                     columnName: 'finishTodayReq',
                     minimumWidth: 60,
                     label: Container(
-                        color: const Color(0xFF5FE3D3),
+                        color: Colors.grey[200],
                         alignment: Alignment.center,
                         child: const Text('FTD\n(Entry)',
                             textAlign: TextAlign.center,
                             overflow: TextOverflow.ellipsis,
-                            style: TextStyle(color: Colors.white)))),
+                            style: TextStyle(color: Colors.black87)))),
                 GridColumn(
                     columnName: 'finishTodayDone',
                     minimumWidth: 60,
                     label: Container(
-                        color: const Color(0xFF5FE3D3),
+                        color: Colors.grey[200],
                         alignment: Alignment.center,
                         child: const Text('FTD\n(Done)',
                             textAlign: TextAlign.center,
                             overflow: TextOverflow.ellipsis,
-                            style: TextStyle(color: Colors.white)))),
+                            style: TextStyle(color: Colors.black87)))),
                 GridColumn(
                     columnName: 'finishMonthReq',
                     minimumWidth: 60,
                     label: Container(
-                        color: const Color(0xFF5FE3D3),
+                        color: Colors.grey[200],
                         alignment: Alignment.center,
                         child: const Text('MTD\n(Entry)',
                             textAlign: TextAlign.center,
                             overflow: TextOverflow.ellipsis,
-                            style: TextStyle(color: Colors.white)))),
+                            style: TextStyle(color: Colors.black87)))),
                 GridColumn(
                     columnName: 'finishMonthDone',
                     minimumWidth: 60,
                     label: Container(
-                        color: const Color(0xFF5FE3D3),
+                        color: Colors.grey[200],
                         alignment: Alignment.center,
                         child: const Text('MTD\n(Done)',
                             textAlign: TextAlign.center,
                             overflow: TextOverflow.ellipsis,
-                            style: TextStyle(color: Colors.white)))),
+                            style: TextStyle(color: Colors.black87)))),
                 GridColumn(
                     columnName: 'finishYearReq',
                     minimumWidth: 60,
                     label: Container(
-                        color: const Color(0xFF5FE3D3),
+                        color: Colors.grey[200],
                         alignment: Alignment.center,
                         child: const Text('YTD\n(Entry)',
                             textAlign: TextAlign.center,
                             overflow: TextOverflow.ellipsis,
-                            style: TextStyle(color: Colors.white)))),
+                            style: TextStyle(color: Colors.black87)))),
                 GridColumn(
                     columnName: 'finishYearDone',
                     minimumWidth: 60,
                     label: Container(
-                        color: const Color(0xFF5FE3D3),
+                        color: Colors.grey[200],
                         alignment: Alignment.center,
                         child: const Text('YTD\n(Done)',
                             textAlign: TextAlign.center,
                             overflow: TextOverflow.ellipsis,
-                            style: TextStyle(color: Colors.white)))),
+                            style: TextStyle(color: Colors.black87)))),
               ],
             ),
           ),

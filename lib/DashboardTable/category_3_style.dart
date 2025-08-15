@@ -5,6 +5,9 @@ import 'package:intl/intl.dart';
 import 'package:syncfusion_flutter_datagrid/datagrid.dart';
 import 'package:http/http.dart' as http;
 
+import '../ExtraFunction/lottie_loading.dart';
+import '../common/utils/constants/baseurl.dart';
+
 class Category3Detail {
   final String unitShortCode;
   final String buyerName;
@@ -48,27 +51,29 @@ class Category3Detail {
       formattedDate = '';
     }
 
+    double roundTo2Decimal(double value) => double.parse(value.toStringAsFixed(2));
+
     return Category3Detail(
       unitShortCode: json['UnitShortCode'] ?? '',
       buyerName: json['BuyerName'] ?? '',
       styleNo: json['StyleNo'] ?? '',
       startDate: formattedDate,
-      cuttingCost: (json['CuttingCost'] as num?)?.toDouble() ?? 0.0,
-      prodSam: (json['ProdSam'] as num?)?.toDouble() ?? 0.0,
-      prepSam: (json['PrepSam'] as num?)?.toDouble() ?? 0.0,
-      finishCost: (json['FinishCost'] as num?)?.toDouble() ?? 0.0,
+      cuttingCost: roundTo2Decimal((json['CuttingCost'] as num?)?.toDouble() ?? 0.0),
+      prodSam: roundTo2Decimal((json['ProdSam'] as num?)?.toDouble() ?? 0.0),
+      prepSam: roundTo2Decimal((json['PrepSam'] as num?)?.toDouble() ?? 0.0),
+      finishCost: roundTo2Decimal((json['FinishCost'] as num?)?.toDouble() ?? 0.0),
     );
   }
 }
 
-Future<List<Category3Detail>> fetchCat3Data(String from, String to, String units) async {
+Future<List<Category3Detail>> fetchCat3Data(String from, String to, String units, String vgUnit) async {
   final response = await http.get(
-    Uri.parse('http://14.142.248.34:10008/management?proce_type=Category3&from=&to=&units=$units'),
+    Uri.parse('${TBaseURL.baseUrl}mngmnt_review_vg?proc_type=Category3&type=Category3&fromDate=&toDate=&unit=$units&unitVg=$vgUnit'),
     // Uri.parse('http://172.16.10.11:8000/management?proce_type=catagory&from=&to=&units=$units'),
   );
 
   if (kDebugMode) {
-    print('http://14.142.248.34:10008/management?proce_type=Category3&from=&to=&units=$units');
+    print('${TBaseURL.baseUrl}mngmnt_review_vg?proc_type=Category3&type=Category3&from=&to=&units=$units&unitVg=$vgUnit');
   }
 
   if (response.statusCode == 200) {
@@ -107,7 +112,7 @@ class Category3DataSource extends DataGridSource {
   DataGridRowAdapter buildRow(DataGridRow row) {
     final isTotalRow = row.getCells().first.value == 'Total';
     return DataGridRowAdapter(
-      color: isTotalRow ? Colors.yellowAccent : null,
+      color: isTotalRow ? const Color(0xFF8DEAA3) : null,
       cells: row.getCells().map<Widget>((dataGridCell) {
         Alignment alignment = dataGridCell.columnName == 'UnitShortCode' || dataGridCell.columnName == 'Buyer' ||
             dataGridCell.columnName == 'Style' || dataGridCell.columnName == 'StartDate'
@@ -122,6 +127,7 @@ class Category3DataSource extends DataGridSource {
             style: TextStyle(
               fontSize: 14,
               fontWeight: isTotalRow ? FontWeight.bold : FontWeight.normal,
+              color: Colors.black
             ),
           ),
         );
@@ -136,12 +142,14 @@ class Category3DataTable extends StatefulWidget {
   final String from;
   final String to;
   final String units;
+  final String vgUnit;
 
   const Category3DataTable({
     super.key,
     required this.from,
     required this.to,
     required this.units,
+    required this.vgUnit,
   });
 
   @override
@@ -154,7 +162,7 @@ class _Category3DataTableState extends State<Category3DataTable> {
   @override
   void initState() {
     super.initState();
-    category3 = fetchCat3Data(widget.from, widget.to, widget.units);
+    category3 = fetchCat3Data(widget.from, widget.to, widget.units,widget.vgUnit);
   }
 
   @override
@@ -163,7 +171,9 @@ class _Category3DataTableState extends State<Category3DataTable> {
       future: category3,
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Center(child: CircularProgressIndicator());
+          return const SizedBox(
+            width: double.infinity,
+              child: LottieLoading(size: 150,animationPath: 'assets/animation/profit.json',));
         } else if (snapshot.hasError) {
           return Center(child: Text('Error: ${snapshot.error}'));
         } else if (snapshot.hasData) {
@@ -194,75 +204,75 @@ class _Category3DataTableState extends State<Category3DataTable> {
                   GridColumn(
                       columnName: 'UnitShortCode',
                       label: Container(
-                          color: const Color(0xFF5FE3D3),
+                          color: Colors.grey[400],
                           alignment: Alignment.center,
                           child: const Text('Unit',
                               overflow: TextOverflow.ellipsis,
                               textAlign: TextAlign.center,
-                              style: TextStyle(color: Colors.white)))),
+                              style: TextStyle(color: Colors.black87)))),
                   GridColumn(
                       columnName: 'Buyer',
                       label: Container(
-                          color: const Color(0xFF5FE3D3),
+                          color: Colors.grey[400],
                           alignment: Alignment.center,
                           child: const Text('Buyer',
                               overflow: TextOverflow.ellipsis,
                               textAlign: TextAlign.center,
-                              style: TextStyle(color: Colors.white)))),
+                              style: TextStyle(color: Colors.black87)))),
                   GridColumn(
                       columnName: 'Style',
                       label: Container(
-                          color: const Color(0xFF5FE3D3),
+                          color: Colors.grey[400],
                           alignment: Alignment.center,
                           child: const Text('Style No',
                               overflow: TextOverflow.ellipsis,
                               textAlign: TextAlign.center,
-                              style: TextStyle(color: Colors.white)))),
+                              style: TextStyle(color: Colors.black87)))),
                   GridColumn(
                       columnName: 'StartDate',
                       label: Container(
-                          color: const Color(0xFF5FE3D3),
+                          color: Colors.grey[400],
                           alignment: Alignment.center,
                           child: const Text('Stitching Start\nDate',
                               overflow: TextOverflow.ellipsis,
                               textAlign: TextAlign.center,
-                              style: TextStyle(color: Colors.white)))),
+                              style: TextStyle(color: Colors.black87)))),
                   GridColumn(
                       columnName: 'CuttingCost',
                       label: Container(
-                          color: const Color(0xFF5FE3D3),
+                          color: Colors.grey[400],
                           alignment: Alignment.center,
                           child: const Text("Cutting\nCost",
                               overflow: TextOverflow.ellipsis,
                               textAlign: TextAlign.center,
-                              style: TextStyle(color: Colors.white)))),
+                              style: TextStyle(color: Colors.black87)))),
                   GridColumn(
                       columnName: 'ProdSam',
                       label: Container(
-                          color: const Color(0xFF5FE3D3),
+                          color: Colors.grey[400],
                           alignment: Alignment.center,
                           child: const Text('Prod\nSam',
                               overflow: TextOverflow.ellipsis,
                               textAlign: TextAlign.center,
-                              style: TextStyle(color: Colors.white)))),
+                              style: TextStyle(color: Colors.black87)))),
                   GridColumn(
                       columnName: 'PrepSam',
                       label: Container(
-                          color: const Color(0xFF5FE3D3),
+                          color: Colors.grey[400],
                           alignment: Alignment.center,
                           child: const Text("Prep\nSam",
                               overflow: TextOverflow.ellipsis,
                               textAlign: TextAlign.center,
-                              style: TextStyle(color: Colors.white)))),
+                              style: TextStyle(color: Colors.black87)))),
                   GridColumn(
                       columnName: 'FinishCost',
                       label: Container(
-                          color: const Color(0xFF5FE3D3),
+                          color: Colors.grey[400],
                           alignment: Alignment.center,
                           child: const Text('Finish\nCost',
                               overflow: TextOverflow.ellipsis,
                               textAlign: TextAlign.center,
-                              style: TextStyle(color: Colors.white)))),
+                              style: TextStyle(color: Colors.black87)))),
                 ],
               ),
             ),

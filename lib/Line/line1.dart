@@ -1,6 +1,5 @@
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
-import 'package:velocity_x/velocity_x.dart';
 
 class _LineChart extends StatelessWidget {
   const _LineChart({required this.isShowingMainData});
@@ -233,7 +232,7 @@ class _LineChart extends StatelessWidget {
   LineChartBarData get lineChartBarData2_1 => LineChartBarData(
     isCurved: true,
     curveSmoothness: 0,
-    color: Vx.green500,
+    color: Colors.green[500],
     barWidth: 4,
     isStrokeCapRound: true,
     dotData: const FlDotData(show: false),
@@ -251,7 +250,7 @@ class _LineChart extends StatelessWidget {
 
   LineChartBarData get lineChartBarData2_2 => LineChartBarData(
     isCurved: true,
-    color: Vx.pink500,
+    color: Colors.pink[500],
     barWidth: 4,
     isStrokeCapRound: true,
     dotData: const FlDotData(show: false),
@@ -272,7 +271,7 @@ class _LineChart extends StatelessWidget {
   LineChartBarData get lineChartBarData2_3 => LineChartBarData(
     isCurved: true,
     curveSmoothness: 0,
-    color: Vx.cyan500,
+    color: Colors.cyan[500],
     barWidth: 2,
     isStrokeCapRound: true,
     dotData: const FlDotData(show: true),

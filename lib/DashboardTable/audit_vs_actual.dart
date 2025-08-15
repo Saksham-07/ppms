@@ -3,6 +3,9 @@ import 'package:flutter/material.dart';
 import 'package:syncfusion_flutter_datagrid/datagrid.dart';
 import 'package:http/http.dart' as http;
 
+import '../ExtraFunction/lottie_loading.dart';
+import '../common/utils/constants/baseurl.dart';
+
 class AuditVsDetail {
   final int auditFinishToday;
   final int auditFinishTotal;
@@ -53,16 +56,17 @@ class AuditVsDetail {
   }
 }
 
-Future<List<AuditVsDetail>> fetchAuditVsActual(String from, String to, String units) async {
-  final response = await http.get(
-    Uri.parse('http://14.142.248.34:10008/management?proce_type=auditVs&from=$from&to=$to&units=$units'),
-  );
+Future<List<AuditVsDetail>> fetchAuditVsActual(
+    String from, String to, String units, String vgUnit) async {
+  print(
+      '${TBaseURL.baseUrl}mngmnt_review_vg?type=MngmntReviewAuditVwActual&unitVg=$vgUnit&fromDate=$from&toDate=$to&unit=$units&proc_type=MngmntReviewAuditVsActual');
+  final response = await http.get(Uri.parse(
+      '${TBaseURL.baseUrl}mngmnt_review_vg?type=MngmntReviewAuditVwActual&unitVg=$vgUnit&fromDate=$from&toDate=$to&unit=$units&proc_type=MngmntReviewAuditVsActual'));
 
   if (response.statusCode == 200) {
     List jsonResponse = json.decode(response.body);
 
     return jsonResponse.map((data) => AuditVsDetail.fromJson(data)).toList();
-
   } else {
     throw Exception('Failed to load data');
   }
@@ -74,18 +78,30 @@ class AuditVsActualSource extends DataGridSource {
       return DataGridRow(cells: [
         DataGridCell<String>(
             columnName: 'UnitShortCode', value: data.unitShortCode),
-        DataGridCell<int?>(columnName: 'AuditStitchToday', value: (data.auditStitchToday)),
-        DataGridCell<int?>(columnName: 'AuditStitchTotal', value: (data.auditStitchTotal)),
-        DataGridCell<int?>(columnName: 'StitchQtyToday', value: (data.stitchToday)),
-        DataGridCell<int?>(columnName: 'StitchQtyTotal', value: (data.stitchTotal)),
-        DataGridCell<int?>(columnName: 'StitchVerToday', value: (data.stitchTodayVariance)),
-        DataGridCell<int?>(columnName: 'StitchVerTotal', value: (data.stitchTotalVariance)),
-        DataGridCell<int?>(columnName: 'AuditFinishToday', value: (data.auditFinishToday)),
-        DataGridCell<int?>(columnName: 'AuditFinishTotal', value: (data.auditFinishTotal)),
-        DataGridCell<int?>(columnName: 'FinishQtyToday', value: (data.finishToday)),
-        DataGridCell<int?>(columnName: 'FinishQtyTotal', value: (data.finishTotal)),
-        DataGridCell<int?>(columnName: 'FinishVerToday', value: (data.finishTodayVariance)),
-        DataGridCell<int?>(columnName: 'FinishVerTotal', value: (data.finishTotalVariance)),
+        DataGridCell<int?>(
+            columnName: 'AuditStitchToday', value: (data.auditStitchToday)),
+        DataGridCell<int?>(
+            columnName: 'AuditStitchTotal', value: (data.auditStitchTotal)),
+        DataGridCell<int?>(
+            columnName: 'StitchQtyToday', value: (data.stitchToday)),
+        DataGridCell<int?>(
+            columnName: 'StitchQtyTotal', value: (data.stitchTotal)),
+        DataGridCell<int?>(
+            columnName: 'StitchVerToday', value: (data.stitchTodayVariance)),
+        DataGridCell<int?>(
+            columnName: 'StitchVerTotal', value: (data.stitchTotalVariance)),
+        DataGridCell<int?>(
+            columnName: 'AuditFinishToday', value: (data.auditFinishToday)),
+        DataGridCell<int?>(
+            columnName: 'AuditFinishTotal', value: (data.auditFinishTotal)),
+        DataGridCell<int?>(
+            columnName: 'FinishQtyToday', value: (data.finishToday)),
+        DataGridCell<int?>(
+            columnName: 'FinishQtyTotal', value: (data.finishTotal)),
+        DataGridCell<int?>(
+            columnName: 'FinishVerToday', value: (data.finishTodayVariance)),
+        DataGridCell<int?>(
+            columnName: 'FinishVerTotal', value: (data.finishTotalVariance)),
       ]);
     }).toList();
 
@@ -93,18 +109,30 @@ class AuditVsActualSource extends DataGridSource {
       final totals = _calculateTotals(auditActualData);
       _dataGridRows.add(DataGridRow(cells: [
         const DataGridCell<String>(columnName: 'UnitShortCode', value: 'Total'),
-        DataGridCell<int>(columnName: 'AuditStitchToday', value: totals['auditStitchToday']),
-        DataGridCell<int>(columnName: 'AuditStitchTotal', value: totals['auditStitchTotal']),
-        DataGridCell<int>(columnName: 'StitchQtyToday', value: totals['stitchToday']),
-        DataGridCell<int>(columnName: 'StitchQtyTotal', value: totals['stitchTotal']),
-        DataGridCell<int>(columnName: 'StitchVerToday', value: totals['stitchTodayVariance']),
-        DataGridCell<int>(columnName: 'StitchVerTotal', value: totals['stitchTotalVariance']),
-        DataGridCell<int>(columnName: 'AuditFinishToday', value: totals['auditFinishToday']),
-        DataGridCell<int>(columnName: 'AuditFinishTotal', value: totals['auditFinishTotal']),
-        DataGridCell<int>(columnName: 'FinishQtyToday', value: totals['finishToday']),
-        DataGridCell<int>(columnName: 'FinishQtyTotal', value: totals['finishTotal']),
-        DataGridCell<int>(columnName: 'FinishVerToday', value: totals['finishTodayVariance']),
-        DataGridCell<int>(columnName: 'FinishVerTotal', value: totals['finishTotalVariance']),
+        DataGridCell<int>(
+            columnName: 'AuditStitchToday', value: totals['auditStitchToday']),
+        DataGridCell<int>(
+            columnName: 'AuditStitchTotal', value: totals['auditStitchTotal']),
+        DataGridCell<int>(
+            columnName: 'StitchQtyToday', value: totals['stitchToday']),
+        DataGridCell<int>(
+            columnName: 'StitchQtyTotal', value: totals['stitchTotal']),
+        DataGridCell<int>(
+            columnName: 'StitchVerToday', value: totals['stitchTodayVariance']),
+        DataGridCell<int>(
+            columnName: 'StitchVerTotal', value: totals['stitchTotalVariance']),
+        DataGridCell<int>(
+            columnName: 'AuditFinishToday', value: totals['auditFinishToday']),
+        DataGridCell<int>(
+            columnName: 'AuditFinishTotal', value: totals['auditFinishTotal']),
+        DataGridCell<int>(
+            columnName: 'FinishQtyToday', value: totals['finishToday']),
+        DataGridCell<int>(
+            columnName: 'FinishQtyTotal', value: totals['finishTotal']),
+        DataGridCell<int>(
+            columnName: 'FinishVerToday', value: totals['finishTodayVariance']),
+        DataGridCell<int>(
+            columnName: 'FinishVerTotal', value: totals['finishTotalVariance']),
       ]));
     }
   }
@@ -116,12 +144,9 @@ class AuditVsActualSource extends DataGridSource {
 
   @override
   DataGridRowAdapter buildRow(DataGridRow row) {
-    final isTotalRow = row
-        .getCells()
-        .first
-        .value == 'Total';
+    final isTotalRow = row.getCells().first.value == 'Total';
     return DataGridRowAdapter(
-      color: isTotalRow ? Colors.yellowAccent : null,
+      color: isTotalRow ? const Color(0xFF8DEAA3) : null,
       cells: row.getCells().map<Widget>((dataGridCell) {
         Alignment alignment = dataGridCell.columnName == 'UnitShortCode'
             ? Alignment.centerLeft
@@ -137,6 +162,7 @@ class AuditVsActualSource extends DataGridSource {
             style: TextStyle(
               fontSize: 14,
               fontWeight: isTotalRow ? FontWeight.bold : FontWeight.normal,
+              color: Colors.black
             ),
           ),
         );
@@ -153,38 +179,48 @@ class AuditVsActualSource extends DataGridSource {
     double calculateAverage(List<double> values) {
       var filteredValues = values.where((value) => value > 0).toList();
       if (filteredValues.isEmpty) return 0.0; // Avoid division by 0
-      return roundToTwo(filteredValues.reduce((a, b) => a + b) / filteredValues.length);
+      return roundToTwo(
+          filteredValues.reduce((a, b) => a + b) / filteredValues.length);
     }
 
     // Map each field to its average
     return {
-      'auditFinishToday': data.fold(0, (sum, item) => sum + item.auditFinishToday),
-      'auditFinishTotal': data.fold(0, (sum, item) => sum + item.auditFinishTotal),
-      'auditStitchToday': data.fold(0, (sum, item) => sum + item.auditStitchToday),
-      'auditStitchTotal': data.fold(0, (sum, item) => sum + item.auditStitchTotal),
+      'auditFinishToday':
+          data.fold(0, (sum, item) => sum + item.auditFinishToday),
+      'auditFinishTotal':
+          data.fold(0, (sum, item) => sum + item.auditFinishTotal),
+      'auditStitchToday':
+          data.fold(0, (sum, item) => sum + item.auditStitchToday),
+      'auditStitchTotal':
+          data.fold(0, (sum, item) => sum + item.auditStitchTotal),
       'finishToday': data.fold(0, (sum, item) => sum + item.finishToday),
       'finishTotal': data.fold(0, (sum, item) => sum + item.finishTotal),
-      'finishTodayVariance': data.fold(0, (sum, item) => sum + item.finishTodayVariance),
-      'finishTotalVariance': data.fold(0, (sum, item) => sum + item.finishTotalVariance),
-      'stitchTodayVariance': data.fold(0, (sum, item) => sum + item.stitchTodayVariance),
-      'stitchTotalVariance': data.fold(0, (sum, item) => sum + item.stitchTotalVariance),
+      'finishTodayVariance':
+          data.fold(0, (sum, item) => sum + item.finishTodayVariance),
+      'finishTotalVariance':
+          data.fold(0, (sum, item) => sum + item.finishTotalVariance),
+      'stitchTodayVariance':
+          data.fold(0, (sum, item) => sum + item.stitchTodayVariance),
+      'stitchTotalVariance':
+          data.fold(0, (sum, item) => sum + item.stitchTotalVariance),
       'stitchToday': data.fold(0, (sum, item) => sum + item.stitchToday),
       'stitchTotal': data.fold(0, (sum, item) => sum + item.stitchTotal),
     };
   }
 }
 
-// Main widget
 class AuditVsActualTable extends StatefulWidget {
   final String from;
   final String to;
   final String units;
+  final String vgUnit;
 
   const AuditVsActualTable({
     super.key,
     required this.from,
     required this.to,
     required this.units,
+    required this.vgUnit,
   });
 
   @override
@@ -197,7 +233,7 @@ class _AuditVsActualTableState extends State<AuditVsActualTable> {
   @override
   void initState() {
     super.initState();
-    auditData = fetchAuditVsActual(widget.from, widget.to, widget.units);
+    auditData = fetchAuditVsActual(widget.from, widget.to, widget.units,widget.vgUnit);
   }
 
   @override
@@ -206,7 +242,9 @@ class _AuditVsActualTableState extends State<AuditVsActualTable> {
       future: auditData,
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Center(child: CircularProgressIndicator());
+          return const SizedBox(
+            width: double.infinity,
+              child: LottieLoading(size: 150,animationPath: 'assets/animation/profit.json',));
         } else if (snapshot.hasError) {
           return Center(child: Text('Error: ${snapshot.error}'));
         } else if (snapshot.hasData) {const double rowHeight = 25;
@@ -241,11 +279,11 @@ class _AuditVsActualTableState extends State<AuditVsActualTable> {
                   StackedHeaderCell(
                     columnNames: ['UnitShortCode'],
                     child: Container(
-                        color: const Color(0xFF5FE3D3),
+                        color: Colors.grey[400],
                         child: const Center(
                             child: Text(
                               '',
-                              style: TextStyle(color: Colors.white),
+                              style: TextStyle(color: Colors.black87),
                             ))),
                   ),
                   StackedHeaderCell(
@@ -254,12 +292,12 @@ class _AuditVsActualTableState extends State<AuditVsActualTable> {
                       'AuditStitchTotal',
                     ],
                     child: Container(
-                        color: const Color(0xFF5FE3D3),
+                        color: Colors.grey[400],
                         child: const Center(
                             child: Text(
                               'Audit Stitch',
                               textAlign: TextAlign.center,
-                              style: TextStyle(color: Colors.white),
+                              style: TextStyle(color: Colors.black87),
                             ))),
                   ),
                   StackedHeaderCell(
@@ -268,12 +306,12 @@ class _AuditVsActualTableState extends State<AuditVsActualTable> {
                       'StitchQtyTotal',
                     ],
                     child: Container(
-                        color: const Color(0xFF5FE3D3),
+                        color: Colors.grey[400],
                         child: const Center(
                             child: Text(
                               'Stitch Qty',
                               textAlign: TextAlign.center,
-                              style: TextStyle(color: Colors.white),
+                              style: TextStyle(color: Colors.black87),
                             ))),
                   ),
                   StackedHeaderCell(
@@ -282,12 +320,12 @@ class _AuditVsActualTableState extends State<AuditVsActualTable> {
                       'StitchVerTotal',
                     ],
                     child: Container(
-                        color: const Color(0xFF5FE3D3),
+                        color: Colors.grey[400],
                         child: const Center(
                             child: Text(
                               'Stitch Ver',
                               textAlign: TextAlign.center,
-                              style: TextStyle(color: Colors.white),
+                              style: TextStyle(color: Colors.black87),
                             ))),
                   ),
                   StackedHeaderCell(
@@ -296,12 +334,12 @@ class _AuditVsActualTableState extends State<AuditVsActualTable> {
                       'AuditFinishTotal',
                     ],
                     child: Container(
-                        color: const Color(0xFF5FE3D3),
+                        color: Colors.grey[400],
                         child: const Center(
                             child: Text(
                               'Audit Finish',
                               textAlign: TextAlign.center,
-                              style: TextStyle(color: Colors.white),
+                              style: TextStyle(color: Colors.black87),
                             ))),
                   ),
                   StackedHeaderCell(
@@ -310,12 +348,12 @@ class _AuditVsActualTableState extends State<AuditVsActualTable> {
                       'FinishQtyTotal',
                     ],
                     child: Container(
-                        color: const Color(0xFF5FE3D3),
+                        color: Colors.grey[400],
                         child: const Center(
                             child: Text(
                               'Finish Qty',
                               textAlign: TextAlign.center,
-                              style: TextStyle(color: Colors.white),
+                              style: TextStyle(color: Colors.black87),
                             ))),
                   ),
                   StackedHeaderCell(
@@ -324,12 +362,12 @@ class _AuditVsActualTableState extends State<AuditVsActualTable> {
                       'FinishVerTotal',
                     ],
                     child: Container(
-                        color: const Color(0xFF5FE3D3),
+                        color: Colors.grey[400],
                         child: const Center(
                             child: Text(
                               'Finish Ver',
                               textAlign: TextAlign.center,
-                              style: TextStyle(color: Colors.white),
+                              style: TextStyle(color: Colors.black87),
                             ))),
                   ),
                 ]),
@@ -338,120 +376,120 @@ class _AuditVsActualTableState extends State<AuditVsActualTable> {
                 GridColumn(
                     columnName: 'UnitShortCode',
                     label: Container(
-                        color: const Color(0xFF5FE3D3),
+                        color: Colors.grey[200],
                         alignment: Alignment.center,
                         child: const Text('Unit',
                             textAlign: TextAlign.center,
                             overflow: TextOverflow.ellipsis,
-                            style: TextStyle(color: Colors.white)))),
+                            style: TextStyle(color: Colors.black87)))),
                 GridColumn(
                     columnName: 'AuditStitchToday',
                     label: Container(
-                        color: const Color(0xFF5FE3D3),
+                        color: Colors.grey[200],
                         alignment: Alignment.center,
                         child: const Text('Today',
                             textAlign: TextAlign.center,
                             overflow: TextOverflow.ellipsis,
-                            style: TextStyle(color: Colors.white)))),
+                            style: TextStyle(color: Colors.black87)))),
                 GridColumn(
                     columnName: 'AuditStitchTotal',
                     label: Container(
-                        color: const Color(0xFF5FE3D3),
+                        color: Colors.grey[200],
                         alignment: Alignment.center,
                         child: const Text('Total',
                             textAlign: TextAlign.center,
                             overflow: TextOverflow.ellipsis,
-                            style: TextStyle(color: Colors.white)))),
+                            style: TextStyle(color: Colors.black87)))),
                 GridColumn(
                     columnName: 'StitchQtyToday',
                     label: Container(
-                        color: const Color(0xFF5FE3D3),
+                        color: Colors.grey[200],
                         alignment: Alignment.center,
                         child: const Text('Today',
                             textAlign: TextAlign.center,
                             overflow: TextOverflow.ellipsis,
-                            style: TextStyle(color: Colors.white)))),
+                            style: TextStyle(color: Colors.black87)))),
                 GridColumn(
                     columnName: 'StitchQtyTotal',
                     label: Container(
-                        color: const Color(0xFF5FE3D3),
+                        color: Colors.grey[200],
                         alignment: Alignment.center,
                         child: const Text('Total',
                             textAlign: TextAlign.center,
                             overflow: TextOverflow.ellipsis,
-                            style: TextStyle(color: Colors.white)))),
+                            style: TextStyle(color: Colors.black87)))),
                 GridColumn(
                     columnName: 'StitchVerToday',
                     label: Container(
-                        color: const Color(0xFF5FE3D3),
+                        color: Colors.grey[200],
                         alignment: Alignment.center,
                         child: const Text('Today',
                             textAlign: TextAlign.center,
                             overflow: TextOverflow.ellipsis,
-                            style: TextStyle(color: Colors.white)))),
+                            style: TextStyle(color: Colors.black87)))),
                 GridColumn(
                     columnName: 'StitchVerTotal',
                     label: Container(
-                        color: const Color(0xFF5FE3D3),
+                        color: Colors.grey[200],
                         alignment: Alignment.center,
                         child: const Text('Total',
                             textAlign: TextAlign.center,
                             overflow: TextOverflow.ellipsis,
-                            style: TextStyle(color: Colors.white)))),
+                            style: TextStyle(color: Colors.black87)))),
                 GridColumn(
                     columnName: 'AuditFinishToday',
                     label: Container(
-                        color: const Color(0xFF5FE3D3),
+                        color: Colors.grey[200],
                         alignment: Alignment.center,
                         child: const Text('Today',
                             textAlign: TextAlign.center,
                             overflow: TextOverflow.ellipsis,
-                            style: TextStyle(color: Colors.white)))),
+                            style: TextStyle(color: Colors.black87)))),
                 GridColumn(
                     columnName: 'AuditFinishTotal',
                     label: Container(
-                        color: const Color(0xFF5FE3D3),
+                        color: Colors.grey[200],
                         alignment: Alignment.center,
                         child: const Text('Total',
                             textAlign: TextAlign.center,
                             overflow: TextOverflow.ellipsis,
-                            style: TextStyle(color: Colors.white)))),
+                            style: TextStyle(color: Colors.black87)))),
                 GridColumn(
                     columnName: 'FinishQtyToday',
                     label: Container(
-                        color: const Color(0xFF5FE3D3),
+                        color: Colors.grey[200],
                         alignment: Alignment.center,
                         child: const Text('Today',
                             textAlign: TextAlign.center,
                             overflow: TextOverflow.ellipsis,
-                            style: TextStyle(color: Colors.white)))),
+                            style: TextStyle(color: Colors.black87)))),
                 GridColumn(
                     columnName: 'FinishQtyTotal',
                     label: Container(
-                        color: const Color(0xFF5FE3D3),
+                        color: Colors.grey[200],
                         alignment: Alignment.center,
                         child: const Text('Total',
                             textAlign: TextAlign.center,
                             overflow: TextOverflow.ellipsis,
-                            style: TextStyle(color: Colors.white)))),
+                            style: TextStyle(color: Colors.black87)))),
                 GridColumn(
                     columnName: 'FinishVerToday',
                     label: Container(
-                        color: const Color(0xFF5FE3D3),
+                        color: Colors.grey[200],
                         alignment: Alignment.center,
                         child: const Text('Today',
                             textAlign: TextAlign.center,
                             overflow: TextOverflow.ellipsis,
-                            style: TextStyle(color: Colors.white)))),
+                            style: TextStyle(color: Colors.black87)))),
                 GridColumn(
                     columnName: 'FinishVerTotal',
                     label: Container(
-                        color: const Color(0xFF5FE3D3),
+                        color: Colors.grey[200],
                         alignment: Alignment.center,
                         child: const Text('Total',
                             textAlign: TextAlign.center,
                             overflow: TextOverflow.ellipsis,
-                            style: TextStyle(color: Colors.white)))),
+                            style: TextStyle(color: Colors.black87)))),
 
               ],
             ),

@@ -1,15 +1,19 @@
 import 'dart:convert';
 import 'dart:developer';
+import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:http/http.dart' as http;
+import 'package:path_provider/path_provider.dart';
 import 'package:printing/printing.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:pdf/pdf.dart';
 import 'dart:ui' as ui;
 import 'package:flutter/services.dart';
+
+import '../../common/utils/constants/baseurl.dart';
 
 class DownloadPayslipView extends StatefulWidget {
   final String? month;
@@ -24,6 +28,7 @@ class DownloadPayslipView extends StatefulWidget {
 class _DownloadPayslipViewState extends State<DownloadPayslipView> {
   final GlobalKey _globalKey = GlobalKey();
   List<Map<String, dynamic>> datas = [];
+  String? loginId,id;
 
   @override
   void initState() {
@@ -32,12 +37,50 @@ class _DownloadPayslipViewState extends State<DownloadPayslipView> {
 
   }
 
+  void _showSearchDialog(BuildContext context) {
+    TextEditingController searchController = TextEditingController();
+
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text("Enter"),
+          content: TextField(
+            controller: searchController,
+            decoration: const InputDecoration(
+              hintText: "Type Here...",
+              border: OutlineInputBorder(),
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.pop(context); // Close dialog without action
+              },
+              child: const Text("Cancel"),
+            ),
+            TextButton(
+              onPressed: () {
+                setState(() {
+                  id = searchController.text.trim();
+                });
+                Navigator.pop(context); // Close dialog
+                _fetchPayslip(); // Run function with entered text
+              },
+              child: const Text("OK"),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   Future<void> _captureAndPrintScreen() async {
     try {
       // Capture the screen as an image
       RenderRepaintBoundary boundary =
       _globalKey.currentContext!.findRenderObject() as RenderRepaintBoundary;
-      ui.Image image = await boundary.toImage();
+      ui.Image image = await boundary.toImage(pixelRatio: 3.0); // High resolution
       ByteData? byteData = await image.toByteData(format: ui.ImageByteFormat.png);
       Uint8List pngBytes = byteData!.buffer.asUint8List();
 
@@ -55,13 +98,23 @@ class _DownloadPayslipViewState extends State<DownloadPayslipView> {
         ),
       );
 
-      // Print the PDF (or the screenshot image)
+      // Save the PDF to a file
+      final output = await getTemporaryDirectory();
+      final file = File("${output.path}/payslip.pdf");
+      await file.writeAsBytes(await pdf.save());
+
+      // Print the PDF
       await Printing.layoutPdf(
         onLayout: (PdfPageFormat format) async => pdf.save(),
       );
+
+      // Show success message
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("PDF saved and ready to print: ${file.path}")),
+      );
     } catch (e) {
       if (kDebugMode) {
-        print(e);
+        print("Error capturing the screen: $e");
       }
     }
   }
@@ -69,14 +122,23 @@ class _DownloadPayslipViewState extends State<DownloadPayslipView> {
 
   Future<void> _fetchPayslip() async {
     final prefs = await SharedPreferences.getInstance();
-    String? id = prefs.getString('login_id');
+    loginId = prefs.getString('login_id');
+    print(id);
+    if(id == '' || id == null) {
+      setState(() {
+        id = loginId;
+      });
+    }
 
     final url1 = Uri.parse(
-      'http://14.142.248.34:10008/payslip?user_id=$id&month=${widget.month}&year=${widget.year}',
+      '${TBaseURL.baseUrl}payslip?user_id=$id&month=${widget.month}&year=${widget.year}',
     );
     final url2 = Uri.parse(
-      'http://14.142.248.34:10008/payslip_earn?user_id=$id&month=${widget.month}&year=${widget.year}',
+      '${TBaseURL.baseUrl}payslip_earn?user_id=$id&month=${widget.month}&year=${widget.year}',
     );
+
+    print(url1);
+    print(url2);
 
     try {
       // Fetch both API responses in parallel
@@ -130,6 +192,18 @@ class _DownloadPayslipViewState extends State<DownloadPayslipView> {
             Navigator.of(context).pop();
           },
         ),
+        actions: [
+          if(loginId == '0552482' || loginId == '0552297')
+            Padding(
+              padding: const EdgeInsets.all(14.0),
+              child: GestureDetector(
+                  onTap: () {
+                    _showSearchDialog(context);
+                  },
+                  child: SizedBox(width: 50,height: 50,child: Text('',style: TextStyle(color: Color(0xFF5FE3D3)),),)
+              ),
+            ),
+        ],
         title: const Text(
           'Payslip',
           style: TextStyle(
@@ -141,7 +215,9 @@ class _DownloadPayslipViewState extends State<DownloadPayslipView> {
         centerTitle: true,
         elevation: 2,
       ),
-      body: ListView.builder(
+      body: RepaintBoundary(
+      key: _globalKey, // Wrap the entire body to capture
+      child: ListView.builder(
         itemCount: datas.length,
         itemBuilder: (context, index) {
           final data = datas[index];
@@ -149,7 +225,7 @@ class _DownloadPayslipViewState extends State<DownloadPayslipView> {
             padding: const EdgeInsets.all(10.0),
             child: SingleChildScrollView(
               scrollDirection: Axis.horizontal,
-              child: IntrinsicWidth(  // Dynamically adjust the width to content size
+              child: IntrinsicWidth(
                 child: Column(
                   children: [
                     Container(
@@ -162,13 +238,15 @@ class _DownloadPayslipViewState extends State<DownloadPayslipView> {
                           // Header
                           Text(
                             data['COMPANY_NAME'],
-                            style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+                            style: const TextStyle(
+                                fontSize: 24, fontWeight: FontWeight.bold),
                           ),
                           const SizedBox(height: 10),
                           Text(
                             '${data['COMPANY_ADDRESS']}\nPAYSLIP FOR THE MONTH OF ${data['MONTH_NAME']}, ${data['YEAR_NO']}\nForm-X (See Rule-26)',
                             textAlign: TextAlign.center,
-                            style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+                            style: const TextStyle(
+                                fontSize: 14, fontWeight: FontWeight.bold),
                           ),
                           const SizedBox(height: 20),
 
@@ -183,7 +261,8 @@ class _DownloadPayslipViewState extends State<DownloadPayslipView> {
                                 child: Container(
                                   padding: const EdgeInsets.all(10.0),
                                   decoration: BoxDecoration(
-                                    border: Border.all(color: Colors.black, width: 1.5),
+                                    border: Border.all(
+                                        color: Colors.black, width: 1.5),
                                   ),
                                   child: Column(
                                     children: [
@@ -191,9 +270,15 @@ class _DownloadPayslipViewState extends State<DownloadPayslipView> {
                                         width: double.infinity,
                                         decoration: BoxDecoration(
                                           border: const Border(
-                                            left: BorderSide(color: Colors.black, width: 1.3),
-                                            right: BorderSide(color: Colors.black, width: 1.3),
-                                            top: BorderSide(color: Colors.black, width: 1.3),
+                                            left: BorderSide(
+                                                color: Colors.black,
+                                                width: 1.3),
+                                            right: BorderSide(
+                                                color: Colors.black,
+                                                width: 1.3),
+                                            top: BorderSide(
+                                                color: Colors.black,
+                                                width: 1.3),
                                           ),
                                           color: Colors.grey.shade300,
                                         ),
@@ -214,14 +299,17 @@ class _DownloadPayslipViewState extends State<DownloadPayslipView> {
                                   ),
                                 ),
                               ),
-                              const SizedBox(width: 20,),
+                              const SizedBox(
+                                width: 20,
+                              ),
                               // Employee Information Table
                               Expanded(
                                 flex: 3,
                                 child: Container(
                                   padding: const EdgeInsets.all(8.0),
                                   decoration: BoxDecoration(
-                                    border: Border.all(color: Colors.black, width: 1.5),
+                                    border: Border.all(
+                                        color: Colors.black, width: 1.5),
                                   ),
                                   child: Column(
                                     children: [
@@ -245,7 +333,8 @@ class _DownloadPayslipViewState extends State<DownloadPayslipView> {
                                 child: Container(
                                   padding: const EdgeInsets.all(8.0),
                                   decoration: BoxDecoration(
-                                    border: Border.all(color: Colors.black, width: 1.5),
+                                    border: Border.all(
+                                        color: Colors.black, width: 1.5),
                                   ),
                                   child: Column(
                                     children: [
@@ -254,13 +343,16 @@ class _DownloadPayslipViewState extends State<DownloadPayslipView> {
                                   ),
                                 ),
                               ),
-                              const SizedBox(width: 20,),
+                              const SizedBox(
+                                width: 20,
+                              ),
                               Expanded(
                                 flex: 4,
                                 child: Container(
                                   padding: const EdgeInsets.all(8.0),
                                   decoration: BoxDecoration(
-                                    border: Border.all(color: Colors.black, width: 1.5),
+                                    border: Border.all(
+                                        color: Colors.black, width: 1.5),
                                   ),
                                   child: Column(
                                     children: [
@@ -269,10 +361,13 @@ class _DownloadPayslipViewState extends State<DownloadPayslipView> {
                                         width: double.infinity,
                                         child: Padding(
                                           padding: const EdgeInsets.all(24.0),
-                                          child: Center(child: Text('${data['AMOUNT_IN_RUP']} : ${data['NET_PAY']}',style: const TextStyle(
-                                            fontWeight: FontWeight.bold,
-                                            fontSize: 16
-                                          ),)),
+                                          child: Center(
+                                              child: Text(
+                                                  '${data['AMOUNT_IN_RUP']} : ${data['NET_PAY']}',
+                                                  style: const TextStyle(
+                                                      fontWeight:
+                                                      FontWeight.bold,
+                                                      fontSize: 16))),
                                         ),
                                       ),
                                     ],
@@ -284,19 +379,16 @@ class _DownloadPayslipViewState extends State<DownloadPayslipView> {
                         ],
                       ),
                     ),
-                    RepaintBoundary(
-                      key: _globalKey, // Assign a GlobalKey to capture the widget
-                      child: Center(
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            const Text('This is a sample screen to print'),
-                            ElevatedButton(
-                              onPressed: _captureAndPrintScreen, // Print the screen
-                              child: const Text('Capture & Print Screen'),
-                            ),
-                          ],
-                        ),
+                    Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          const Text('This is a sample screen to print'),
+                          ElevatedButton(
+                            onPressed: _captureAndPrintScreen, // Print the screen
+                            child: const Text('Capture & Print Screen'),
+                          ),
+                        ],
                       ),
                     ),
                   ],
@@ -306,6 +398,7 @@ class _DownloadPayslipViewState extends State<DownloadPayslipView> {
           );
         },
       ),
+    ),
     );
   }
 

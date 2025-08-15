@@ -5,6 +5,8 @@ import 'package:http/http.dart' as http;
 import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../common/utils/constants/baseurl.dart';
+
 class StyleWiseDetail {
   String buyer;
   String styleNo;
@@ -345,7 +347,7 @@ class _StyleWisePageState extends State<StyleWisePage> {
     }
 
     // Ensure _loginId is not null before proceeding
-    final String url = 'http://14.142.248.34:10008/unit?type=permissions&user=$_loginId';
+    final String url = '${TBaseURL.baseUrl}unit?type=permissions&user=$_loginId';
     if (kDebugMode) {
       print('Fetching data from: $url');
     }
@@ -383,7 +385,7 @@ class _StyleWisePageState extends State<StyleWisePage> {
   }
   Future<List<StyleWiseDetail>> fetchProdTnaData(String to, String unit) async {
     final response = await http.get(
-      Uri.parse('http://14.142.248.34:10008/stylewise?type=CUTTING&unit=$unit&to=$to&to=$to'),
+      Uri.parse('${TBaseURL.baseUrl}stylewise?type=CUTTING&unit=$unit&to=$to&to=$to'),
       // Uri.parse('http://172.16.10.11:8000/management?proce_type=prodTna&from=$from&to=$to&units=$units'),
     );
 

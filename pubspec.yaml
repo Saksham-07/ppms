@@ -14,9 +14,10 @@ publish_to: 'none' # Remove this line if you wish to publish to pub.dev
 # In iOS, build-name is used as CFBundleShortVersionString while build-number is used as CFBundleVersion.
 # Read more about iOS versioning at
 # https://developer.apple.com/library/archive/documentation/General/Reference/InfoPlistKeyReference/Articles/CoreFoundationKeys.html
-# In Windows, build-name is used as the major, minor, and patch parts
+# I4242n Windows, build-name is used as the major, minor, and patch parts
 # of the product and file versions while build-number is used as the build suffix.
-version: 1.3.7
+
+version: 1.4.95
 environment:
   sdk: '>=3.5.0 <4.0.0'
 
@@ -42,7 +43,7 @@ dependencies:
   smooth_page_indicator: ^1.1.0
   iconsax: ^0.0.8
   carousel_slider: ^4.2.1
-  velocity_x: ^4.1.2
+  google_fonts: ^6.0.0
   flutter_date_range_picker: ^0.1.1
   dropdown_button2: ^2.3.9
   toggle_switch: ^2.3.0
@@ -52,12 +53,16 @@ dependencies:
   marquee: ^2.2.3
   fl_chart: ^0.68.0
   qr_code_scanner: ^1.0.1
+  provider: ^6.0.5
   dropdown_search: ^5.0.2
   dio: ^5.0.0
-  install_plugin: ^2.0.0
+  android_intent_plus: ^3.1.2
   permission_handler: ^11.1.0
   printing: ^5.12.0
+  lottie: ^2.3.1
+  flutter_inner_shadow: ^0.0.1
   flutter_html: ^3.0.0-beta.2
+  flutter_animated_button: ^2.0.4
   path_provider: ^2.0.11
   pdf: ^3.9.1
   flutter_lints: ^4.0.0
@@ -67,9 +72,12 @@ dependencies:
   open_file: ^3.2.1
   d_chart: ^2.10.2
   syncfusion_flutter_datagrid: ^21.2.3
-  device_info_plus: ^11.2.0
+  device_info_plus: ^11.3.2
   uuid: ^3.0.7
   flutter_secure_storage: ^9.2.4
+  pull_to_refresh: ^2.0.0
+  share_plus: ^11.0.0
+
 
 dev_dependencies:
   flutter_test:
@@ -101,6 +109,7 @@ flutter:
   # To add assets to your application, add an assets section, like this:
   assets:
     - assets/images/
+    - assets/animation/
     - assets/images/ess_images/ButtonIcons/
     - assets/images/ess_images/StatusIcon/
     - assets/fonts/Roboto-Regular.ttf
@@ -128,6 +137,11 @@ flutter:
        fonts:
          - asset: assets/fonts/Roboto-Regular.ttf
          - asset: assets/fonts/Roboto-Bold.ttf
+
+     - family: Stick
+       fonts:
+         - asset: assets/fonts/static/STIXTwoText-Regular.ttf
+
            weight: 700
   #
   # For details regarding fonts from package dependencies,
@@ -148,8 +162,12 @@ flutter_native_splash:
   # of your splash screen to a solid color.  Use background_image to set the background of your
   # splash screen to a png image.  This is useful for gradients. The image will be stretch to the
   # size of the app. Only one parameter can be used, color and background_image cannot both be set.
-  color: "#42a5f5"
-  background_image: 'assets/images/kpi_n.png'
+
+  color: "#42a5f5"  # background color
+  image: assets/images/logo.lpeg  # optional logo
+  android: true
+  ios: true
+    # You can add more customization like dark mode, fill, etc.
 
   # Optional parameters are listed below.  To enable a parameter, uncomment the line by removing
   # the leading # character.
@@ -161,18 +179,16 @@ flutter_native_splash:
   # The branding property allows you to specify an image used as branding in the splash screen.
   # It must be a png file. It is supported for Android, iOS and the Web.  For Android 12,
   # see the Android 12 section below.
-  branding: assets/images/kpi_n.png
+#  branding: assets/images/kpi_n.png
 
   # To position the branding image at the bottom of the screen you can use bottom, bottomRight,
   # and bottomLeft. The default values is bottom if not specified or specified something else.
-  branding_mode: bottom
+#  branding_mode: bottom
 
   # The color_dark, background_image_dark, image_dark, branding_dark are parameters that set the background
   # and image when the device is in dark mode. If they are not specified, the app will use the
   # parameters from above. If the image_dark parameter is specified, color_dark or
   # background_image_dark must be specified.  color_dark and background_image_dark cannot both be
   # set.
-  color_dark: "#042a49"
-  background_image_dark: "assets/images/kpi_n.png"
   #image_dark: assets/splash-invert.png
   #branding_dark: assets/dart_dark.png

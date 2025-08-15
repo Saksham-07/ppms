@@ -133,9 +133,9 @@ class _AuditTestPageState extends State<AuditTestPage> {
 
     while (retryCount < maxRetries && !success) {
       try {
-        final response = await http.get(Uri.parse('http://14.142.248.34:10008/line?unit=$unit&ot=0'));
+        final response = await http.get(Uri.parse('${TBaseURL.baseUrl}line?unit=$unit&ot=0'));
         if (kDebugMode) {
-          print('http://14.142.248.34:10008/line?unit=$unit');
+          print('${TBaseURL.baseUrl}line?unit=$unit');
         }
 
         if (response.statusCode == 200) {
@@ -247,10 +247,10 @@ class _AuditTestPageState extends State<AuditTestPage> {
 
   Future<void> _fetchTableData(String line , String unit) async {
     String todayDate = DateFormat('yyyy-MM-dd').format(DateTime.now());
-    final response = await http.get(Uri.parse('http://14.142.248.34:10009/line_data?unit_code=$unit&dated=$todayDate&line_id=$line&version=$version'));
-    // final response = await http.get(Uri.parse('http://14.142.248.34:10008/line_data?unit_code=$unit&dated=$todayDate&line_id=$lineId'));
+    final response = await http.get(Uri.parse('${TBaseURL.auditUrl}line_data?unit_code=$unit&dated=$todayDate&line_id=$line&version=$version'));
+    // final response = await http.get(Uri.parse('${TBaseURL.baseUrl}line_data?unit_code=$unit&dated=$todayDate&line_id=$lineId'));
     if (kDebugMode) {
-      print('http://14.142.248.34:10009/line_data?unit_code=$unit&dated=2024-09-02&line_id=$line');
+      print('${TBaseURL.auditUrl}line_data?unit_code=$unit&dated=2024-09-02&line_id=$line');
     }
     if (response.statusCode == 200) {
       final data = json.decode(response.body);
@@ -308,10 +308,10 @@ class _AuditTestPageState extends State<AuditTestPage> {
         print('Out Of Perm');
       }
       try {
-        final response = await http.get(Uri.parse('http://14.142.248.34:10008/el_counter?order=$order&style=$style&color=$color&line_id=$selectedLineID'));
+        final response = await http.get(Uri.parse('${TBaseURL.baseUrl}el_counter?order=$order&style=$style&color=$color&line_id=$selectedLineID'));
 
         if (kDebugMode) {
-          print('http://14.142.248.34:10008/el_counter?order=$order&style=$style&color=$color&line_id=$selectedLineID');
+          print('${TBaseURL.baseUrl}el_counter?order=$order&style=$style&color=$color&line_id=$selectedLineID');
         }
 
         if (response.statusCode == 200) {
@@ -396,7 +396,7 @@ class _AuditTestPageState extends State<AuditTestPage> {
   }
 
   Future<List<Map<String, String>>> _fetchDefectOptions() async {
-    final response = await http.get(Uri.parse('http://14.142.248.34:10008/defect?type=defect'));
+    final response = await http.get(Uri.parse('${TBaseURL.baseUrl}defect?type=defect'));
     if (response.statusCode == 200) {
       final List<dynamic> data = json.decode(response.body);
       return data.map<Map<String, String>>((item) {
@@ -411,7 +411,7 @@ class _AuditTestPageState extends State<AuditTestPage> {
   }
 
   Future<List<Map<String, String>>> _fetchReasonsOptions() async {
-    final response = await http.get(Uri.parse('http://14.142.248.34:10008/defect?type=comp'));
+    final response = await http.get(Uri.parse('${TBaseURL.baseUrl}defect?type=comp'));
     if (response.statusCode == 200) {
       final List<dynamic> data = json.decode(response.body);
       return data.map<Map<String, String>>((item) {

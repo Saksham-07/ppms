@@ -1,9 +1,11 @@
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:ppms/common/utils/constants/baseurl.dart';
 import 'package:syncfusion_flutter_datagrid/datagrid.dart';
 import 'package:http/http.dart' as http;
 
+import '../ExtraFunction/lottie_loading.dart';
 import '../Stylewise/cutting_style_wise.dart';
 import '../Stylewise/finishing_style_wise.dart';
 import '../Stylewise/stitching_style_wise.dart';
@@ -90,13 +92,15 @@ class ProfitAndLossData {
     );
   }
 }
+  // print('${TBaseURL.baseUrl}mngmnt_review_vg?type=Pnl&unit=$vgUnit&fromDate=$from&toDate=$to');
 
-Future<List<ProfitAndLossData>> fetchProfitAndLossData(String from, String to, String units) async {
+Future<List<ProfitAndLossData>> fetchProfitAndLossData(String from, String to, String units, String vgUnit)
+async {
   final response = await http.get(
-    Uri.parse('http://14.142.248.34:10008/management?proce_type=pnl&from=$from&to=$to&units=$units'),
+    Uri.parse('${TBaseURL.baseUrl}mngmnt_review_vg?type=Pnl&unitVg=$vgUnit&fromDate=$from&toDate=$to&unit=$units&proc_type=MngmntReviewPnL'),
   );
   if (kDebugMode) {
-    print('http://14.142.248.34:10008/management?proce_type=pnl&from=$from&to=$to&units=$units');
+    print('${TBaseURL.baseUrl}mngmnt_review_vg?type=Pnl&unitVg=$vgUnit&fromDate=$from&toDate=$to&unit=$units&proc_type=MngmntReviewPnL');
   }
 
   if (response.statusCode == 200) {
@@ -106,6 +110,7 @@ Future<List<ProfitAndLossData>> fetchProfitAndLossData(String from, String to, S
     throw Exception('Failed to load data');
   }
 }
+
 
 class PnLDataSource extends DataGridSource {
   final String from;
@@ -204,9 +209,9 @@ class PnLDataSource extends DataGridSource {
 
     return DataGridRowAdapter(
         color: isTotalRow
-            ? Colors.yellowAccent
+            ? const Color(0xFF8DEAA3)
             : isSubTotalRow
-            ? Colors.greenAccent
+            ? const Color(0xFFA1D7DE)
             : null,
       cells: row.getCells().map<Widget>((dataGridCell) {
         Alignment alignment = dataGridCell.columnName == 'UnitShortCode' || dataGridCell.columnName == 'Team'
@@ -310,12 +315,14 @@ class PnLDataTable extends StatefulWidget {
   final String from;
   final String to;
   final String units;
+  final String unitsVg;
 
   const PnLDataTable({
     super.key,
     required this.from,
     required this.to,
     required this.units,
+    required this.unitsVg,
   });
 
   @override
@@ -325,10 +332,11 @@ class PnLDataTable extends StatefulWidget {
 class _PnLDataTableState extends State<PnLDataTable> {
   late Future<List<ProfitAndLossData>> pnlData;
 
+
   @override
   void initState() {
     super.initState();
-    pnlData = fetchProfitAndLossData(widget.from, widget.to, widget.units);
+    pnlData = fetchProfitAndLossData(widget.from, widget.to, widget.units,widget.unitsVg);
   }
 
   @override
@@ -337,7 +345,9 @@ class _PnLDataTableState extends State<PnLDataTable> {
       future: pnlData,
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Center(child: CircularProgressIndicator());
+          return const SizedBox(
+            width: double.infinity,
+              child: LottieLoading(size: 150,animationPath: 'assets/animation/profit.json',));
         } else if (snapshot.hasError) {
           return Center(child: Text('Error: ${snapshot.error}'));
         } else if (snapshot.hasData) {const double rowHeight = 25;
@@ -364,7 +374,7 @@ class _PnLDataTableState extends State<PnLDataTable> {
               allowSwiping: false,
               rowHeight: 25,
               horizontalScrollController: ScrollController(initialScrollOffset: 0),
-              headerRowHeight: 40,
+              headerRowHeight: 35,
               columnWidthMode: ColumnWidthMode.fitByCellValue,
               source: PnLDataSource(pnlData: snapshot.data!,from: widget.from , to: widget.to,context: context),
               stackedHeaderRows: [
@@ -372,22 +382,22 @@ class _PnLDataTableState extends State<PnLDataTable> {
                   StackedHeaderCell(
                     columnNames: ['UnitShortCode','UnitShortCode1'],
                     child: Container(
-                        color: const Color(0xFF5FE3D3),
+                        color: Colors.grey[400],
                         child: const Center(
                             child: Text(
                               '',
-                              style: TextStyle(color: Colors.white),
+                              style: TextStyle(color: Colors.black87),
                             ))),
                   ),
                   StackedHeaderCell(
                     columnNames: ['Team'],
                     child: Container(
-                        color: const Color(0xFF5FE3D3),
+                        color: Colors.grey[400],
                         child: const Center(
                             child: Text(
                               '',
                               textAlign: TextAlign.center,
-                              style: TextStyle(color: Colors.white),
+                              style: TextStyle(color: Colors.black87),
                             ))),
                   ),
                   StackedHeaderCell(
@@ -398,12 +408,12 @@ class _PnLDataTableState extends State<PnLDataTable> {
                       'CutCostPerQty',
                     ],
                     child: Container(
-                        color: const Color(0xFF5FE3D3),
+                        color: Colors.grey[400],
                         child: const Center(
                             child: Text(
                               'Cutting',
                               textAlign: TextAlign.center,
-                              style: TextStyle(color: Colors.white),
+                              style: TextStyle(color: Colors.black87),
                             ))),
                   ),
                   StackedHeaderCell(
@@ -417,12 +427,12 @@ class _PnLDataTableState extends State<PnLDataTable> {
                       'AvgActEff',
                     ],
                     child: Container(
-                        color: const Color(0xFF5FE3D3),
+                        color: Colors.grey[400],
                         child: const Center(
                             child: Text(
                               'Stitching',
                               textAlign: TextAlign.center,
-                              style: TextStyle(color: Colors.white),
+                              style: TextStyle(color: Colors.black87),
                             ))),
                   ),
                   StackedHeaderCell(
@@ -433,12 +443,12 @@ class _PnLDataTableState extends State<PnLDataTable> {
                       'FinishCotPerQty',
                     ],
                     child: Container(
-                        color: const Color(0xFF5FE3D3),
+                        color: Colors.grey[400],
                         child: const Center(
                             child: Text(
                               'Finishing',
                               textAlign: TextAlign.center,
-                              style: TextStyle(color: Colors.white),
+                              style: TextStyle(color: Colors.black87),
                             ))),
                   ),
                   StackedHeaderCell(
@@ -447,12 +457,12 @@ class _PnLDataTableState extends State<PnLDataTable> {
                       'Variance',
                     ],
                     child: Container(
-                        color: const Color(0xFF5FE3D3),
+                        color: Colors.grey[400],
                         child: const Center(
                             child: Text(
                               'Finish Vs Packing',
                               textAlign: TextAlign.center,
-                              style: TextStyle(color: Colors.white),
+                              style: TextStyle(color: Colors.black87),
                             ))),
                   ),
                   StackedHeaderCell(
@@ -461,12 +471,12 @@ class _PnLDataTableState extends State<PnLDataTable> {
                       'TotalPnL',
                     ],
                     child: Container(
-                        color: const Color(0xFF5FE3D3),
+                        color: Colors.grey[400],
                         child: const Center(
                             child: Text(
                               'Overall',
                               textAlign: TextAlign.center,
-                              style: TextStyle(color: Colors.white),
+                              style: TextStyle(color: Colors.black87),
                             ))),
                   ),
                 ]),
@@ -475,203 +485,204 @@ class _PnLDataTableState extends State<PnLDataTable> {
                 GridColumn(
                     columnName: 'UnitShortCode',
                     label: Container(
-                        color: const Color(0xFF5FE3D3),
+                        color: Colors.grey[200],
                         alignment: Alignment.center,
                         child: const Text('Unit',
                             textAlign: TextAlign.center,
                             overflow: TextOverflow.ellipsis,
-                            style: TextStyle(color: Colors.white)))),
+                            style: TextStyle(color: Colors.black87)))),
                 GridColumn(
                   visible: false,
+
                     columnName: 'UnitShortCode1',
                     label: Container(
-                        color: const Color(0xFF5FE3D3),
+                        color: Colors.grey[200],
                         alignment: Alignment.center,
                         child: const Text('Unit',
                             textAlign: TextAlign.center,
                             overflow: TextOverflow.ellipsis,
-                            style: TextStyle(color: Colors.white)))),
+                            style: TextStyle(color: Colors.black87)))),
                 GridColumn(
                     columnName: 'Team',
                     label: Container(
-                        color: const Color(0xFF5FE3D3),
+                        color: Colors.grey[200],
                         alignment: Alignment.center,
                         child: const Text('Team',
                             textAlign: TextAlign.center,
                             overflow: TextOverflow.ellipsis,
-                            style: TextStyle(color: Colors.white)))),
+                            style: TextStyle(color: Colors.black87)))),
                 GridColumn(
                     columnName: 'CutTodayOutput',
                     label: Container(
-                        color: const Color(0xFF5FE3D3),
+                        color: Colors.grey[200],
                         alignment: Alignment.center,
                         child: const Text('Today\nOutput',
                             textAlign: TextAlign.center,
                             overflow: TextOverflow.ellipsis,
-                            style: TextStyle(color: Colors.white)))),
+                            style: TextStyle(color: Colors.black87)))),
                 GridColumn(
                     columnName: 'CutTodayPnL',
                     label: Container(
-                        color: const Color(0xFF5FE3D3),
+                        color: Colors.grey[200],
                         alignment: Alignment.center,
                         child: const Text('Today\nP&L',
                             textAlign: TextAlign.center,
                             overflow: TextOverflow.ellipsis,
-                            style: TextStyle(color: Colors.white)))),
+                            style: TextStyle(color: Colors.black87)))),
                 GridColumn(
                     columnName: 'CutTotalPnL',
                     label: Container(
-                        color: const Color(0xFF5FE3D3),
+                        color: Colors.grey[200],
                         alignment: Alignment.center,
                         child: const Text('Total\nP&L',
                             textAlign: TextAlign.center,
                             overflow: TextOverflow.ellipsis,
-                            style: TextStyle(color: Colors.white)))),
+                            style: TextStyle(color: Colors.black87)))),
                 GridColumn(
                     columnName: 'CutCostPerQty',
                     label: Container(
-                        color: const Color(0xFF5FE3D3),
+                        color: Colors.grey[200],
                         alignment: Alignment.center,
                         child: const Text('Cost/\nQty',
                             textAlign: TextAlign.center,
                             overflow: TextOverflow.ellipsis,
-                            style: TextStyle(color: Colors.white)))),
+                            style: TextStyle(color: Colors.black87)))),
                 GridColumn(
                     columnName: 'StitchTodayOutput',
                     label: Container(
-                        color: const Color(0xFF5FE3D3),
+                        color: Colors.grey[200],
                         alignment: Alignment.center,
                         child: const Text('Today\nOutput',
                             textAlign: TextAlign.center,
                             overflow: TextOverflow.ellipsis,
-                            style: TextStyle(color: Colors.white)))),
+                            style: TextStyle(color: Colors.black87)))),
                 GridColumn(
                     columnName: 'StitchTodayPnL',
                     label: Container(
-                        color: const Color(0xFF5FE3D3),
+                        color: Colors.grey[200],
                         alignment: Alignment.center,
                         child: const Text('Today\nP&L',
                             textAlign: TextAlign.center,
                             overflow: TextOverflow.ellipsis,
-                            style: TextStyle(color: Colors.white)))),
+                            style: TextStyle(color: Colors.black87)))),
                 GridColumn(
                     columnName: 'StitchTotalPnL',
                     label: Container(
-                        color: const Color(0xFF5FE3D3),
+                        color: Colors.grey[200],
                         alignment: Alignment.center,
                         child: const Text('Total\nP&L',
                             textAlign: TextAlign.center,
                             overflow: TextOverflow.ellipsis,
-                            style: TextStyle(color: Colors.white)))),
+                            style: TextStyle(color: Colors.black87)))),
                 GridColumn(
                     columnName: 'TodayPlanEff',
                     minimumWidth: 75,
                     label: Container(
-                        color: const Color(0xFF5FE3D3),
+                        color: Colors.grey[200],
                         alignment: Alignment.center,
                         child: const Text('Today Plan\nEff (%)',
                             textAlign: TextAlign.center,
                             overflow: TextOverflow.ellipsis,
-                            style: TextStyle(color: Colors.white)))),
+                            style: TextStyle(color: Colors.black87)))),
                 GridColumn(
                     columnName: 'AvgPlanEff',
                     label: Container(
-                        color: const Color(0xFF5FE3D3),
+                        color: Colors.grey[200],
                         alignment: Alignment.center,
                         child: const Text('Avg Plan\nEff (%)',
                             textAlign: TextAlign.center,
                             overflow: TextOverflow.ellipsis,
-                            style: TextStyle(color: Colors.white)))),
+                            style: TextStyle(color: Colors.black87)))),
                 GridColumn(
                     columnName: 'TodayActEff',
                     label: Container(
-                        color: const Color(0xFF5FE3D3),
+                        color: Colors.grey[200],
                         alignment: Alignment.center,
                         child: const Text('Today Act\nEff (%)',
                             textAlign: TextAlign.center,
                             overflow: TextOverflow.ellipsis,
-                            style: TextStyle(color: Colors.white)))),
+                            style: TextStyle(color: Colors.black87)))),
                 GridColumn(
                     columnName: 'AvgActEff',
                     label: Container(
-                        color: const Color(0xFF5FE3D3),
+                        color: Colors.grey[200],
                         alignment: Alignment.center,
                         child: const Text('Avg Act\nEff (%)',
                             textAlign: TextAlign.center,
                             overflow: TextOverflow.ellipsis,
-                            style: TextStyle(color: Colors.white)))),
+                            style: TextStyle(color: Colors.black87)))),
                 GridColumn(
                     columnName: 'FinishTodayOutput',
                     label: Container(
-                        color: const Color(0xFF5FE3D3),
+                        color: Colors.grey[200],
                         alignment: Alignment.center,
                         child: const Text('Today\nOutput',
                             textAlign: TextAlign.center,
                             overflow: TextOverflow.ellipsis,
-                            style: TextStyle(color: Colors.white)))),
+                            style: TextStyle(color: Colors.black87)))),
                 GridColumn(
                     columnName: 'FinishTodayPnL',
                     label: Container(
-                        color: const Color(0xFF5FE3D3),
+                        color: Colors.grey[200],
                         alignment: Alignment.center,
                         child: const Text('Today\nP&L',
                             textAlign: TextAlign.center,
                             overflow: TextOverflow.ellipsis,
-                            style: TextStyle(color: Colors.white)))),
+                            style: TextStyle(color: Colors.black87)))),
                 GridColumn(
                     columnName: 'FinishTotalPnL',
                     label: Container(
-                        color: const Color(0xFF5FE3D3),
+                        color: Colors.grey[200],
                         alignment: Alignment.center,
                         child: const Text('Total\nP&L',
                             textAlign: TextAlign.center,
                             overflow: TextOverflow.ellipsis,
-                            style: TextStyle(color: Colors.white)))),
+                            style: TextStyle(color: Colors.black87)))),
                 GridColumn(
                     columnName: 'FinishCotPerQty',
                     label: Container(
-                        color: const Color(0xFF5FE3D3),
+                        color: Colors.grey[200],
                         alignment: Alignment.center,
                         child: const Text('Cost/\nQty',
                             textAlign: TextAlign.center,
                             overflow: TextOverflow.ellipsis,
-                            style: TextStyle(color: Colors.white)))),
+                            style: TextStyle(color: Colors.black87)))),
                 GridColumn(
                     columnName: 'TodayPack',
                     label: Container(
-                        color: const Color(0xFF5FE3D3),
+                        color: Colors.grey[200],
                         alignment: Alignment.center,
                         child: const Text('Today\nPacking',
                             textAlign: TextAlign.center,
                             overflow: TextOverflow.ellipsis,
-                            style: TextStyle(color: Colors.white)))),
+                            style: TextStyle(color: Colors.black87)))),
                 GridColumn(
                     columnName: 'Variance',
                     label: Container(
-                        color: const Color(0xFF5FE3D3),
+                        color: Colors.grey[200],
                         alignment: Alignment.center,
                         child: const Text('Variance',
                             textAlign: TextAlign.center,
                             overflow: TextOverflow.ellipsis,
-                            style: TextStyle(color: Colors.white)))),
+                            style: TextStyle(color: Colors.black87)))),
                 GridColumn(
                     columnName: 'TodayPnL',
                     label: Container(
-                        color: const Color(0xFF5FE3D3),
+                        color: Colors.grey[200],
                         alignment: Alignment.center,
                         child: const Text('Today\nP&L',
                             textAlign: TextAlign.center,
                             overflow: TextOverflow.ellipsis,
-                            style: TextStyle(color: Colors.white)))),
+                            style: TextStyle(color: Colors.black87)))),
                 GridColumn(
                     columnName: 'TotalPnL',
                     label: Container(
-                        color: const Color(0xFF5FE3D3),
+                        color: Colors.grey[200],
                         alignment: Alignment.center,
                         child: const Text('Total\nP&L',
                             textAlign: TextAlign.center,
                             overflow: TextOverflow.ellipsis,
-                            style: TextStyle(color: Colors.white)))),
+                            style: TextStyle(color: Colors.black87)))),
               ],
             ),
           ),

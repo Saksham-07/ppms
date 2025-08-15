@@ -3,6 +3,9 @@ import 'package:flutter/material.dart';
 import 'package:syncfusion_flutter_datagrid/datagrid.dart';
 import 'package:http/http.dart' as http;
 
+import '../ExtraFunction/lottie_loading.dart';
+import '../common/utils/constants/baseurl.dart';
+
 class EnergyDetail {
   final int dieselValueToday;
   final int dieselValueTotal;
@@ -47,9 +50,9 @@ class EnergyDetail {
   }
 }
 
-Future<List<EnergyDetail>> fetchEnergyCost(String from, String to, String units) async {
+Future<List<EnergyDetail>> fetchEnergyCost(String from, String to, String units,String vgUnit) async {
   final response = await http.get(
-    Uri.parse('http://14.142.248.34:10008/management?proce_type=energy&from=$from&to=$to&units=$units'),
+    Uri.parse('${TBaseURL.baseUrl}mngmnt_review_vg?type=EnergyCost&unitVg=$vgUnit&fromDate=$from&toDate=$to&unit=$units&proc_type=MngmntReviewEnergyCost'),
   );
 
   if (response.statusCode == 200) {
@@ -111,7 +114,7 @@ class EnergySource extends DataGridSource {
         .first
         .value == 'Total';
     return DataGridRowAdapter(
-      color: isTotalRow ? Colors.yellowAccent : null,
+      color: isTotalRow ? const Color(0xFF8DEAA3) : null,
       cells: row.getCells().map<Widget>((dataGridCell) {
         Alignment alignment = dataGridCell.columnName == 'UnitShortCode'
             ? Alignment.centerLeft
@@ -127,6 +130,7 @@ class EnergySource extends DataGridSource {
             style: TextStyle(
               fontSize: 14,
               fontWeight: isTotalRow ? FontWeight.bold : FontWeight.normal,
+              color: Colors.black
             ),
           ),
         );
@@ -167,12 +171,14 @@ class EnergyDataTable extends StatefulWidget {
   final String from;
   final String to;
   final String units;
+  final String vgUnit;
 
   const EnergyDataTable({
     super.key,
     required this.from,
     required this.to,
     required this.units,
+    required this.vgUnit,
   });
 
   @override
@@ -185,7 +191,7 @@ class _EnergyDataTableState extends State<EnergyDataTable> {
   @override
   void initState() {
     super.initState();
-    energyData = fetchEnergyCost(widget.from, widget.to, widget.units);
+    energyData = fetchEnergyCost(widget.from, widget.to, widget.units, widget.vgUnit);
   }
 
   @override
@@ -194,7 +200,9 @@ class _EnergyDataTableState extends State<EnergyDataTable> {
       future: energyData,
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Center(child: CircularProgressIndicator());
+          return const SizedBox(
+            width: double.infinity,
+              child: LottieLoading(size: 150,animationPath: 'assets/animation/profit.json',));
         } else if (snapshot.hasError) {
           return Center(child: Text('Error: ${snapshot.error}'));
         } else if (snapshot.hasData) {const double rowHeight = 25;
@@ -229,11 +237,11 @@ class _EnergyDataTableState extends State<EnergyDataTable> {
                   StackedHeaderCell(
                     columnNames: ['UnitShortCode'],
                     child: Container(
-                        color: const Color(0xFF5FE3D3),
+                        color: Colors.grey[400],
                         child: const Center(
                             child: Text(
                               '',
-                              style: TextStyle(color: Colors.white),
+                              style: TextStyle(color: Colors.black87),
                             ))),
                   ),
                   StackedHeaderCell(
@@ -242,12 +250,12 @@ class _EnergyDataTableState extends State<EnergyDataTable> {
                       'DieselTotal',
                     ],
                     child: Container(
-                        color: const Color(0xFF5FE3D3),
+                        color: Colors.grey[400],
                         child: const Center(
                             child: Text(
                               'Diesel',
                               textAlign: TextAlign.center,
-                              style: TextStyle(color: Colors.white),
+                              style: TextStyle(color: Colors.black87),
                             ))),
                   ),
                   StackedHeaderCell(
@@ -256,12 +264,12 @@ class _EnergyDataTableState extends State<EnergyDataTable> {
                       'ElectricityTotal',
                     ],
                     child: Container(
-                        color: const Color(0xFF5FE3D3),
+                        color: Colors.grey[400],
                         child: const Center(
                             child: Text(
                               'Electricity',
                               textAlign: TextAlign.center,
-                              style: TextStyle(color: Colors.white),
+                              style: TextStyle(color: Colors.black87),
                             ))),
                   ),
                   StackedHeaderCell(
@@ -270,12 +278,12 @@ class _EnergyDataTableState extends State<EnergyDataTable> {
                       'PNGTotal',
                     ],
                     child: Container(
-                        color: const Color(0xFF5FE3D3),
+                        color: Colors.grey[400],
                         child: const Center(
                             child: Text(
                               'PNG',
                               textAlign: TextAlign.center,
-                              style: TextStyle(color: Colors.white),
+                              style: TextStyle(color: Colors.black87),
                             ))),
                   ),
                   StackedHeaderCell(
@@ -284,12 +292,12 @@ class _EnergyDataTableState extends State<EnergyDataTable> {
                       'SolarTotal',
                     ],
                     child: Container(
-                        color: const Color(0xFF5FE3D3),
+                        color: Colors.grey[400],
                         child: const Center(
                             child: Text(
                               'Solar',
                               textAlign: TextAlign.center,
-                              style: TextStyle(color: Colors.white),
+                              style: TextStyle(color: Colors.black87),
                             ))),
                   ),
                   StackedHeaderCell(
@@ -298,12 +306,12 @@ class _EnergyDataTableState extends State<EnergyDataTable> {
                       'NetTotal',
                     ],
                     child: Container(
-                        color: const Color(0xFF5FE3D3),
+                        color: Colors.grey[400],
                         child: const Center(
                             child: Text(
                               'Total',
                               textAlign: TextAlign.center,
-                              style: TextStyle(color: Colors.white),
+                              style: TextStyle(color: Colors.black87),
                             ))),
                   ),
                 ]),
@@ -312,102 +320,102 @@ class _EnergyDataTableState extends State<EnergyDataTable> {
                 GridColumn(
                     columnName: 'UnitShortCode',
                     label: Container(
-                        color: const Color(0xFF5FE3D3),
+                        color: Colors.grey[200],
                         alignment: Alignment.center,
                         child: const Text('Unit',
                             textAlign: TextAlign.center,
                             overflow: TextOverflow.ellipsis,
-                            style: TextStyle(color: Colors.white)))),
+                            style: TextStyle(color: Colors.black87)))),
                 GridColumn(
                     columnName: 'DieselToday',
                     label: Container(
-                        color: const Color(0xFF5FE3D3),
+                        color: Colors.grey[200],
                         alignment: Alignment.center,
                         child: const Text('Today',
                             textAlign: TextAlign.center,
                             overflow: TextOverflow.ellipsis,
-                            style: TextStyle(color: Colors.white)))),
+                            style: TextStyle(color: Colors.black87)))),
                 GridColumn(
                     columnName: 'DieselTotal',
                     label: Container(
-                        color: const Color(0xFF5FE3D3),
+                        color: Colors.grey[200],
                         alignment: Alignment.center,
                         child: const Text('Total',
                             textAlign: TextAlign.center,
                             overflow: TextOverflow.ellipsis,
-                            style: TextStyle(color: Colors.white)))),
+                            style: TextStyle(color: Colors.black87)))),
                 GridColumn(
                     columnName: 'ElectricityToday',
                     label: Container(
-                        color: const Color(0xFF5FE3D3),
+                        color: Colors.grey[200],
                         alignment: Alignment.center,
                         child: const Text('Today',
                             textAlign: TextAlign.center,
                             overflow: TextOverflow.ellipsis,
-                            style: TextStyle(color: Colors.white)))),
+                            style: TextStyle(color: Colors.black87)))),
                 GridColumn(
                     columnName: 'ElectricityTotal',
                     label: Container(
-                        color: const Color(0xFF5FE3D3),
+                        color: Colors.grey[200],
                         alignment: Alignment.center,
                         child: const Text('Total',
                             textAlign: TextAlign.center,
                             overflow: TextOverflow.ellipsis,
-                            style: TextStyle(color: Colors.white)))),
+                            style: TextStyle(color: Colors.black87)))),
                 GridColumn(
                     columnName: 'PNGToday',
                     label: Container(
-                        color: const Color(0xFF5FE3D3),
+                        color: Colors.grey[200],
                         alignment: Alignment.center,
                         child: const Text('Today',
                             textAlign: TextAlign.center,
                             overflow: TextOverflow.ellipsis,
-                            style: TextStyle(color: Colors.white)))),
+                            style: TextStyle(color: Colors.black87)))),
                 GridColumn(
                     columnName: 'PNGTotal',
                     label: Container(
-                        color: const Color(0xFF5FE3D3),
+                        color: Colors.grey[200],
                         alignment: Alignment.center,
                         child: const Text('Total',
                             textAlign: TextAlign.center,
                             overflow: TextOverflow.ellipsis,
-                            style: TextStyle(color: Colors.white)))),
+                            style: TextStyle(color: Colors.black87)))),
                 GridColumn(
                     columnName: 'SolarToday',
                     label: Container(
-                        color: const Color(0xFF5FE3D3),
+                        color: Colors.grey[200],
                         alignment: Alignment.center,
                         child: const Text('Today',
                             textAlign: TextAlign.center,
                             overflow: TextOverflow.ellipsis,
-                            style: TextStyle(color: Colors.white)))),
+                            style: TextStyle(color: Colors.black87)))),
                 GridColumn(
                     columnName: 'SolarTotal',
                     label: Container(
-                        color: const Color(0xFF5FE3D3),
+                        color: Colors.grey[200],
                         alignment: Alignment.center,
                         child: const Text('Total',
                             textAlign: TextAlign.center,
                             overflow: TextOverflow.ellipsis,
-                            style: TextStyle(color: Colors.white)))),
+                            style: TextStyle(color: Colors.black87)))),
                 GridColumn(
                     columnName: 'NetToday',
                     label: Container(
-                        color: const Color(0xFF5FE3D3),
+                        color: Colors.grey[200],
                         alignment: Alignment.center,
                         child: const Text('Today',
                             textAlign: TextAlign.center,
                             overflow: TextOverflow.ellipsis,
-                            style: TextStyle(color: Colors.white)))),
+                            style: TextStyle(color: Colors.black87)))),
                 GridColumn(
                     columnName: 'NetTotal',
                     label: Container(
-                        color: const Color(0xFF5FE3D3),
+                        color: Colors.grey[200],
                         alignment: Alignment.center,
                         child: const Text('Total',
                             textAlign: TextAlign.center,
                             overflow: TextOverflow.ellipsis,
-                            style: TextStyle(color: Colors.white)))),
+                            style: TextStyle(color: Colors.black87)))),
 
               ],
             ),
