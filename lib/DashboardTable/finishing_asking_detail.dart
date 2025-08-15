@@ -4,6 +4,9 @@ import 'package:flutter/material.dart';
 import 'package:syncfusion_flutter_datagrid/datagrid.dart';
 import 'package:http/http.dart' as http;
 
+import '../ExtraFunction/lottie_loading.dart';
+import '../common/utils/constants/baseurl.dart';
+
 class FinishingAskingDetail {
   final int askingRate;
   final int balToPack;
@@ -53,10 +56,10 @@ class FinishingAskingDetail {
 
 Future<List<FinishingAskingDetail>> fetchFinishData(String from, String to, String units) async {
   final response = await http.get(
-    Uri.parse('http://14.142.248.34:10008/management?proce_type=finish&from=''&to=$to&units=$units'),
+    Uri.parse('${TBaseURL.baseUrl}management?proce_type=finish&from=''&to=$to&units=$units'),
   );
   if (kDebugMode) {
-    print('http://14.142.248.34:10008/management?proce_type=finish&from=''&to=$to&units=$units');
+    print('${TBaseURL.baseUrl}management?proce_type=finish&from=''&to=$to&units=$units');
   }
 
   if (response.statusCode == 200) {
@@ -117,7 +120,7 @@ class FinishingAskingDataSource extends DataGridSource {
   DataGridRowAdapter buildRow(DataGridRow row) {
     final isTotalRow = row.getCells().first.value == 'Total';
     return DataGridRowAdapter(
-      color: isTotalRow ? Colors.yellowAccent : null,
+      color: isTotalRow ? const Color(0xFF8DEAA3) : null,
       cells: row.getCells().map<Widget>((dataGridCell) {
         Alignment alignment = dataGridCell.columnName == 'UnitShortCode'
             ? Alignment.centerLeft
@@ -191,7 +194,9 @@ class _FinishingDataTableState extends State<FinishingDataTable> {
       future: finishingAsking,
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Center(child: CircularProgressIndicator());
+          return const SizedBox(
+            width: double.infinity,
+              child: LottieLoading(size: 150,animationPath: 'assets/animation/profit.json',));
         } else if (snapshot.hasError) {
           return Center(child: Text('Error: ${snapshot.error}'));
         } else if (snapshot.hasData) {
@@ -224,111 +229,111 @@ class _FinishingDataTableState extends State<FinishingDataTable> {
                 GridColumn(
                     columnName: 'UnitShortCode',
                     label: Container(
-                        color: const Color(0xFF5FE3D3),
+                        color: Colors.grey[400],
                         alignment: Alignment.center,
                         child: const Text('Unit',
                             overflow: TextOverflow.ellipsis,
                             textAlign: TextAlign.center,
-                            style: TextStyle(color: Colors.white)))),
+                            style: TextStyle(color: Colors.black87)))),
                 GridColumn(
                     columnName: 'YDayStitch',
                     label: Container(
-                        color: const Color(0xFF5FE3D3),
+                        color: Colors.grey[400],
                         alignment: Alignment.center,
                         child: const Text('YDay\nStitch',
                             overflow: TextOverflow.ellipsis,
                             textAlign: TextAlign.center,
-                            style: TextStyle(color: Colors.white)))),
+                            style: TextStyle(color: Colors.black87)))),
                 GridColumn(
                     columnName: 'SamProd',
                     label: Container(
-                        color: const Color(0xFF5FE3D3),
+                        color: Colors.grey[400],
                         alignment: Alignment.center,
                         child: const Text('SAM\nProd',
                             overflow: TextOverflow.ellipsis,
                             textAlign: TextAlign.center,
-                            style: TextStyle(color: Colors.white)))),
+                            style: TextStyle(color: Colors.black87)))),
                 GridColumn(
                     columnName: 'BalToSam',
                     label: Container(
-                        color: const Color(0xFF5FE3D3),
+                        color: Colors.grey[400],
                         alignment: Alignment.center,
                         child: const Text('Bal To\n Sam',
                             overflow: TextOverflow.ellipsis,
                             textAlign: TextAlign.center,
-                            style: TextStyle(color: Colors.white)))),
+                            style: TextStyle(color: Colors.black87)))),
                 GridColumn(
                     columnName: 'YDayPack',
                     label: Container(
-                        color: const Color(0xFF5FE3D3),
+                        color: Colors.grey[400],
                         alignment: Alignment.center,
                         child: const Text('YDay\nPack',
                             overflow: TextOverflow.ellipsis,
                             textAlign: TextAlign.center,
-                            style: TextStyle(color: Colors.white)))),
+                            style: TextStyle(color: Colors.black87)))),
                 GridColumn(
                     columnName: 'WTD',
                     label: Container(
-                        color: const Color(0xFF5FE3D3),
+                        color: Colors.grey[400],
                         alignment: Alignment.center,
                         child: const Text('WTD',
                             overflow: TextOverflow.ellipsis,
                             textAlign: TextAlign.center,
-                            style: TextStyle(color: Colors.white)))),
+                            style: TextStyle(color: Colors.black87)))),
                 GridColumn(
                     columnName: 'AskingRate',
                     label: Container(
-                        color: const Color(0xFF5FE3D3),
+                        color: Colors.grey[400],
                         alignment: Alignment.center,
                         child: const Text('Asking\nRate',
                             overflow: TextOverflow.ellipsis,
                             textAlign: TextAlign.center,
-                            style: TextStyle(color: Colors.white)))),
+                            style: TextStyle(color: Colors.black87)))),
                 GridColumn(
                     columnName: 'BalToPack',
                     label: Container(
-                        color: const Color(0xFF5FE3D3),
+                        color: Colors.grey[400],
                         alignment: Alignment.center,
                         child: const Text('Bal To\nPack',
                             overflow: TextOverflow.ellipsis,
                             textAlign: TextAlign.center,
-                            style: TextStyle(color: Colors.white)))),
+                            style: TextStyle(color: Colors.black87)))),
                 GridColumn(
                     columnName: 'BalToPackGoods',
                     label: Container(
-                        color: const Color(0xFF5FE3D3),
+                        color: Colors.grey[400],
                         alignment: Alignment.center,
                         child: const Text('Bal To Pack\nGoods Value',
                             overflow: TextOverflow.ellipsis,
                             textAlign: TextAlign.center,
-                            style: TextStyle(color: Colors.white)))),
+                            style: TextStyle(color: Colors.black87)))),
                 GridColumn(
                     columnName: 'TodayChecker',
                     label: Container(
-                        color: const Color(0xFF5FE3D3),
+                        color: Colors.grey[400],
                         alignment: Alignment.center,
                         child: const Text("Today's\nChecker",
                             overflow: TextOverflow.ellipsis,
                             textAlign: TextAlign.center,
-                            style: TextStyle(color: Colors.white)))),
+                            style: TextStyle(color: Colors.black87)))),
                 GridColumn(
                     columnName: 'TodayPressman',
                     label: Container(
-                        color: const Color(0xFF5FE3D3),
+                        color: Colors.grey[400],
                         alignment: Alignment.center,
                         child: const Text("Today's\nPressmen",
                             textAlign: TextAlign.center,
                             overflow: TextOverflow.ellipsis,
-                            style: TextStyle(color: Colors.white)))),
+                            style: TextStyle(color: Colors.black87)))),
                 GridColumn(
                     columnName: 'TodayManpower',
                     label: Container(
-                        color: const Color(0xFF5FE3D3),
+                        color: Colors.grey[400],
                         alignment: Alignment.center,
                         child: const Text("Today's\nManpower",
                             overflow: TextOverflow.ellipsis,
                             textAlign: TextAlign.center,
-                            style: TextStyle(color: Colors.white)))),
+                            style: TextStyle(color: Colors.black87)))),
               ],
             ),
           ),

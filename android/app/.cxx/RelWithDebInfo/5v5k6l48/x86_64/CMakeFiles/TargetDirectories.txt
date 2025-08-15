@@ -1,0 +1,2 @@
+/Users/macos15/Development/ppms/android/app/.cxx/RelWithDebInfo/5v5k6l48/x86_64/CMakeFiles/rebuild_cache.dir
+/Users/macos15/Development/ppms/android/app/.cxx/RelWithDebInfo/5v5k6l48/x86_64/CMakeFiles/edit_cache.dir

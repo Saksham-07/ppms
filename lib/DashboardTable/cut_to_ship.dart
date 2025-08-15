@@ -4,6 +4,9 @@ import 'package:flutter/material.dart';
 import 'package:syncfusion_flutter_datagrid/datagrid.dart';
 import 'package:http/http.dart' as http;
 
+import '../ExtraFunction/lottie_loading.dart';
+import '../common/utils/constants/baseurl.dart';
+
 class CutToShipDetail {
   final double cutPlanPerc;
   final double orderToShipPerc;
@@ -48,10 +51,10 @@ class CutToShipDetail {
 
 Future<List<CutToShipDetail>> fetchCutToShipData(String from, String to, String units) async {
   final response = await http.get(
-    Uri.parse('http://14.142.248.34:10008/management?proce_type=cutToShip&from=$from&to=$to&units=$units'),
+    Uri.parse('${TBaseURL.baseUrl}management?proce_type=cutToShip&from=$from&to=$to&units=$units'),
   );
   if (kDebugMode) {
-    print('http://14.142.248.34:10008/management?proce_type=cutToShip&from=$from&to=$to&units=$units');
+    print('${TBaseURL.baseUrl}management?proce_type=cutToShip&from=$from&to=$to&units=$units');
   }
 
   if (response.statusCode == 200) {
@@ -106,7 +109,7 @@ class CutToShipDataSource extends DataGridSource {
   DataGridRowAdapter buildRow(DataGridRow row) {
     final isTotalRow = row.getCells().first.value == 'Total';
     return DataGridRowAdapter(
-      color: isTotalRow ? Colors.yellowAccent : null,
+      color: isTotalRow ? const Color(0xFF8DEAA3) : null,
       cells: row.getCells().map<Widget>((dataGridCell) {
         Alignment alignment = dataGridCell.columnName == 'UnitShortCode'
             ? Alignment.centerLeft
@@ -120,6 +123,7 @@ class CutToShipDataSource extends DataGridSource {
             style: TextStyle(
               fontSize: 14,
               fontWeight: isTotalRow ? FontWeight.bold : FontWeight.normal,
+              color: Colors.black
             ),
           ),
         );
@@ -183,7 +187,9 @@ class _CutShipTableState extends State<CutShipTable> {
       future: cutShip,
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Center(child: CircularProgressIndicator());
+          return const SizedBox(
+            width: double.infinity,
+              child: LottieLoading(size: 150,animationPath: 'assets/animation/profit.json',));
         } else if (snapshot.hasError) {
           return Center(child: Text('Error: ${snapshot.error}'));
         } else if (snapshot.hasData) {
@@ -215,84 +221,84 @@ class _CutShipTableState extends State<CutShipTable> {
                   GridColumn(
                       columnName: 'UnitShortCode',
                       label: Container(
-                          color: const Color(0xFF5FE3D3),
+                          color: Colors.grey[400],
                           alignment: Alignment.center,
                           child: const Text('Unit',
                               overflow: TextOverflow.ellipsis,
                               textAlign: TextAlign.center,
-                              style: TextStyle(color: Colors.white)))),
+                              style: TextStyle(color: Colors.black87)))),
                   GridColumn(
                       columnName: 'CutToShipPerc',
                       label: Container(
-                          color: const Color(0xFF5FE3D3),
+                          color: Colors.grey[400],
                           alignment: Alignment.center,
                           child: const Text('Cut Plan\nTo Ship %',
                               overflow: TextOverflow.ellipsis,
                               textAlign: TextAlign.center,
-                              style: TextStyle(color: Colors.white)))),
+                              style: TextStyle(color: Colors.black87)))),
                   GridColumn(
                       columnName: 'OrderToShipPerc',
                       label: Container(
-                          color: const Color(0xFF5FE3D3),
+                          color: Colors.grey[400],
                           alignment: Alignment.center,
                           child: const Text('Order To\n Ship%',
                               overflow: TextOverflow.ellipsis,
                               textAlign: TextAlign.center,
-                              style: TextStyle(color: Colors.white)))),
+                              style: TextStyle(color: Colors.black87)))),
                   GridColumn(
                       columnName: 'BudgetRejPerc',
                       label: Container(
-                          color: const Color(0xFF5FE3D3),
+                          color: Colors.grey[400],
                           alignment: Alignment.center,
                           child: const Text('Budget\nRej%',
                               overflow: TextOverflow.ellipsis,
                               textAlign: TextAlign.center,
-                              style: TextStyle(color: Colors.white)))),
+                              style: TextStyle(color: Colors.black87)))),
                   GridColumn(
                       columnName: 'BudgetRejVal',
                       label: Container(
-                          color: const Color(0xFF5FE3D3),
+                          color: Colors.grey[400],
                           alignment: Alignment.center,
                           child: const Text('Budget\nRej Val',
                               overflow: TextOverflow.ellipsis,
                               textAlign: TextAlign.center,
-                              style: TextStyle(color: Colors.white)))),
+                              style: TextStyle(color: Colors.black87)))),
                   GridColumn(
                       columnName: 'ActualRejPerc',
                       label: Container(
-                          color: const Color(0xFF5FE3D3),
+                          color: Colors.grey[400],
                           alignment: Alignment.center,
                           child: const Text('Actual\nRej%',
                               overflow: TextOverflow.ellipsis,
                               textAlign: TextAlign.center,
-                              style: TextStyle(color: Colors.white)))),
+                              style: TextStyle(color: Colors.black87)))),
                   GridColumn(
                       columnName: 'ActualRejVal',
                       label: Container(
-                          color: const Color(0xFF5FE3D3),
+                          color: Colors.grey[400],
                           alignment: Alignment.center,
                           child: const Text('Actual\nRej Val',
                               overflow: TextOverflow.ellipsis,
                               textAlign: TextAlign.center,
-                              style: TextStyle(color: Colors.white)))),
+                              style: TextStyle(color: Colors.black87)))),
                   GridColumn(
                       columnName: 'VariancePerc',
                       label: Container(
-                          color: const Color(0xFF5FE3D3),
+                          color: Colors.grey[400],
                           alignment: Alignment.center,
                           child: const Text('Variance\nRej%',
                               overflow: TextOverflow.ellipsis,
                               textAlign: TextAlign.center,
-                              style: TextStyle(color: Colors.white)))),
+                              style: TextStyle(color: Colors.black87)))),
                   GridColumn(
                       columnName: 'VarianceVal',
                       label: Container(
-                          color: const Color(0xFF5FE3D3),
+                          color: Colors.grey[400],
                           alignment: Alignment.center,
                           child: const Text('Variance\nRej Val',
                               overflow: TextOverflow.ellipsis,
                               textAlign: TextAlign.center,
-                              style: TextStyle(color: Colors.white)))),
+                              style: TextStyle(color: Colors.black87)))),
                 ],
               ),
             ),

@@ -8,7 +8,6 @@ import 'package:ppms/ESS/management_approval/screens/management_approval.dart';
 import 'package:http/http.dart' as http;
 import 'package:ppms/common/utils/constants/image_string.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:velocity_x/velocity_x.dart';
 
 import '../../../common/utils/constants/baseurl.dart';
 
@@ -559,223 +558,109 @@ class _ManagementApprovalFormState extends State<ManagementApprovalForm> {
                   physics: const ScrollPhysics(),
                   child: Row(
                     children: [
-                      const SizedBox(
-                        width: 10,
-                      ),
-                       Column(
-                        children: [
-                          const Text(
-                            "Proposer",
-                            style: TextStyle(fontWeight: FontWeight.bold),
-                          ),
-                          Image(width: 30,height: 30,image: AssetImage(formData.propstatus=="Sent for Approval" || formData.propstatus=="Approved"?TImages.approveStatus:(formData.propstatus=="Hold"?TImages.holdStatus:TImages.pendingStatus)))
-                          //Icon(formData.propstatus=="Sent for Approval" || formData.propstatus=="Approved"?Iconsax.verify:(formData.propstatus=="Hold"?Icons.thumb_down:Iconsax.timer))
-                        ],
-                      )
-                          .paddingAll(5)
-                          .box
-                          .shadow
-                          .color(Vx.gray50)
-                          //.width(190)
-                          .rounded
-                          .border(color: Colors.grey)
-                          .shadow
-                          .make(),
-                      const SizedBox(
-                        width: 10,
-                      ),
-                      Column(
-                        children: [
-                          const Text(
-                            "Unit HR Head",
-                            style: TextStyle(fontWeight: FontWeight.bold),
-                          ),
-                          Image(width: 30,height: 30,image: AssetImage(formData.apr1status=="Sent for Approval" || formData.apr1status=="Approved"?TImages.approveStatus:(formData.apr1status=="Hold"?TImages.holdStatus:TImages.pendingStatus)))
-                          //Icon(formData.apr1status=="Sent for Approval" || formData.apr1status=="Approved"?Iconsax.verify:(formData.apr1status=="Hold"?Icons.thumb_down:Iconsax.timer))
-                        ],
-                      )
-                          .paddingAll(5)
-                          .box
-                          .shadow
-                          .color(Vx.gray50)
-                          //.width(190)
-                          .rounded
-                          .border(color: Colors.grey)
-                          .shadow
-                          .make(),
-                      const SizedBox(
-                        width: 10,
-                      ),
-                       Column(
-                        children: [
-                          const Text(
-                            "Unit GM",
-                            style: TextStyle(fontWeight: FontWeight.bold),
-                          ),
-                          Image(width: 30,height: 30,image: AssetImage(formData.apr2status=="Sent for Approval" || formData.apr2status=="Approved"?TImages.approveStatus:(formData.apr2status=="Hold"?TImages.holdStatus:TImages.pendingStatus)))
-                          //Icon(formData.apr2status=="Sent for Approval" || formData.apr2status=="Approved"?Iconsax.verify:(formData.apr2status=="Hold"?Icons.thumb_down:Iconsax.timer))
-                        ],
-                      )
-                          .paddingAll(5)
-                          .box
-                          .shadow
-                          .color(Vx.gray50)
-                          //.width(190)
-                          .rounded
-                          .border(color: Colors.grey)
-                          .shadow
-                          .make(),
-                      const SizedBox(
-                        width: 10,
-                      ),
-                       Column(
-                        children: [
-                          const Text(
-                            "AVP APPROVAL",
-                            style: TextStyle(fontWeight: FontWeight.bold),
-                          ),
-                          Image(width: 30,height: 30,image: AssetImage(formData.apravpstatus=="Sent for Approval" || formData.apravpstatus=="Approved"?TImages.approveStatus:(formData.apravpstatus=="Hold"?TImages.holdStatus:TImages.pendingStatus)))
-                          //Icon(formData.apravpstatus=="Sent for Approval" || formData.apravpstatus=="Approved"?Iconsax.verify:(formData.apravpstatus=="Hold"?Icons.thumb_down:Iconsax.timer))
-                        ],
-                      )
-                          .paddingAll(5)
-                          .box
-                          .shadow
-                          .color(Vx.gray50)
-                          //.width(190)
-                          .rounded
-                          .border(color: Colors.grey)
-                          .shadow
-                          .make(),
-                      const SizedBox(
-                        width: 10,
-                      ),
-                        Column(
-                        children: [
-                          const Text(
-                            "HO",
-                            style: TextStyle(fontWeight: FontWeight.bold),
-                          ),
-                          Image(width: 30,height: 30,image: AssetImage(formData.apr3status=="Sent for Approval" || formData.apr3status=="Approved"?TImages.approveStatus:(formData.apr3status=="Hold"?TImages.holdStatus:TImages.pendingStatus)))
-                          //Icon(formData.apr3status=="Sent for Approval" || formData.apr3status=="Approved"?Iconsax.verify:(formData.apr3status=="Hold"?Icons.thumb_down:Iconsax.timer))
-                        ],
-                      )
-                          .paddingAll(5)
-                          .box
-                          .shadow
-                          .color(Vx.gray50)
-                          //.width(190)
-                          .rounded
-                          .border(color: Colors.grey)
-                          .shadow
-                          .make(),
-                      const SizedBox(
-                        width: 10,
-                      ),
-                       Column(
-                        children: [
-                          const Text(
-                            "Senior Management Approval",
-                            style: TextStyle(fontWeight: FontWeight.bold),
-                          ),
-                          Image(width: 30,height: 30,image: AssetImage(formData.apr4status=="Sent for Approval" || formData.apr4status=="Approved"?TImages.approveStatus:(formData.apr4status=="Hold"?TImages.holdStatus:TImages.pendingStatus)))
-                          //Icon(formData.apr4status=="Sent for Approval" || formData.apr4status=="Approved"?Iconsax.verify:(formData.apr4status=="Hold"?Icons.thumb_down:Iconsax.timer))
-                        ],
-                      )
-                          .paddingAll(5)
-                          .box
-                          .shadow
-                          .color(Vx.gray50)
-                          //.width(190)
-                          .rounded
-                          .border(color: Colors.grey)
-                          .shadow
-                          .make(),
-                      const SizedBox(
-                        width: 10,
-                      ),
-                       Column(
-                        children: [
-                          const Text(
-                            "Mr.Sumit/Mr. Narinder/Mr. Surinder",
-                            style: TextStyle(fontWeight: FontWeight.bold),
-                          ),
-                          Image(width: 30,height: 30,image: AssetImage(formData.apr5status=="Sent for Approval" || formData.apr5status=="Approved"?TImages.approveStatus:(formData.apr5status=="Hold"?TImages.holdStatus:TImages.pendingStatus)))
-                          //Icon(formData.apr5status=="Sent for Approval" || formData.apr5status=="Approved"?Iconsax.verify:(formData.apr5status=="Hold"?Icons.thumb_down:Iconsax.timer))
-                        ],
-                      )
-                          .paddingAll(5)
-                          .box
-                          .shadow
-                          .color(Vx.gray50)
-                          //.width(190)
-                          .rounded
-                          .border(color: Colors.grey)
-                          .shadow
-                          .make()
+                      const SizedBox(width: 10),
+                      _buildApprovalColumn("Proposer", formData.propstatus),
+                      const SizedBox(width: 10),
+                      _buildApprovalColumn("Unit HR Head", formData.apr1status),
+                      const SizedBox(width: 10),
+                      _buildApprovalColumn("Unit GM", formData.apr2status),
+                      const SizedBox(width: 10),
+                      _buildApprovalColumn("AVP APPROVAL", formData.apravpstatus),
+                      const SizedBox(width: 10),
+                      _buildApprovalColumn("HO", formData.apr3status),
+                      const SizedBox(width: 10),
+                      _buildApprovalColumn("Senior Management Approval", formData.apr4status),
+                      const SizedBox(width: 10),
+                      _buildApprovalColumn("Mr.Sumit/Mr. Narinder/Mr. Surinder", formData.apr5status),
                     ],
                   ),
                 ),
+                const SizedBox(height: 20),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.all(5.0),
+                      child: IconButton(
+                        onPressed: () {
+                          showConfirmDialog(
+                            "Are you sure want to Approve?",
+                            appId.toString(),
+                            appCatg.toString(),
+                            updateByType.toString(),
+                            1,
+                          );
+                        },
+                        icon: const Icon(Iconsax.tick_square, color: Colors.green),
+                        tooltip: "Approve",
+                      ),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.all(5.0),
+                      child: IconButton(
+                        onPressed: () {
+                          showConfirmDialog(
+                            "Are you sure want to Reject?",
+                            appId.toString(),
+                            appCatg.toString(),
+                            updateByType.toString(),
+                            2,
+                          );
+                        },
+                        icon: const Icon(Icons.disabled_by_default_rounded, color: Colors.red),
+                        tooltip: "Reject",
+                      ),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.all(5.0),
+                      child: IconButton(
+                        onPressed: () {
+                          showConfirmDialog(
+                            "Are you sure want to Hold?",
+                            appId.toString(),
+                            appCatg.toString(),
+                            updateByType.toString(),
+                            3,
+                          );
+                        },
+                        icon: const Image(
+                          image: AssetImage("assets/images/ess_images/ButtonIcons/HoldIcon.png"),
+                          height: 22,
+                          width: 22,
+                        ),
+                        tooltip: "Hold",
+                      ),
+                    ),
+                  ],
+                ),
               ],
-            ),
-            const SizedBox(
-              height: 20,
-            ),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: [
-                IconButton(
-                  onPressed: () {
-                    showConfirmDialog(
-                        "Are you sure want to Approve?",
-                        appId.toString(),
-                        appCatg.toString(),
-                        updateByType.toString(),
-                        1);
-                  },
-                  icon: Icon(Iconsax.tick_square, color: Colors.green),
-                  tooltip: "Approve",
-                ),
-                IconButton(
-                  onPressed: () {
-                    showConfirmDialog(
-                        "Are you sure want to Reject?",
-                        appId.toString(),
-                        appCatg.toString(),
-                        updateByType.toString(),
-                        2);
-                  },
-                  icon: Icon(Icons.disabled_by_default_rounded, color: Colors.red),
-                  tooltip: "Reject",
-                ),
-                IconButton(
-                  onPressed: () {
-                    showConfirmDialog(
-                        "Are you sure want to Hold?",
-                        appId.toString(),
-                        appCatg.toString(),
-                        updateByType.toString(),
-                        3);
-                  },
-                  icon: const Image(
-                    image: AssetImage(
-                        "assets/images/ess_images/ButtonIcons/HoldIcon.png"),
-                    height: 22,
-                    width: 22,
-                  ),
-                  tooltip: "Hold",
-                ),
-              ],
-            ).centered().paddingAll(5)
-                .box
-                .shadow
-                .color(Vx.gray50)
-            //.width(190)
-                .rounded
-                .border(color: Colors.grey)
-                .shadow
-                .make(),
+            )
           ]),
         ));
+  }
+  Widget _buildApprovalColumn(String title, String? status) {
+    return Container(
+      padding: const EdgeInsets.all(5),
+      decoration: BoxDecoration(
+        color: Colors.grey[50],
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: Colors.grey),
+        boxShadow: [BoxShadow(color: Colors.black12, blurRadius: 3)],
+      ),
+      child: Column(
+        children: [
+          Text(title, style: const TextStyle(fontWeight: FontWeight.bold)),
+          Image(
+            width: 30,
+            height: 30,
+            image: AssetImage(
+              status == "Sent for Approval" || status == "Approved"
+                  ? TImages.approveStatus
+                  : (status == "Hold" ? TImages.holdStatus : TImages.pendingStatus),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }

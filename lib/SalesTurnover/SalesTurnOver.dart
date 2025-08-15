@@ -1,8 +1,11 @@
-import 'package:flutter/cupertino.dart';
+import 'dart:async';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/widgets.dart';
+import 'package:flutter_animated_button/flutter_animated_button.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import '../ExtraFunction/lottie_loading.dart';
+import '../common/utils/constants/baseurl.dart';
 
 class SalesData {
   String mainColumn;
@@ -58,24 +61,25 @@ class SalesData {
   }
 }
 
-Future<List<SalesData>> fetchSalesData(String fy,int check) async {
-  print('test');
+Future<List<SalesData>> fetchSalesData(String fy, int check) async {
   final response = await http.get(
-    Uri.parse('http://14.142.248.34:10008/sales?unit=$check&year=$fy'),
+    Uri.parse('${TBaseURL.baseUrl}sales?unit=$check&year=$fy'),
   );
 
-  print('http://14.142.248.34:10008/sales?unit=$check&year=$fy');
+  if (kDebugMode) {
+    print('${TBaseURL.baseUrl}sales?unit=$check&year=$fy');
+  }
 
   if (response.statusCode == 200) {
     List jsonResponse = json.decode(response.body);
     print(jsonResponse);
 
     return jsonResponse.map((data) => SalesData.fromJson(data)).toList();
-
   } else {
     throw Exception('Failed to load data');
   }
 }
+
 String trimToFirst15Characters(String text) {
   if (text.length > 11) {
     return '${text.substring(0, 11)}.';
@@ -83,6 +87,7 @@ String trimToFirst15Characters(String text) {
     return text;
   }
 }
+
 class SalesTable extends StatelessWidget {
   final List<SalesData> data;
 
@@ -176,48 +181,32 @@ class SalesTable extends StatelessWidget {
       scaleEnabled: true,
       minScale: 0.8,
       maxScale: 2.5,
-      child: Container(
-        child: Row(
-          children: [
-            Column(
-              children: [
-                IntrinsicWidth(
-                  child: Table(
-                    border: TableBorder.all(color: Colors.black45),
-                    defaultColumnWidth: IntrinsicColumnWidth(),
-                    children: [
-                      const TableRow(
-                        decoration: BoxDecoration(color: Color(0xFF5FE3D3)),
-                        children: [
-                          TableCell(
-                            child: Center(
-                              child: Text(
-                                "Buyer",
-                                textAlign: TextAlign.center,
-                                style: TextStyle(color: Colors.white),
-                              ),
+      child: Row(
+        children: [
+          Column(
+            children: [
+              IntrinsicWidth(
+                child: Table(
+                  border: TableBorder.all(
+                    color: Theme.of(context).colorScheme.secondary,
+                  ),
+                  defaultColumnWidth: const IntrinsicColumnWidth(),
+                  children: [
+                    TableRow(
+                      decoration: BoxDecoration(color: Colors.grey[400]),
+                      children: const [
+                        TableCell(
+                          child: Center(
+                            child: Text(
+                              "Buyer",
+                              textAlign: TextAlign.center,
+                              style: TextStyle(color: Colors.black),
                             ),
                           ),
-                        ],
-                      ),
-                      for (var item in data)
-                        TableRow(
-                          children: [
-                            TableCell(
-                              child: Padding(
-                                padding: const EdgeInsets.only(left: 4),
-                                child: Align(
-                                  alignment: Alignment.centerLeft,
-                                  child: Text(
-                                    trimToFirst15Characters(
-                                        item.mainColumn.toString()),
-                                    textAlign: TextAlign.start,
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ],
                         ),
+                      ],
+                    ),
+                    for (var item in data)
                       TableRow(
                         children: [
                           TableCell(
@@ -226,92 +215,134 @@ class SalesTable extends StatelessWidget {
                               child: Align(
                                 alignment: Alignment.centerLeft,
                                 child: Text(
-                                  "Total",
+                                  trimToFirst15Characters(
+                                      item.mainColumn.toString()),
                                   textAlign: TextAlign.start,
-                                  style: TextStyle(fontWeight: FontWeight.bold),
+                                  style: TextStyle(
+                                    color:
+                                        Theme.of(context).colorScheme.secondary,
+                                  ),
                                 ),
                               ),
                             ),
                           ),
                         ],
                       ),
-                    ],
-                  ),
+                    const TableRow(
+                      decoration: BoxDecoration(color: Color(0xFF8DEAA3)),
+                      children: [
+                        TableCell(
+                          child: Padding(
+                            padding: EdgeInsets.only(left: 4),
+                            child: Align(
+                              alignment: Alignment.centerLeft,
+                              child: Text(
+                                "Total",
+                                textAlign: TextAlign.start,
+                                style: TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.black),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
                 ),
-              ],
-            ),
-            Expanded(
+              ),
+            ],
+          ),
+          Expanded(
+            child: SingleChildScrollView(
               child: SingleChildScrollView(
-                child: SingleChildScrollView(
-                  scrollDirection: Axis.horizontal,
-                  child: Column(
-                    children: [
-                      Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          SingleChildScrollView(
-                            scrollDirection: Axis.vertical,
-                            child: IntrinsicWidth(
-                              child: Table(
-                                border: TableBorder.all(color: Colors.black45),
-                                defaultColumnWidth: IntrinsicColumnWidth(),
-                                children: [
-                                  TableRow(
-                                    decoration: BoxDecoration(
-                                        color: Color(0xFF5FE3D3)),
-                                    children: [
-                                      for (var month in visibleMonths)
-                                        TableCell(
-                                          child: Center(
-                                            child: Text(
-                                              month,
-                                              textAlign: TextAlign.center,
-                                              style: TextStyle(color: Colors.white),
-                                            ),
-                                          ),
-                                        ),
+                scrollDirection: Axis.horizontal,
+                child: Column(
+                  children: [
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        SingleChildScrollView(
+                          scrollDirection: Axis.vertical,
+                          child: IntrinsicWidth(
+                            child: Table(
+                              border: TableBorder.all(
+                                color: Theme.of(context).colorScheme.secondary,
+                              ),
+                              defaultColumnWidth: const IntrinsicColumnWidth(),
+                              children: [
+                                TableRow(
+                                  decoration:
+                                      BoxDecoration(color: Colors.grey[400]),
+                                  children: [
+                                    for (var month in visibleMonths)
                                       TableCell(
                                         child: Center(
                                           child: Text(
-                                            "Total",
+                                            month,
                                             textAlign: TextAlign.center,
-                                            style: TextStyle(color: Colors.white),
+                                            style:
+                                                TextStyle(color: Colors.black),
                                           ),
                                         ),
                                       ),
-                                    ],
-                                  ),
-                                  for (var item in data)
-                                    TableRow(
-                                      children: [
-                                        for (var month in visibleMonths)
-                                          TableCell(
-                                            child: Center(
-                                              child: Padding(
-                                                padding: const EdgeInsets.only(
-                                                    left: 6, right: 2),
-                                                child: Align(
-                                                  alignment: Alignment.centerRight,
-                                                  child: Text(
-                                                    _getMonthValue(item, month),
-                                                    textAlign: TextAlign.end,
-                                                  ),
-                                                ),
-                                              ),
-                                            ),
+                                    TableCell(
+                                      child: Container(
+                                        color: Colors.grey[400],
+                                        child: const Center(
+                                          child: Text(
+                                            "Total",
+                                            textAlign: TextAlign.center,
+                                            style: TextStyle(
+                                                color: Colors.black,
+                                                fontWeight: FontWeight.bold),
                                           ),
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                for (var item in data)
+                                  TableRow(
+                                    children: [
+                                      for (var month in visibleMonths)
                                         TableCell(
                                           child: Center(
                                             child: Padding(
                                               padding: const EdgeInsets.only(
                                                   left: 6, right: 2),
                                               child: Align(
-                                                alignment: Alignment.centerRight,
+                                                alignment:
+                                                    Alignment.centerRight,
+                                                child: Text(
+                                                  _getMonthValue(item, month),
+                                                  textAlign: TextAlign.end,
+                                                  style: TextStyle(
+                                                    color: Theme.of(context)
+                                                        .colorScheme
+                                                        .secondary,
+                                                  ),
+                                                ),
+                                              ),
+                                            ),
+                                          ),
+                                        ),
+                                      TableCell(
+                                        child: Container(
+                                          color: const Color(0xffbeedf5),
+                                          child: Center(
+                                            child: Padding(
+                                              padding: const EdgeInsets.only(
+                                                  left: 6, right: 2),
+                                              child: Align(
+                                                alignment:
+                                                    Alignment.centerRight,
                                                 child: Text(
                                                   _calculateRowTotal(item)
                                                       .toString(),
                                                   textAlign: TextAlign.end,
                                                   style: TextStyle(
+                                                    color: Colors.black,
                                                     fontWeight: FontWeight.bold,
                                                   ),
                                                 ),
@@ -319,62 +350,75 @@ class SalesTable extends StatelessWidget {
                                             ),
                                           ),
                                         ),
-                                      ],
-                                    ),
-                                  TableRow(
-                                    children: [
-                                      for (var month in visibleMonths)
-                                        TableCell(
+                                      ),
+                                    ],
+                                  ),
+                                TableRow(
+                                  children: [
+                                    for (var month in visibleMonths)
+                                      TableCell(
+                                        child: Container(
+                                          color: const Color(0xFF8DEAA3),
                                           child: Center(
                                             child: Padding(
-                                              padding: EdgeInsets.only(
+                                              padding: const EdgeInsets.only(
                                                   left: 6, right: 2),
                                               child: Align(
-                                                alignment: Alignment.centerRight,
+                                                alignment:
+                                                    Alignment.centerRight,
                                                 child: Text(
-                                                  columnSums[month]?.toString() ??
+                                                  columnSums[month]
+                                                          ?.toString() ??
                                                       '0',
                                                   textAlign: TextAlign.end,
-                                                  style: TextStyle(
-                                                      fontWeight: FontWeight.bold),
+                                                  style: const TextStyle(
+                                                      color: Colors.black,
+                                                      fontWeight:
+                                                          FontWeight.bold),
                                                 ),
                                               ),
                                             ),
                                           ),
                                         ),
-                                      TableCell(
+                                      ),
+                                    TableCell(
+                                      child: Container(
+                                        color: const Color(0xFFC4B2F1),
                                         child: Center(
                                           child: Padding(
-                                            padding: EdgeInsets.only(
+                                            padding: const EdgeInsets.only(
                                                 left: 6, right: 2),
                                             child: Align(
                                               alignment: Alignment.centerRight,
                                               child: Text(
-                                                columnSums.values.fold(
-                                                    0, (a, b) => a + b).toString(),
+                                                columnSums.values
+                                                    .fold(0, (a, b) => a + b)
+                                                    .toString(),
                                                 textAlign: TextAlign.end,
-                                                style: TextStyle(
-                                                    fontWeight: FontWeight.bold),
+                                                style: const TextStyle(
+                                                    color: Colors.black,
+                                                    fontWeight:
+                                                        FontWeight.bold),
                                               ),
                                             ),
                                           ),
                                         ),
                                       ),
-                                    ],
-                                  ),
-                                ],
-                              ),
+                                    ),
+                                  ],
+                                ),
+                              ],
                             ),
                           ),
-                        ],
-                      ),
-                    ],
-                  ),
+                        ),
+                      ],
+                    ),
+                  ],
                 ),
               ),
-            )
-          ],
-        ),
+            ),
+          )
+        ],
       ),
     );
   }
@@ -424,32 +468,82 @@ class SalesTurnOverPage extends StatefulWidget {
   _SalesTurnOverPageState createState() => _SalesTurnOverPageState();
 }
 
-class _SalesTurnOverPageState extends State<SalesTurnOverPage> {
+class _SalesTurnOverPageState extends State<SalesTurnOverPage>
+    with TickerProviderStateMixin {
   String _selectedTurn = "1";
   String? _selectedFyShortName;
   List<dynamic> _fyData = [];
   Future<List<SalesData>>? _salesData;
-  bool _isChecked = true;
-  int _checkboxValue = 1;
+  bool _isChecked = false;
   double _scale = 1.0; // Default scale value
   double _previousScale = 1.0;
+  bool _isRVisible = false,
+      _showFullTitle = true,
+      _isReversing = false,
+      _showCursor = true,
+      _fromDateFocused = false,
+      _toDateFocused = false;
+  bool isDarkMode = false;
+  late AnimationController _typingController,
+      _backButtonController,
+      _scaleController;
+  late Animation<double> _scaleAnimation;
+  late Animation<Offset> _backButtonAnimation;
+  late Animation<int> _typingAnimation;
+  late AnimationController _checkboxController;
+  late Animation<double> _checkboxScaleAnimation;
+  late Timer _cursorTimer;
+  String _displayText = '';
+  int _currentMaxLength = 0;
 
   @override
   void initState() {
     super.initState();
     _fetchFyData();
+    buttonAnimation();
+    _currentMaxLength = 'Paramount Product Management System'.length;
+    _setupAnimations();
+    _startTypingSequence();
+    backAnimation();
+    _checkboxController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 200),
+    );
+    _checkboxScaleAnimation = Tween<double>(begin: 0.8, end: 1.2).animate(
+      CurvedAnimation(
+        parent: _checkboxController,
+        curve: Curves.easeInOut,
+      ),
+    );
+  }
+
+  @override
+  void dispose() {
+    _scaleController.dispose();
+    _typingController
+      ..removeListener(_updateText)
+      ..dispose();
+    _cursorTimer.cancel();
+    _backButtonController.dispose();
+    _checkboxController.dispose();
+    super.dispose();
+  }
+
+  void _startCheckboxAnimation() {
+    _checkboxController.reset();
+    _checkboxController.forward();
   }
 
   Future<void> _fetchFyData() async {
-    final response =
-    await http.get(Uri.parse('http://14.142.248.34:10008/year?year='));
+    int todaySale = _isChecked ? 1 : 0;
+    final response = await http.get(Uri.parse('${TBaseURL.baseUrl}year?year='));
     if (response.statusCode == 200) {
       final data = json.decode(response.body);
       setState(() {
         _fyData = data;
         if (_fyData.isNotEmpty) {
           _selectedFyShortName = _fyData[0]['FyShortName'];
-          _fetchData(_selectedFyShortName!,_checkboxValue);
+          _fetchData(_selectedFyShortName!, todaySale);
         }
       });
     } else {
@@ -457,187 +551,581 @@ class _SalesTurnOverPageState extends State<SalesTurnOverPage> {
     }
   }
 
-  void _fetchData(String fy,int check) {
-    setState(() {
-      _salesData = fetchSalesData(fy,check);
+  void backAnimation() {
+    _backButtonController = AnimationController(
+      vsync: this,
+      duration: const Duration(
+          milliseconds: 500), // Longer duration for two-part animation
+    );
+  }
+
+  void buttonAnimation() {
+    _scaleController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 400),
+    );
+
+    _scaleAnimation = Tween<double>(begin: 1.0, end: 1.3).animate(
+      CurvedAnimation(
+        parent: _scaleController,
+        curve: Curves.easeInOut,
+      ),
+    );
+
+    _scaleController.addStatusListener((status) {
+      if (status == AnimationStatus.completed) {
+        _scaleController.reverse();
+      }
     });
+  }
+
+  //back button animation
+  Future<void> _handleBack() async {
+    final animation = TweenSequence<double>([
+      TweenSequenceItem(
+        tween: Tween(begin: 0.0, end: 0.2), // Move right (backward) 20%
+        weight: 40, // 40% of total duration
+      ),
+      TweenSequenceItem(
+        tween:
+            Tween(begin: 0.2, end: -1.5), // Then move left (forward) off screen
+        weight: 60, // 60% of total duration
+      ),
+    ]).animate(_backButtonController);
+
+    await _backButtonController.forward(); // Start animation
+    if (mounted) Navigator.of(context).pop(); // Pop after animation completes
+  }
+
+  //App bar typing animation
+  void _setupAnimations() {
+    _typingController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1500),
+    );
+
+    _typingAnimation = IntTween(begin: 0, end: _currentMaxLength).animate(
+      CurvedAnimation(
+        parent: _typingController,
+        curve: Curves.easeInOut,
+      ),
+    );
+
+    _typingAnimation.addListener(_updateText);
+    _cursorTimer =
+        Timer.periodic(const Duration(milliseconds: 500), _toggleCursor);
+  }
+
+  //App bar typing animation
+  void _updateText() {
+    const fullText = 'Paramount Product Management System';
+    const shortText = 'Sales Turnover';
+
+    setState(() {
+      _displayText = _showFullTitle
+          ? fullText.substring(0, _typingAnimation.value)
+          : shortText.substring(
+              0, _typingAnimation.value.clamp(0, shortText.length));
+    });
+  }
+
+  //App bar typing animation
+  void _toggleCursor(Timer timer) {
+    if (mounted) {
+      // Show cursor during both forward and reverse typing
+      final shouldShowCursor =
+          _typingController.value > 0 && _typingController.value < 1.0;
+
+      if (shouldShowCursor || _showCursor != shouldShowCursor) {
+        setState(() => _showCursor = shouldShowCursor);
+      }
+    }
+  }
+
+  //App bar typing animation
+  Future<void> _startTypingSequence() async {
+    // Type out full title
+    _currentMaxLength = 'Paramount Product Management System'.length;
+    _typingController.duration = const Duration(milliseconds: 3000);
+    await _typingController.forward(from: 0);
+
+    // Wait 2 seconds
+    await Future.delayed(const Duration(seconds: 2));
+
+    // Reverse type full title
+    setState(() => _isReversing = true);
+    await _typingController.reverse(from: 1.0);
+
+    // Switch to short title
+    if (mounted) {
+      setState(() {
+        _showFullTitle = false;
+        _isReversing = false;
+        _currentMaxLength = 'PPMS'.length;
+      });
     }
 
+    // Adjust duration for shorter text
+    _typingController.duration = const Duration(milliseconds: 3000);
+    await _typingController.forward(from: 0);
+  }
+
+  void _fetchData(String fy, int check) {
+    setState(() {
+      _salesData = fetchSalesData(fy, check);
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        backgroundColor: Color(0xFF5FE3D3),
-        automaticallyImplyLeading: false,
-        leading: IconButton(
-          icon: const Icon(
-            Icons.arrow_back_rounded,
-            color: Colors.white,
-            size: 22,
-          ),
-          onPressed: () {
-            Navigator.of(context).pop();
-          },
-        ),
-        title: const Text(
-          'Sales Turnover',
-          style: TextStyle(
-            color: Colors.white,
-            fontSize: 16,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        centerTitle: true,
-        elevation: 2,
-      ),
-      body: InteractiveViewer(
-        panEnabled: true, // Allows panning with a single finger
-        scaleEnabled: true,
-        minScale: 1.0,
-        maxScale: 4.0,
-        child: GestureDetector(
-          onScaleStart: (details) {
-            _previousScale = _scale;
-          },
-          onScaleUpdate: (details) {
-          setState(() {
-            _scale = _previousScale * details.scale;
-          });
-          },
-          onScaleEnd: (details) {
-            _previousScale = _scale;
-          },
-        child:Padding(
-          padding: const EdgeInsets.all(16.0),
-          child:Transform.scale(
-            scale: _scale,
-            child: Column(
-            children: [
-              Row(
-                children: [
-                  Expanded(
-                    flex: 3,
-                    child: Container(
-                      height: 56,
-                      child: TextFormField(
-                        initialValue: "Turnover Summary - Month Wise",
-                        readOnly: true,
-                        decoration: InputDecoration(
-                          labelText: "Turn",
-                          border: OutlineInputBorder(),
-                        ),
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
-                  ),
-                  SizedBox(width: 16),
-                  Expanded(
-                    flex: 2,
-                    child: Container(
-                      height: 56,
-                      child: DropdownButtonFormField<String>(
-                        value: _selectedFyShortName,
-                        items: _fyData
-                            .map<DropdownMenuItem<String>>((dynamic item) {
-                          return DropdownMenuItem<String>(
-                            value: item['FyShortName'],
-                            child: Text(
-                              item['FyName'],
-                              style: TextStyle(
-                                fontSize: 14,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          );
-                        }).toList(),
-                        onChanged: (value) {
-                          setState(() {
-                            _selectedFyShortName = value;
-                          });
-                        },
-                        decoration: InputDecoration(
-                          labelText: "FY Year",
-                          border: OutlineInputBorder(),
-                        ),
-                      ),
-                    ),
-                  ),
-                ],),
-              SizedBox(width: double.infinity,height: 10,),
-              Row(
-                children: [
-                  Row(
-                    children: [
-                      Checkbox(
-                        activeColor: Color(0xFF33C4B2),
-                        value: _isChecked,
-                        onChanged: (bool? value) {
-                          setState(() {
-                            _isChecked = value!;
-                            _checkboxValue = _isChecked ? 1 : 0;
-                          });
-                        },
-                      ),
-                      Text("Exclude Today's Sale"),
-                    ],
-                  ),
-                  Spacer(),
-                  Padding(
-                    padding: const EdgeInsets.only(left: 12,right: 15),
-                    child: Container(
-                      width: 50,
-                      height: 30,
-                      child: ElevatedButton(
-                        onPressed: () {
-                          if (_selectedFyShortName != null) {
-                            _fetchData(_selectedFyShortName!,_checkboxValue);
-                          }
-                        },
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFF16DE48),
-                          padding: const EdgeInsets.symmetric(horizontal: 12),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                        )
-                        , child: Text('GO',style: TextStyle(
-                        color: Colors.white
-                      ),)
-                      ),
-                    ),
-                  ),
+        backgroundColor: Theme.of(context).primaryColor,
+        appBar: AppBar(
+          bottom: const PreferredSize(
+              preferredSize: Size(7, 7),
+              child: Divider(
+                color: Colors.white,
+                indent: 16,
+                endIndent: 16,
+              )),
+          backgroundColor: Theme.of(context).appBarTheme.backgroundColor,
+          automaticallyImplyLeading: false,
+          surfaceTintColor: Colors.transparent,
+          leading: AnimatedBuilder(
+            animation: _backButtonController,
+            builder: (context, child) {
+              final value = _backButtonController.value;
+              double offset;
 
-                ],
-              ),
-              SizedBox(height: 5),
-              Expanded(
-                child: SingleChildScrollView(
-                  child: FutureBuilder<List<SalesData>>(
-                    future: _salesData,
-                    builder: (context, snapshot) {
-                      if (snapshot.connectionState == ConnectionState.waiting) {
-                        return CircularProgressIndicator();
-                      } else if (snapshot.hasError) {
-                        return Text('Error: ${snapshot.error}');
-                      } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
-                        return Text('No data available');
-                      } else {
-                        return SalesTable(data: snapshot.data!); // Display the table if data is available
-                      }
-                    },
+              // Custom easing for the two-part motion
+              if (value < 0.4) {
+                // First part - move right (backward)
+                offset = Curves.easeOut.transform(value / 0.4) * 0.2;
+              } else {
+                // Second part - move left (forward)
+                offset =
+                    0.2 + Curves.easeIn.transform((value - 0.4) / 0.6) * -1.7;
+              }
+
+              return Transform.translate(
+                offset: Offset(
+                    offset * 30, 0), // Multiply by approximate pixel value
+                child: Container(
+                  margin: const EdgeInsets.only(left: 12, top: 6),
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                      color: Colors.white,
+                      width: 0.5,
+                    ),
+                  ),
+                  child: Padding(
+                    padding: const EdgeInsets.all(3.0),
+                    child: IconButton(
+                      icon: const Icon(
+                        Icons.arrow_back_ios_new_rounded,
+                        color: Colors.black,
+                        size: 20,
+                      ),
+                      onPressed: _handleBack,
+                      style: IconButton.styleFrom(
+                        backgroundColor: Colors.white,
+                        shape: const CircleBorder(),
+                      ),
+                    ),
+                  ),
+                ),
+              );
+            },
+          ),
+          title: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              AnimatedSwitcher(
+                duration: const Duration(milliseconds: 200),
+                child: Text(
+                  _displayText,
+                  key: ValueKey(_showFullTitle),
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: _showFullTitle ? 14 : 18,
+                    fontWeight: FontWeight.bold,
+                    letterSpacing: _showFullTitle ? 0.0 : 1.5,
                   ),
                 ),
               ),
+              if (_showCursor &&
+                  _typingController.value < 1.0 &&
+                  _typingController.value > 0)
+                Container(
+                  width: 6,
+                  height: 20,
+                  margin: const EdgeInsets.only(left: 2),
+                  color: Colors.grey,
+                ),
             ],
           ),
+          centerTitle: true,
+          elevation: 0,
+          shadowColor: Colors.transparent,
+          // actions: [
+          //   Container(
+          //     margin: const EdgeInsets.only(right: 8),
+          //     decoration: BoxDecoration(
+          //       shape: BoxShape.circle,
+          //       border: Border.all(
+          //         color: Colors.grey[700]!,
+          //         width: 0.5,
+          //       ),
+          //     ),
+          //     child: IconButton(
+          //       icon: const Icon(
+          //         Icons.menu_rounded,
+          //         color: Colors.white,
+          //         size: 22,
+          //       ),
+          //       onPressed: () => Scaffold.of(context).openDrawer(),
+          //       style: IconButton.styleFrom(
+          //         backgroundColor: Colors.black54,
+          //         shape: const CircleBorder(),
+          //       ),
+          //     ),
+          //   ),
+          // ],
         ),
-            )
-            ),
-      )
-    );
+        body: InteractiveViewer(
+          panEnabled: true, // Allows panning with a single finger
+          scaleEnabled: true,
+          minScale: 1.0,
+          maxScale: 4.0,
+          child: GestureDetector(
+              onScaleStart: (details) {
+                _previousScale = _scale;
+              },
+              onScaleUpdate: (details) {
+                setState(() {
+                  _scale = _previousScale * details.scale;
+                });
+              },
+              onScaleEnd: (details) {
+                _previousScale = _scale;
+              },
+              child: Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Transform.scale(
+                  scale: _scale,
+                  child: Column(
+                    children: [
+                      Row(
+                        children: [
+                          Expanded(
+                            flex: 3,
+                            child: SizedBox(
+                              height: 35,
+                              child: TextFormField(
+                                initialValue: "Turnover Summary - Month Wise",
+                                readOnly: true,
+                                decoration: InputDecoration(
+                                  contentPadding:
+                                      const EdgeInsets.only(left: 8),
+                                  border: const OutlineInputBorder(),
+                                  focusedBorder: OutlineInputBorder(
+                                      borderSide: BorderSide(
+                                    color:
+                                        Theme.of(context).colorScheme.secondary,
+                                    width: 1,
+                                  )),
+                                  enabledBorder: OutlineInputBorder(
+                                      borderSide: BorderSide(
+                                    color:
+                                        Theme.of(context).colorScheme.secondary,
+                                    width: 1,
+                                  )),
+                                ),
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.bold,
+                                  color:
+                                      Theme.of(context).colorScheme.secondary,
+                                ),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 16),
+                          Expanded(
+                            flex: 2,
+                            child: SizedBox(
+                              height: 35,
+                              child: DropdownButtonFormField<String>(
+                                value: _selectedFyShortName,
+                                items: _fyData.map<DropdownMenuItem<String>>(
+                                    (dynamic item) {
+                                  return DropdownMenuItem<String>(
+                                    value: item['FyShortName'],
+                                    child: Text(
+                                      item['FyName'],
+                                      style: TextStyle(
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.bold,
+                                        color: Theme.of(context)
+                                            .colorScheme
+                                            .secondary,
+                                      ),
+                                    ),
+                                  );
+                                }).toList(),
+                                onChanged: (value) {
+                                  setState(() {
+                                    _selectedFyShortName = value;
+                                  });
+                                },
+                                decoration: InputDecoration(
+                                  labelText: "FY Year",
+                                  border: OutlineInputBorder(
+                                      borderSide: BorderSide(
+                                    color:
+                                        Theme.of(context).colorScheme.secondary,
+                                  )),
+                                  enabledBorder: OutlineInputBorder(
+                                      borderSide: BorderSide(
+                                    color:
+                                        Theme.of(context).colorScheme.secondary,
+                                  )),
+                                  focusedBorder: OutlineInputBorder(
+                                      borderSide: BorderSide(
+                                    color:
+                                        Theme.of(context).colorScheme.secondary,
+                                  )),
+                                  labelStyle: TextStyle(
+                                    color:
+                                        Theme.of(context).colorScheme.secondary,
+                                  ),
+                                  contentPadding:
+                                      const EdgeInsets.only(left: 8),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(
+                        width: double.infinity,
+                        height: 10,
+                      ),
+                      Row(
+                        children: [
+                          Row(
+                            children: [
+                              GestureDetector(
+                                onTap: () {
+                                  setState(() {
+                                    _isChecked = !_isChecked;
+                                    _startCheckboxAnimation();
+                                  });
+                                },
+                                child: AnimatedContainer(
+                                  duration: const Duration(milliseconds: 300),
+                                  curve: Curves.easeInOut,
+                                  width: 24,
+                                  height: 24,
+                                  decoration: BoxDecoration(
+                                    color: _isChecked
+                                        ? Colors.grey[800]
+                                        : Colors.white,
+                                    borderRadius: BorderRadius.circular(4),
+                                    border: Border.all(
+                                      color: Colors.grey[700]!,
+                                      width: 1.5,
+                                    ),
+                                  ),
+                                  child: AnimatedSwitcher(
+                                    duration: const Duration(milliseconds: 200),
+                                    transitionBuilder: (Widget child,
+                                        Animation<double> animation) {
+                                      return ScaleTransition(
+                                        scale: animation,
+                                        child: child,
+                                      );
+                                    },
+                                    child: _isChecked
+                                        ? const Icon(
+                                            Icons.check,
+                                            key: ValueKey<bool>(true),
+                                            size: 18,
+                                            color: Colors.white,
+                                          )
+                                        : const SizedBox.shrink(
+                                            key: ValueKey<bool>(false)),
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              Text(
+                                "Exclude Today's Sale",
+                                style: TextStyle(
+                                  color:
+                                      Theme.of(context).colorScheme.secondary,
+                                ),
+                              ),
+                            ],
+                          ),
+                          const Spacer(),
+                          Padding(
+                            padding: const EdgeInsets.only(left: 10),
+                            child: AnimatedBuilder(
+                              animation: _scaleAnimation,
+                              builder: (context, child) {
+                                return Transform.scale(
+                                  scale: _scaleAnimation.value,
+                                  child: AnimatedButton(
+                                    height: 35,
+                                    width: 80,
+                                    text: 'Go',
+                                    isReverse: true,
+                                    selectedTextColor: Colors.black,
+                                    transitionType:
+                                        TransitionType.CENTER_ROUNDER,
+                                    backgroundColor: Colors.grey[600]!,
+                                    borderRadius: 8,
+                                    borderColor: Colors.grey[400]!,
+                                    borderWidth: 1.5,
+                                    animationDuration:
+                                        const Duration(seconds: 1),
+                                    animatedOn: AnimatedOn.onTap,
+                                    textStyle: const TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.bold,
+                                      fontFamily: 'Tahoma',
+                                    ),
+                                    onPress: () async {
+                                      _scaleController
+                                          .forward(); // Start the scale animation
+                                      if (_selectedFyShortName != null) {
+                                        int todaySale = _isChecked ? 1 : 0;
+                                        _fetchData(
+                                            _selectedFyShortName!, todaySale);
+                                      }
+                                    },
+                                  ),
+                                );
+                              },
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 10),
+                      Expanded(
+                        child: FutureBuilder<List<SalesData>>(
+                          future: _salesData,
+                          builder: (context, snapshot) {
+                            // Loading state
+                            if (snapshot.connectionState ==
+                                ConnectionState.waiting) {
+                              return const Center(
+                                child: LottieLoading(
+                                  size: 280,
+                                  animationPath:
+                                      'assets/animation/Paperplane.json',
+                                ),
+                              );
+                            }
+
+                            // Error state
+                            if (snapshot.hasError) {
+                              return const Center(
+                                child: Column(
+                                  children: [
+                                    LottieLoading(
+                                      size: 280,
+                                      animationPath:
+                                          'assets/animation/error.json',
+                                    ),
+                                    Text('Please Try Again After Some Time')
+                                  ],
+                                ),
+                              );
+                            }
+
+                            // Data loaded but empty
+                            if (!snapshot.hasData || snapshot.data!.isEmpty) {
+                              return const Center(
+                                child: Column(
+                                  children: [
+                                    LottieLoading(
+                                      size: 280,
+                                      animationPath:
+                                          'assets/animation/noData.json',
+                                    ),
+                                    Text('Please Try Again After Some Time')
+                                  ],
+                                ),
+                              );
+                            }
+
+                            // Data loaded successfully
+                            return SingleChildScrollView(
+                              child: SalesTable(data: snapshot.data!),
+                            );
+                          },
+                        ),
+                      )
+                    ],
+                  ),
+                ),
+              )),
+        ));
+  }
+
+  Color _borderColor = Colors.black26;
+  bool _showRGBBorder = false;
+  int _currentRGBIndex = 0;
+  final List<Color> _rgbColors = [
+    Colors.black,
+    Colors.black87,
+    Colors.black54,
+    Colors.black45,
+    Colors.black26
+  ];
+
+// Add this method to your state class to handle the RGB animation
+  void _startRGBAnimation() {
+    setState(() {
+      _showRGBBorder = true;
+    });
+
+    // Reset the animation after 2 seconds
+    Future.delayed(const Duration(seconds: 1), () {
+      if (mounted) {
+        setState(() {
+          _showRGBBorder = false;
+        });
+      }
+    });
+
+    // Animate through RGB colors
+    const frameDuration = Duration(milliseconds: 200);
+    _currentRGBIndex = 0;
+    Timer.periodic(frameDuration, (Timer timer) {
+      if (!mounted) {
+        timer.cancel();
+        return;
+      }
+
+      setState(() {
+        _currentRGBIndex = (_currentRGBIndex + 1) % _rgbColors.length;
+        _borderColor = _rgbColors[_currentRGBIndex];
+      });
+
+      // Stop after 2 seconds
+      if (timer.tick * frameDuration.inMilliseconds >= 2000) {
+        timer.cancel();
+        if (mounted) {
+          setState(() {
+            _borderColor = Colors.black26;
+          });
+        }
+      }
+    });
   }
 }

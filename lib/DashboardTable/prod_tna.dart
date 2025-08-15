@@ -3,6 +3,9 @@ import 'package:flutter/material.dart';
 import 'package:syncfusion_flutter_datagrid/datagrid.dart';
 import 'package:http/http.dart' as http;
 
+import '../ExtraFunction/lottie_loading.dart';
+import '../common/utils/constants/baseurl.dart';
+
 class ProdTnaDetail {
   final int fileHandoverCount;
   final int fileHandoverDiff;
@@ -46,13 +49,12 @@ class ProdTnaDetail {
 }
 
 // Fetch data from the API
-Future<List<ProdTnaDetail>> fetchProdTnaData(String from, String to, String units) async {
+Future<List<ProdTnaDetail>> fetchProdTnaData(String from, String to, String units,String vgUnit) async {
   final response = await http.get(
-    Uri.parse('http://14.142.248.34:10008/management?proce_type=prodTna&from=$from&to=$to&units=$units'),
-    // Uri.parse('http://172.16.10.11:8000/management?proce_type=prodTna&from=$from&to=$to&units=$units'),
+    Uri.parse('${TBaseURL.baseUrl}mngmnt_review_vg?proc_type=MngmntReviewOther&type=ProductionTNA&fromDate=$from&toDate=$to&unit=$units&unitVg=$vgUnit'),
   );
 
-  print('http://14.142.248.34:10008/management?proce_type=prodTna&from=$from&to=$to&units=$units');
+  print('${TBaseURL.baseUrl}mngmnt_review_vg?proc_type=MngmntReviewOther&type=ProductionTNA&fromDate=$from&toDate=$to&unit=$units&unitVg=$vgUnit');
 
   if (response.statusCode == 200) {
     List jsonResponse = json.decode(response.body);
@@ -105,7 +107,7 @@ class ProdTnaDataSource extends DataGridSource {
   DataGridRowAdapter buildRow(DataGridRow row) {
     final isTotalRow = row.getCells().first.value == 'Total';
     return DataGridRowAdapter(
-      color: isTotalRow ? Colors.yellowAccent : null,
+      color: isTotalRow ? const Color(0xFF8DEAA3) : null,
       cells: row.getCells().map<Widget>((dataGridCell) {
         Alignment alignment = dataGridCell.columnName == 'UnitShortCode'
             ? Alignment.centerLeft
@@ -119,6 +121,7 @@ class ProdTnaDataSource extends DataGridSource {
             style: TextStyle(
               fontSize: 14,
               fontWeight: isTotalRow ? FontWeight.bold : FontWeight.normal,
+              color: Colors.black
             ),
           ),
         );
@@ -149,12 +152,14 @@ class ProdTnaDataTable extends StatefulWidget {
   final String from;
   final String to;
   final String units;
+  final String vgUnit;
 
   const ProdTnaDataTable({
     super.key,
     required this.from,
     required this.to,
     required this.units,
+    required this.vgUnit,
   });
 
   @override
@@ -167,7 +172,7 @@ class _ProdTnaDataTableState extends State<ProdTnaDataTable> {
   @override
   void initState() {
     super.initState();
-    prodTna = fetchProdTnaData(widget.from, widget.to, widget.units);
+    prodTna = fetchProdTnaData(widget.from, widget.to, widget.units,widget.vgUnit);
   }
 
   @override
@@ -176,7 +181,9 @@ class _ProdTnaDataTableState extends State<ProdTnaDataTable> {
       future: prodTna,
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Center(child: CircularProgressIndicator());
+          return const SizedBox(
+            width: double.infinity,
+              child: LottieLoading(size: 150,animationPath: 'assets/animation/profit.json',));
         } else if (snapshot.hasError) {
           return Center(child: Text('Error: ${snapshot.error}'));
         } else if (snapshot.hasData) {const double rowHeight = 25;
@@ -210,11 +217,11 @@ class _ProdTnaDataTableState extends State<ProdTnaDataTable> {
                   StackedHeaderCell(
                     columnNames: ['UnitShortCode'],
                     child: Container(
-                        color: const Color(0xFF5FE3D3),
+                        color: Colors.grey[400],
                         child: const Center(
                             child: Text(
                               '',
-                              style: TextStyle(color: Colors.white),
+                              style: TextStyle(color: Colors.black87),
                             ))),
                   ),
                   StackedHeaderCell(
@@ -225,12 +232,12 @@ class _ProdTnaDataTableState extends State<ProdTnaDataTable> {
                       'TNAPending'
                     ],
                     child: Container(
-                        color: const Color(0xFF5FE3D3),
+                        color: Colors.grey[400],
                         child: const Center(
                             child: Text(
                               'File HandOver &\nTNA Made',
                               textAlign: TextAlign.center,
-                              style: TextStyle(color: Colors.white),
+                              style: TextStyle(color: Colors.black87),
                             ))),
                   ),
                   StackedHeaderCell(
@@ -241,12 +248,12 @@ class _ProdTnaDataTableState extends State<ProdTnaDataTable> {
                       'ApprovedPending'
                     ],
                     child: Container(
-                        color: const Color(0xFF5FE3D3),
+                        color: Colors.grey[400],
                         child: const Center(
                             child: Text(
                               textAlign: TextAlign.center,
                               'TNA Review\n& Approval',
-                              style: TextStyle(color: Colors.white),
+                              style: TextStyle(color: Colors.black87),
                             ))),
                   ),
                 ]),
@@ -255,91 +262,91 @@ class _ProdTnaDataTableState extends State<ProdTnaDataTable> {
                 GridColumn(
                     columnName: 'UnitShortCode',
                     label: Container(
-                        color: const Color(0xFF5FE3D3),
+                        color: Colors.grey[200],
                         alignment: Alignment.center,
                         child: const Text('Unit',
                             overflow: TextOverflow.clip,
-                            style: TextStyle(color: Colors.white)))),
+                            style: TextStyle(color: Colors.black87)))),
                 GridColumn(
                     columnName: 'FileHandover',
                     minimumWidth: 60,
                     label: Container(
-                        color: const Color(0xFF5FE3D3),
+                        color: Colors.grey[200],
                         alignment: Alignment.center,
                         child: const Text('File\nHndovr',
                             overflow: TextOverflow.ellipsis,
                             textAlign: TextAlign.center,
-                            style: TextStyle(color: Colors.white)))),
+                            style: TextStyle(color: Colors.black87)))),
                 GridColumn(
                     columnName: 'FileHandoverPending',
                     minimumWidth: 80,
                     label: Container(
-                        color: const Color(0xFF5FE3D3),
+                        color: Colors.grey[200],
                         alignment: Alignment.center,
                         child: const Text('File Hndovr\nPending',
                             overflow: TextOverflow.ellipsis,
                             textAlign: TextAlign.center,
-                            style: TextStyle(color: Colors.white)))),
+                            style: TextStyle(color: Colors.black87)))),
                 GridColumn(
                     columnName: 'TNAMade',
                     minimumWidth: 60,
                     label: Container(
-                        color: const Color(0xFF5FE3D3),
+                        color: Colors.grey[200],
                         alignment: Alignment.center,
                         child: const Text('TNA\nMade',
                             overflow: TextOverflow.ellipsis,
                             textAlign: TextAlign.center,
-                            style: TextStyle(color: Colors.white)))),
+                            style: TextStyle(color: Colors.black87)))),
                 GridColumn(
                     columnName: 'TNAPending',
                     minimumWidth: 60,
                     label: Container(
-                        color: const Color(0xFF5FE3D3),
+                        color: Colors.grey[200],
                         alignment: Alignment.center,
                         child: const Text('TNA\nPending',
                             overflow: TextOverflow.ellipsis,
                             textAlign: TextAlign.center,
-                            style: TextStyle(color: Colors.white)))),
+                            style: TextStyle(color: Colors.black87)))),
                 GridColumn(
                     columnName: 'Reviewed',
                     minimumWidth: 70,
                     label: Container(
-                        color: const Color(0xFF5FE3D3),
+                        color: Colors.grey[200],
                         alignment: Alignment.center,
                         child: const Text('Reviewed',
                             overflow: TextOverflow.ellipsis,
                             textAlign: TextAlign.center,
-                            style: TextStyle(color: Colors.white)))),
+                            style: TextStyle(color: Colors.black87)))),
                 GridColumn(
                     columnName: 'ReviewedPending',
                     minimumWidth: 70,
                     label: Container(
-                        color: const Color(0xFF5FE3D3),
+                        color: Colors.grey[200],
                         alignment: Alignment.center,
                         child: const Text('Reviewed\nPending',
                             overflow: TextOverflow.ellipsis,
                             textAlign: TextAlign.center,
-                            style: TextStyle(color: Colors.white)))),
+                            style: TextStyle(color: Colors.black87)))),
                 GridColumn(
                     columnName: 'Approved',
                     minimumWidth: 70,
                     label: Container(
-                        color: const Color(0xFF5FE3D3),
+                        color: Colors.grey[200],
                         alignment: Alignment.center,
                         child: const Text('Approved',
                             overflow: TextOverflow.ellipsis,
                             textAlign: TextAlign.center,
-                            style: TextStyle(color: Colors.white)))),
+                            style: TextStyle(color: Colors.black87)))),
                 GridColumn(
                     columnName: 'ApprovedPending',
                     minimumWidth: 70,
                     label: Container(
-                        color: const Color(0xFF5FE3D3),
+                        color: Colors.grey[200],
                         alignment: Alignment.center,
                         child: const Text('Approved\nPending',
                             overflow: TextOverflow.ellipsis,
                             textAlign: TextAlign.center,
-                            style: TextStyle(color: Colors.white)))),
+                            style: TextStyle(color: Colors.black87)))),
               ],
             ),
           ),

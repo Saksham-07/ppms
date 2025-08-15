@@ -169,8 +169,8 @@ class AuditPageNewState extends State<AuditPageNew> {
 
   Future<void> getVersion(String version) async {
     try {
-      final response = await http.get(Uri.parse('http://14.142.248.34:10008/version?version=$version'));
-      print('http://14.142.248.34:10008/version?version=$version');
+      final response = await http.get(Uri.parse('${TBaseURL.baseUrl}version?version=$version'));
+      print('${TBaseURL.baseUrl}version?version=$version');
       if (response.statusCode == 200) {
         var data = jsonDecode(response.body);
         if (data.isNotEmpty) {
@@ -197,7 +197,7 @@ class AuditPageNewState extends State<AuditPageNew> {
 
   Future<void> getFile() async {
     try {
-      final response = await http.get(Uri.parse('http://14.142.248.34:10008/version_file_path'));
+      final response = await http.get(Uri.parse('${TBaseURL.baseUrl}version_file_path'));
       if (kDebugMode) {
       }
       if (response.statusCode == 200) {
@@ -218,7 +218,7 @@ class AuditPageNewState extends State<AuditPageNew> {
   }
 
   void _showUpdateDialog() {
-    String apkUrl = 'http://14.142.248.34:10004/assets/media/$fileName';
+    String apkUrl = 'http://14.96.24.164:10004/assets/media/$fileName';
     if (kDebugMode) {
     }
     if (kDebugMode) {

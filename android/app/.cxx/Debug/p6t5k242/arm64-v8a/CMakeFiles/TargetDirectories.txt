@@ -1,0 +1,2 @@
+/Users/macos15/Development/ppms/android/app/.cxx/Debug/p6t5k242/arm64-v8a/CMakeFiles/rebuild_cache.dir
+/Users/macos15/Development/ppms/android/app/.cxx/Debug/p6t5k242/arm64-v8a/CMakeFiles/edit_cache.dir

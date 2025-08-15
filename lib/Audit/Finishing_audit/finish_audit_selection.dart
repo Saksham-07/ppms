@@ -1,8 +1,11 @@
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_html/flutter_html.dart';
+import 'package:iconsax/iconsax.dart';
 import 'package:intl/intl.dart';
 import 'package:package_info_plus/package_info_plus.dart';
+import 'package:ppms/Audit/Finishing_audit/finish_audit.dart';
 import 'package:ppms/Audit/Sewing_Audit/sewing_audit.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:http/http.dart' as http;
@@ -11,15 +14,16 @@ import 'package:dropdown_search/dropdown_search.dart';
 import '../../ExtraFunction/uuid.dart';
 import '../../common/utils/constants/baseurl.dart';
 
-class FinishAuditSelection extends StatefulWidget {
-  const FinishAuditSelection({super.key});
+class FinishingAuditSelection extends StatefulWidget {
+  const FinishingAuditSelection({super.key});
 
   @override
-  FinishAuditSelectionState createState() => FinishAuditSelectionState();
+  FinishingAuditSelectionState createState() => FinishingAuditSelectionState();
 }
 
-class FinishAuditSelectionState extends State<FinishAuditSelection> {
+class FinishingAuditSelectionState extends State<FinishingAuditSelection> {
   String? _loginId;
+  int _currentIndex = 0;
   TextEditingController orderQty = TextEditingController();
   TextEditingController issueQty = TextEditingController();
   TextEditingController receivedQty = TextEditingController();
@@ -27,7 +31,7 @@ class FinishAuditSelectionState extends State<FinishAuditSelection> {
 
   String isFresh = "Fresh";
   List<String> _unitOptions = [];
-  Map<String, String> _unitMap = {};
+  Map<String, String> _unitMap = {},_unitMapVg = {};
   String? _selectedUnit;
 
   List<String> buyerOptions = [];
@@ -49,7 +53,7 @@ class FinishAuditSelectionState extends State<FinishAuditSelection> {
   List<String> lineOption = [];
   Map<String, String> lineMap = {};
   String? selectedLine;
-  int? lineId;
+  String? lineId;
 
   List<String> floorOptions = [];
   Map<String, String> floorMap = {};
@@ -67,8 +71,7 @@ class FinishAuditSelectionState extends State<FinishAuditSelection> {
 
   List<String> productOptions = [];
   Map<String, String> productMap = {};
-  String? selectedProduct;
-  int? productId;
+  String? selectedProduct = '';
 
   List<String> supervisorOptions = [];
   Map<String, String> supervisorMap = {};
@@ -82,6 +85,14 @@ class FinishAuditSelectionState extends State<FinishAuditSelection> {
   Map<String, String> checkerMap = {};
   String? selectedChecker;
 
+  List<String> aqmOptions = [];
+  Map<String, String> aqmMap = {};
+  String? selectedAqm;
+
+  List<String> inChargeOptions = [];
+  Map<String, String> inChargeMap = {};
+  String? selectedInCharge;
+
   List<String> auditOptions = [];
   Map<String, String> auditMap = {};
   String? selectedAudit;
@@ -90,7 +101,7 @@ class FinishAuditSelectionState extends State<FinishAuditSelection> {
   Map<String, dynamic> textData = {};
   Map<String, dynamic> allData = {};
 
-  bool isSelected = false,isReAudit = true;
+  bool isSelected = false,isReAudit = true,isOutHouse = false;
   String version = '',uuid = '',reAuditNo = '';
   String startTime = '';
   String? selectedTime;
@@ -102,7 +113,7 @@ class FinishAuditSelectionState extends State<FinishAuditSelection> {
   @override
   void initState() {
     super.initState();
-    _fetchUnitOptions();
+    _fetchUnitOptions('Apps');
     getVersionNo();
     getUid();
   }
@@ -138,48 +149,60 @@ class FinishAuditSelectionState extends State<FinishAuditSelection> {
 
   List<String> generateHourlyIntervals(String startTime, String currentTime) {
     String date = DateTime.now().toIso8601String().split('T')[0];
-    String nextDate = DateTime.now().add(Duration(days: 1)).toIso8601String().split('T')[0];
     DateTime startDateTime = DateTime.parse("$date $startTime");
     DateTime now = DateTime.parse("$date $currentTime");
 
     List<String> intervals = [];
-    int count = 1;
+    int count = 0;
 
-    while (startDateTime.isBefore(DateTime.parse("$nextDate 00:30:00"))) {
-      if (startDateTime.isAfter(now.subtract(Duration(hours: 1))) &&
-          startDateTime.isBefore(now.add(Duration(hours: 1)))) {
+    while (startDateTime.isBefore(DateTime.parse("$date 23:59:59"))) {
+      // Add the interval if it matches the previous hour or the current hour
+      if (startDateTime.isAfter(now.subtract(const Duration(hours: 1))) &&
+          startDateTime.isBefore(now.add(const Duration(hours: 1)))) {
         intervals.add(count.toString());
       }
 
       count++;
-      startDateTime = startDateTime.add(Duration(hours: 1));
+      startDateTime = startDateTime.add(const Duration(hours: 1));
     }
 
     return intervals;
   }
 
-  Future<void> _fetchUnitOptions() async {
+  Future<void> _fetchUnitOptions(String type) async {
     final prefs = await SharedPreferences.getInstance();
     _loginId = prefs.getString('login_id');
-    final String url = '${TBaseURL.baseUrl}unit?type=permissions&user=$_loginId';
+    final String url = '${TBaseURL.baseUrl}unit_vg?type=VG&user=$_loginId';
+    if (kDebugMode) {
+      print('${TBaseURL.baseUrl}unit_vg?type=VG&user=$_loginId');
+    }
     final response = await http.get(Uri.parse(url));
 
     if (response.statusCode == 200) {
       final List<dynamic> data = jsonDecode(response.body);
       setState(() {
-        _unitOptions = data.map((e) => e['UnitShortCode'].toString()).toList();
-        _unitMap = {for (var item in data) item['UnitShortCode'].toString(): item['UnitCode'].toString()};
+        _unitOptions = data.map((e) => e['UnitShortCode1'].toString()).toList();
+        _unitMap = {
+          for (var item in data) item['UnitShortCode1']
+              .toString(): item['UnitCode1'].toString()
+        };
+        _unitMapVg = {
+          for (var item in data) item['UnitShortCode1']
+              .toString(): item['UnitCode'].toString()
+        };
         _selectedUnit = _unitOptions.isNotEmpty ? _unitOptions[0] : null;
       });
 
-      String? unit = _unitMap[_selectedUnit];
 
-      await _fetchStyleOptions(_selectedUnit!);
-      await _fetchStartTime(unit!);
-      await _fetchProductOptions();
+      String? unit = type == 'Apps' ? _unitMap[_selectedUnit] : _unitMapVg[_selectedUnit];
+
+      await _fetchVendorOptions();
       await _fetchSupervisorOptions(_selectedUnit!);
+      await _fetchStartTime(unit!);
       await _fetchQAOptions(_selectedUnit!);
       await _fetchCheckerOptions(_selectedUnit!);
+      await _fetchAqmOptions(_selectedUnit!);
+      await _fetchInChargeOptions(_selectedUnit!);
       await _fetchAuditOptions(unit);
 
 
@@ -190,8 +213,24 @@ class FinishAuditSelectionState extends State<FinishAuditSelection> {
     }
   }
 
-  Future<void> _fetchStyleOptions(String unit) async {
-    String url = '${TBaseURL.auditLocalUrl}sewing_audit?type=Style&unit=$unit&style=&color=&lineId=&line_Id=&orderNo=';
+  Future<void> _fetchStyleOptions(String unit,String line) async {
+    String type = _currentIndex == 0 ? 'Apps' : 'VG';
+    String url = '';
+    if(type == 'Apps'){
+      url = '${TBaseURL.auditUrl}finishing_audit_new?type=Style&unit=$unit&style=&color=&lineId=$line&line_Id=&orderNo=';
+    }
+    else if(type == 'VG'){
+      String? vgUnit = _unitMapVg[unit];
+      print(selectedVendor);
+      if(selectedVendor == 'InHouse') {
+        url = '${TBaseURL
+            .auditUrl}finishing_audit_vg_new?type=Style&Unit=$vgUnit&Line=$line&Party=&Vendor=$selectedVendor';
+      }
+      else{
+        url = '${TBaseURL
+            .auditUrl}finishing_audit_vg_new?type=Style&Unit=$vgUnit&Line=&Party=$line&Vendor=$selectedVendor';
+      }
+    }
     final response = await http.get(Uri.parse(url));
 
     if (kDebugMode) {
@@ -200,11 +239,41 @@ class FinishAuditSelectionState extends State<FinishAuditSelection> {
 
     if (response.statusCode == 200) {
       final List<dynamic> data = jsonDecode(response.body);
+      List<String> options = data.map((e) => e['STYLE_NO'].toString()).toList();
+      String lineKey = selectedLine ?? '';
+      String? style = await loadLineMappedPref('styleSewingByLine', lineKey);
       setState(() {
-        styleNoOptions =  ['----'] + data.map((e) => e['STYLE_NO'].toString()).toList();
+        styleNoOptions =  options;
         styleMap = {for (var item in data) item['STYLE_NO'].toString(): item['STYLE_NO'].toString()};
-        selectedStyleNo = styleNoOptions.isNotEmpty ? styleNoOptions[0] : null;
+        selectedStyleNo = (style != null && options.contains(style))
+            ? style
+            : (options.isNotEmpty ? options[0] : null);
       });
+
+      String? lineApps = lineMap[selectedLine];
+      String? lineId = lineIDMap[selectedFloor];
+      String type = _currentIndex == 0 ? 'Apps' : 'VG';
+      selectedOrderNo = null;
+      selectedBuyer = null;
+      selectedColor = null;
+      orderQty.text = '';
+      issueQty.text = '';
+      pcsChkd.text = '';
+      receivedQty.text = '';
+      if(type == 'Apps') {
+        await _fetchOrderOptions(_selectedUnit!, selectedStyleNo!);
+        await _fetchBuyerOptions(_selectedUnit!, selectedStyleNo!);
+        await _fetchColorOptions(_selectedUnit!, selectedStyleNo!);
+        await _fetchQtyOptions(_selectedUnit!, selectedStyleNo!,selectedColor!,lineId!,lineApps!,selectedOrderNo!);
+      }
+      else if(type == 'VG'){
+        String? lineId = lineMap[selectedLine];
+        await _fetchOdrByrClr(_selectedUnit!,selectedStyleNo!,lineId!);
+      }
+      String? unit = type == 'Apps' ? _unitMap[_selectedUnit] : _unitMapVg[_selectedUnit];
+      await _fetchStartTime(unit!);
+      await _fetchProductOptions();
+
     } else {
       if (kDebugMode) {
         print('Failed to load Buyer options');
@@ -213,7 +282,17 @@ class FinishAuditSelectionState extends State<FinishAuditSelection> {
   }
 
   Future<void> _fetchAuditOptions(String unit) async {
-    String url = '${TBaseURL.auditLocalUrl}sewing_audit?type=AuditNo&unit=$unit&style=&color=&lineId=&line_Id=&orderNo=';
+    String type = _currentIndex == 0 ? 'Apps' : 'VG';
+    String url = '';
+    if(type == 'Apps') {
+      url = '${TBaseURL
+          .auditUrl}finishing_audit_new?type=AuditNo&unit=$unit&style=&color=&lineId=&line_Id=&orderNo=';
+    }
+    else if(type == 'VG'){
+      String? vgUnit = _unitMapVg[_selectedUnit];
+      url = '${TBaseURL
+          .auditUrl}finishing_audit_new?type=AuditNo&unit=$vgUnit&style=&color=&lineId=&line_Id=&orderNo=';
+    }
     final response = await http.get(Uri.parse(url));
 
     if (kDebugMode) {
@@ -235,7 +314,15 @@ class FinishAuditSelectionState extends State<FinishAuditSelection> {
   }
 
   Future<void> _fetchReAuditDataOptions(String unit,String audit) async {
-    String url = '${TBaseURL.auditLocalUrl}sewing_audit?type=ReAudit&unit=$unit&style=&color=&lineId=&line_Id=&orderNo=&AuditNo=$audit';
+    String type = _currentIndex == 0 ? 'Apps' : 'VG';
+    String url = '';
+    if(type == 'Apps') {
+      url = '${TBaseURL
+          .auditUrl}finishing_audit?type=ReAudit&unit=$unit&style=&color=&lineId=&line_Id=&orderNo=&AuditNo=$audit';
+    }
+    else if(type == 'VG'){
+      url = '${TBaseURL.auditUrl}finish_audit_vg?type=ReAudit&Unit=&AuditNo=$audit';
+    }
     final response = await http.get(Uri.parse(url));
 
     if (kDebugMode) {
@@ -251,18 +338,30 @@ class FinishAuditSelectionState extends State<FinishAuditSelection> {
         selectedBuyer = data[0]['BuyerName'];
         buyerCode = data[0]['BuyerCode'];
         selectedColor = data[0]['Color'];
-        selectedLine = data[0]['LineName'];
-        lineId = data[0]['LineId'];
+        selectedVendor = data[0]['VendorType'];
+        if(selectedVendor == 'INH-FINISHING' || selectedVendor == 'InHouse'){
+          isOutHouse = false;
+        }
+        else{
+          isOutHouse = true;
+        }
+        if(!isOutHouse) {
+          selectedLine = data[0]['LineName'];
+          lineId = data[0]['LineId'];
+        }
+        else{
+          selectedLine = data[0]['LineName1'];
+          lineId = data[0]['VendorId'];
+        }
         selectedFloor = data[0]['FloorName'];
         floorId = data[0]['FloorId'];
-        // selectedVendor = data[0]['VendorType'];
-        selectedVendor = '';
+
         selectedInterval = (data[0]['Hrs']).toString();
-        selectedProduct = data[0]['ComponentName'];
-        productId = data[0]['ComponentId'];
+        selectedProduct = data[0]['Component'];
         selectedSupervisor = supervisorMap.keys.firstWhere((key) => supervisorMap[key] == data[0]['Supervisor']);
         selectedQa = qaMap.keys.firstWhere((key) => qaMap[key] == data[0]['QA']);
-        selectedChecker = checkerMap.keys.firstWhere((key) => checkerMap[key] == data[0]['Checker']);
+        selectedAqm = aqmMap.keys.firstWhere((key) => aqmMap[key] == data[0]['AQM']);
+        selectedInCharge = inChargeMap.keys.firstWhere((key) => inChargeMap[key] == data[0]['Incharge']);
         orderQty.text = (data[0]['OrderQty']).toString();
         issueQty.text = (data[0]['IssueQty']).toString();
         pcsChkd.text = (data[0]['PCs_Chked']).toString();
@@ -276,7 +375,7 @@ class FinishAuditSelectionState extends State<FinishAuditSelection> {
   }
 
   Future<void> _fetchStartTime(String unit) async {
-    String url = '${TBaseURL.auditLocalUrl}sewing_audit?type=StartTime&unit=$unit&style=&color=&lineId=&line_Id=&orderNo=';
+    String url = '${TBaseURL.auditUrl}finishing_audit_vg_new?type=StartTime&Unit=$unit';
     final response = await http.get(Uri.parse(url));
 
     if (kDebugMode) {
@@ -285,19 +384,26 @@ class FinishAuditSelectionState extends State<FinishAuditSelection> {
 
     if (response.statusCode == 200) {
       final List<dynamic> data = jsonDecode(response.body);
-      print(data);
+      if (kDebugMode) {
+        print(data);
+      }
       setState(() {
         startTime = data[0]['UnitStartTime'];
-        print(startTime);
+        if (kDebugMode) {
+          print(startTime);
+        }
       });
-      Future.delayed(Duration(milliseconds: 300),(){
+      Future.delayed(const Duration(milliseconds: 300),(){
         String currentTime = DateFormat("HH:mm:ss").format(DateTime.now());
-        hourIntervals = generateHourlyIntervals("08:30:00", currentTime);
+        hourIntervals = generateHourlyIntervals(startTime, currentTime);
 
         // Set the selected value to the most recent interval
-        if (hourIntervals.isNotEmpty) {
-          selectedInterval = hourIntervals.last;
-        }
+        setState(() {
+          if (hourIntervals.isNotEmpty) {
+            selectedInterval = hourIntervals.last;
+          }
+        });
+
         print(hourIntervals);
       });
     } else {
@@ -307,8 +413,63 @@ class FinishAuditSelectionState extends State<FinishAuditSelection> {
     }
   }
 
+  Future<void> _fetchOdrByrClr(String unit, String style,String line) async {
+    String type = _currentIndex == 0 ? 'Apps' : 'VG';
+    String? vgUnit = _unitMapVg[unit];
+    String url = '';
+    if(!isOutHouse) {
+      url = '${TBaseURL
+          .auditUrl}finishing_audit_vg_new?type=OdrByrClr&Unit=$vgUnit&style=$style&Line=$line&Party=&Vendor=$selectedVendor';
+    }
+    else{
+      url = '${TBaseURL
+          .auditUrl}finishing_audit_vg_new?type=OdrByrClr&Unit=$vgUnit&style=$style&Line=&Party=$line&Vendor=$selectedVendor';
+    }
+    final response = await http.get(Uri.parse(url));
+
+    if (kDebugMode) {
+      print(url);
+    }
+
+    if (response.statusCode == 200) {
+      final List<dynamic> data = jsonDecode(response.body);
+      if (kDebugMode) {
+        print('data $data');
+      }
+      String? lineId;
+      List<String> options = data.map((e) => e['COLOR_COMBO'].toString()).toList();
+      String lineKey = selectedLine ?? '';
+      String? savedColor = await loadLineMappedPref('colorSewingByLine', lineKey);
+      setState(() {
+        buyerOptions =  data.map((e) => e['BUYER_NAME'].toString()).toList();
+        buyerMap = {for (var item in data) item['BUYER_NAME'].toString(): item['BUYER_CODE'].toString()};
+        selectedBuyer = buyerOptions.isNotEmpty ? buyerOptions[0] : null;
+        orderNoOptions =  data.map((e) => e['ORDER_NO'].toString()).toList();
+        orderMap = {for (var item in data) item['ORDER_NO'].toString(): item['ORDER_NO'].toString()};
+        selectedOrderNo = orderNoOptions.isNotEmpty ? orderNoOptions[0] : null;
+        colorOptions =  options;
+        colorMap = {for (var item in data) item['COLOR_COMBO'].toString(): item['COLOR_COMBO'].toString()};
+        selectedColor = (savedColor != null && options.contains(savedColor))
+            ? savedColor
+            : (options.isNotEmpty ? options[0] : null);
+        lineId = lineMap[selectedLine];
+      });
+
+      String? unit = type == 'Apps' ? _unitMap[_selectedUnit] : _unitMapVg[_selectedUnit];
+
+      await _fetchStartTime(unit!);
+      await _fetchQtyOptions(_selectedUnit!, selectedStyleNo!,selectedColor!,lineId!,lineMap[selectedLine]!,selectedOrderNo!);
+      await _fetchProductOptions();
+
+    } else {
+      if (kDebugMode) {
+        print('Failed to load Buyer options');
+      }
+    }
+  }
+
   Future<void> _fetchBuyerOptions(String unit, String style) async {
-    String url = '${TBaseURL.auditLocalUrl}sewing_audit?type=Buyer&unit=$unit&style=$style&color=&lineId=&line_Id=&orderNo=';
+    String url = '${TBaseURL.auditUrl}finishing_audit_new?type=Buyer&unit=$unit&style=$style&color=&lineId=&line_Id=&orderNo=';
     final response = await http.get(Uri.parse(url));
 
     if (kDebugMode) {
@@ -334,7 +495,7 @@ class FinishAuditSelectionState extends State<FinishAuditSelection> {
   }
 
   Future<void> _fetchOrderOptions(String unit, String style) async {
-    String url = '${TBaseURL.auditLocalUrl}sewing_audit?type=Order&unit=$unit&style=$style&color=&lineId=&line_Id=&orderNo=';
+    String url = '${TBaseURL.auditUrl}finishing_audit_new?type=Order&unit=$unit&style=$style&color=&lineId=&line_Id=&orderNo=';
     final response = await http.get(Uri.parse(url));
 
     if (kDebugMode) {
@@ -356,7 +517,7 @@ class FinishAuditSelectionState extends State<FinishAuditSelection> {
   }
 
   Future<void> _fetchColorOptions(String unit, String style) async {
-    String url = '${TBaseURL.auditLocalUrl}sewing_audit?type=Color&unit=$unit&style=$style&color=&lineId=&line_Id=&orderNo=';
+    String url = '${TBaseURL.auditUrl}finishing_audit_new?type=Color&unit=$unit&style=$style&color=&lineId=${lineMap[selectedLine]}&line_Id=&orderNo=';
     final response = await http.get(Uri.parse(url));
 
     if (kDebugMode) {
@@ -365,12 +526,26 @@ class FinishAuditSelectionState extends State<FinishAuditSelection> {
 
     if (response.statusCode == 200) {
       final List<dynamic> data = jsonDecode(response.body);
+      List<String> options = data.map((e) => e['COLOR_COMBO'].toString()).toList();
+      String lineKey = selectedLine ?? '';
+      String? savedColor = await loadLineMappedPref('colorSewingByLine', lineKey);
+      String? lineId;
       setState(() {
-        colorOptions =  data.map((e) => e['COLOR_COMBO'].toString()).toList();
+        colorOptions =  options;
         colorMap = {for (var item in data) item['COLOR_COMBO'].toString(): item['COLOR_COMBO'].toString()};
-        selectedColor = colorOptions.isNotEmpty ? colorOptions[0] : null;
+        selectedColor = (savedColor != null && options.contains(savedColor))
+            ? savedColor
+            : (options.isNotEmpty ? options[0] : null);
       });
-      _fetchLineOptions(_selectedUnit!, selectedStyleNo!,selectedColor!);
+      String type = _currentIndex == 0 ? 'Apps' : 'VG';
+      if(isOutHouse){
+        lineId = lineMap[selectedLine];
+      }
+      else {
+        lineId = lineIDMap[selectedFloor];
+      }
+      await _fetchQtyOptions(_selectedUnit!, selectedStyleNo!,selectedColor!,lineId!,lineMap[selectedLine]!,selectedOrderNo!);
+      await _fetchProductOptions();
     } else {
       if (kDebugMode) {
         print('Failed to load Color options');
@@ -378,8 +553,24 @@ class FinishAuditSelectionState extends State<FinishAuditSelection> {
     }
   }
 
-  Future<void> _fetchLineOptions(String unit, String style,String color) async {
-    String url = '${TBaseURL.auditLocalUrl}sewing_audit?type=Line&unit=$unit&style=$style&color=$color&lineId=&line_Id=&orderNo=';
+  Future<void> _fetchLineOptions(String unit, String vendor) async {
+    String type = _currentIndex == 0 ? 'Apps' : 'VG';
+    String url = '';
+    if(type == 'Apps') {
+      url = '${TBaseURL
+          .auditUrl}finishing_audit_new?type=Line&unit=$unit&style=&color=&lineId=&line_Id=&orderNo=&vendor=$vendor';
+    }
+    else if(type == 'VG'){
+      String? vgUnit = _unitMapVg[unit];
+      if(vendor == 'InHouse') {
+        url = '${TBaseURL
+            .auditUrl}finishing_audit_vg_new?type=Line&Unit=$vgUnit&Vendor=$vendor';
+      }
+      else{
+        url = '${TBaseURL
+            .auditUrl}finishing_audit_vg_new?type=VendorName&Unit=$vgUnit&Vendor=$vendor';
+      }
+    }
     final response = await http.get(Uri.parse(url));
 
     if (kDebugMode) {
@@ -389,13 +580,11 @@ class FinishAuditSelectionState extends State<FinishAuditSelection> {
     if (response.statusCode == 200) {
       final List<dynamic> data = jsonDecode(response.body);
       setState(() {
-        lineOption =  data.map((e) => e['LINENAME'].toString()).toList();
+        lineOption =  ['----'] + data.map((e) => e['LINENAME'].toString()).toList();
         lineMap = {for (var item in data) item['LINENAME'].toString(): item['LINEID'].toString()};
         selectedLine = lineOption.isNotEmpty ? lineOption[0] : null;
       });
-
-      await _fetchFloorOptions(_selectedUnit!, selectedStyleNo!,selectedColor!,lineMap[selectedLine]!);
-      await _fetchVendorOptions(lineMap[selectedLine]!);
+      // await _fetchStyleOptions(unit, type,lineMap[selectedLine]!);
 
     } else {
       if (kDebugMode) {
@@ -404,8 +593,17 @@ class FinishAuditSelectionState extends State<FinishAuditSelection> {
     }
   }
 
-  Future<void> _fetchFloorOptions(String unit, String style,String color,String line) async {
-    String url = '${TBaseURL.auditLocalUrl}sewing_audit?type=Floor&unit=$unit&style=$style&color=$color&lineId=$line&line_Id=&orderNo=';
+  Future<void> _fetchFloorOptions(String unit,String line) async {
+    String type = _currentIndex == 0 ? 'Apps' : 'VG';
+    String url = '';
+    if(type == 'Apps'){
+      url = '${TBaseURL.auditUrl}finishing_audit_new?type=Floor&unit=$unit&style=&color=&lineId=$line&line_Id=&orderNo=';
+    }
+    else if (type == 'VG'){
+      String? vgUnit = _unitMapVg[unit];
+      url = '${TBaseURL
+          .auditUrl}finishing_audit_vg_new?type=Floor&Unit=$vgUnit&line=$line';
+    }
     final response = await http.get(Uri.parse(url));
 
     if (kDebugMode) {
@@ -424,7 +622,6 @@ class FinishAuditSelectionState extends State<FinishAuditSelection> {
         lineId = lineIDMap[selectedFloor];
       });
 
-      await _fetchQtyOptions(_selectedUnit!, selectedStyleNo!,selectedColor!,lineId!,lineMap[selectedLine]!);
       if (kDebugMode) {
         print(lineIDMap);
       }
@@ -435,13 +632,22 @@ class FinishAuditSelectionState extends State<FinishAuditSelection> {
     }
   }
 
-  Future<void> _fetchVendorOptions(String line) async {
-    String url = '${TBaseURL.auditLocalUrl}sewing_audit?type=Vendor&unit=&style=&color=&lineId=$line&line_Id=&orderNo=';
-    final response = await http.get(Uri.parse(url));
-
+  Future<void> _fetchVendorOptions() async {
+    String type = _currentIndex == 0 ? 'Apps' : 'VG';
+    String url = '';
+    if(type == 'Apps') {
+      url = '${TBaseURL
+          .auditUrl}finishing_audit_new?type=Vendor&unit=&style=&color=&lineId=&line_Id=&orderNo=';
+    }
+    else if(type == 'VG'){
+      url = '${TBaseURL
+          .auditUrl}finishing_audit_vg_new?type=Vendor&Unit=&style=&color=&line=';
+    }
     if (kDebugMode) {
       print(url);
     }
+    final response = await http.get(Uri.parse(url));
+
 
     if (response.statusCode == 200) {
       final List<dynamic> data = jsonDecode(response.body);
@@ -453,6 +659,15 @@ class FinishAuditSelectionState extends State<FinishAuditSelection> {
         vendorOptions =  data.map((e) => e['VENDOR_GROUP'].toString()).toList();
         vendorMap = {for (var item in data) item['VENDOR_GROUP'].toString(): item['VENDOR_GROUP'].toString()};
         selectedVendor = vendorOptions.isNotEmpty ? vendorOptions[0] : null;
+        if(selectedVendor == 'OH-FINISHING' || selectedVendor == 'OutHouse' || selectedVendor == 'PR-WORK' || selectedVendor == 'PcsRate'){
+          isOutHouse = true;
+        }
+        else{
+          isOutHouse = false;
+        }
+        if(selectedVendor != null || selectedVendor != '') {
+          _fetchLineOptions(_selectedUnit!, selectedVendor!);
+        }
       });
     } else {
       if (kDebugMode) {
@@ -461,8 +676,30 @@ class FinishAuditSelectionState extends State<FinishAuditSelection> {
     }
   }
 
-  Future<void> _fetchQtyOptions(String unit, String style,String color,String line,String lineId) async {
-    String url = '${TBaseURL.auditLocalUrl}sewing_audit?type=Qty&unit=$unit&style=$style&color=$color&line_Id=$line&lineId=$lineId&orderNo=';
+  Future<void> _fetchQtyOptions(String unit, String style,String color,String line,String lineId,String order) async {
+    String type  = _currentIndex == 0 ? 'Apps' : 'VG';
+    String url = '';
+    if(type == 'Apps') {
+      if(!isOutHouse) {
+        url = '${TBaseURL
+            .auditUrl}finishing_audit_new?type=Qty&unit=$unit&style=$style&color=$color&line_Id=$line&lineId=$lineId&orderNo=$order&vendor=';
+      }
+      else{
+        url = '${TBaseURL
+            .auditUrl}finishing_audit_new?type=Qty&unit=$unit&style=$style&color=$color&line_Id=&lineId=$lineId&orderNo=$order&vendor=$line';
+      }
+    }
+    else if(type == 'VG'){
+      String? vgUnit = _unitMapVg[unit];
+      if(!isOutHouse) {
+        url = '${TBaseURL
+            .auditUrl}finishing_audit_vg_new?type=Qty&Unit=$vgUnit&style=$style&color=$color&line=$lineId&order=$order&Party=&Vendor=$selectedVendor';
+      }
+      else{
+        url = '${TBaseURL
+            .auditUrl}finishing_audit_vg_new?type=Qty&Unit=$vgUnit&style=$style&color=$color&line=&order=$order&Party=$lineId&Vendor=$selectedVendor';
+      }
+    }
     final response = await http.get(Uri.parse(url));
 
     if (kDebugMode) {
@@ -487,20 +724,39 @@ class FinishAuditSelectionState extends State<FinishAuditSelection> {
     }
   }
 
-  Future<void> _fetchSupervisorOptions(String unit) async {
-    String url = '${TBaseURL.auditLocalUrl}sewing_audit?type=Supervisor&unit=$unit&style=&color=&lineId=&line_Id=&orderNo=';
-    final response = await http.get(Uri.parse(url));
-
-    if (kDebugMode) {
-      print(url);
+  Future<void> saveLineMappedPref(String prefKey, String line, String value) async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    Map<String, String> map = {};
+    String? jsonString = prefs.getString(prefKey);
+    if (jsonString != null) {
+      map = Map<String, String>.from(json.decode(jsonString));
     }
+    map[line] = value;
+    await prefs.setString(prefKey, json.encode(map));
+  }
 
+  Future<String?> loadLineMappedPref(String prefKey, String line) async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    String? jsonString = prefs.getString(prefKey);
+    if (jsonString == null) return null;
+    Map<String, dynamic> map = json.decode(jsonString);
+    return map[line] as String?;
+  }
+
+  Future<void> _fetchSupervisorOptions(String unit) async {
+    String url = '${TBaseURL.auditUrl}finishing_audit_vg_new?type=Supervisor&Unit=$unit';
+    final response = await http.get(Uri.parse(url));
     if (response.statusCode == 200) {
       final List<dynamic> data = jsonDecode(response.body);
+      List<String> options = data.map((e) => '${e['NAME']}(${e['PAY_CODE']})').toList();
+      String lineKey = selectedLine ?? '';
+      String? sup = await loadLineMappedPref('supSewingByLine', lineKey);
       setState(() {
-        supervisorOptions = ['----'] + data.map((e) => '${e['NAME']}(${e['PAY_CODE']})').toList();
+        supervisorOptions = options;
         supervisorMap = {for (var item in data) '${item['NAME']}(${item['PAY_CODE']})': item['PAY_CODE'].toString()};
-        selectedSupervisor = supervisorOptions.isNotEmpty ? supervisorOptions[0] : null;
+        selectedSupervisor = (sup != null && options.contains(sup))
+            ? sup
+            : (options.isNotEmpty ? options[0] : null);
       });
     } else {
       if (kDebugMode) {
@@ -510,7 +766,7 @@ class FinishAuditSelectionState extends State<FinishAuditSelection> {
   }
 
   Future<void> _fetchQAOptions(String unit) async {
-    String url = '${TBaseURL.auditLocalUrl}sewing_audit?type=QA&unit=$unit&style=&color=&lineId=&line_Id=&orderNo=';
+    String url = '${TBaseURL.auditUrl}finishing_audit_vg_new?type=QA&Unit=$unit';
     final response = await http.get(Uri.parse(url));
 
     if (kDebugMode) {
@@ -519,10 +775,15 @@ class FinishAuditSelectionState extends State<FinishAuditSelection> {
 
     if (response.statusCode == 200) {
       final List<dynamic> data = jsonDecode(response.body);
+      List<String> options = data.map((e) => '${e['NAME']}(${e['PAY_CODE']})').toList();
+      String lineKey = selectedLine ?? '';
+      String? savedQa = await loadLineMappedPref('qaSewingByLine', lineKey);
       setState(() {
-        qaOptions = ['----'] + data.map((e) => '${e['NAME']}(${e['PAY_CODE']})').toList();
+        qaOptions = options;
         qaMap = {for (var item in data) '${item['NAME']}(${item['PAY_CODE']})': item['PAY_CODE'].toString()};
-        selectedQa = qaOptions.isNotEmpty ? qaOptions[0] : null;
+        selectedQa = (savedQa != null && options.contains(savedQa))
+            ? savedQa
+            : (options.isNotEmpty ? options[0] : null);
       });
     } else {
       if (kDebugMode) {
@@ -532,7 +793,7 @@ class FinishAuditSelectionState extends State<FinishAuditSelection> {
   }
 
   Future<void> _fetchCheckerOptions(String unit) async {
-    String url = '${TBaseURL.auditLocalUrl}sewing_audit?type=Checker&unit=$unit&style=&color=&lineId=&line_Id=&orderNo=';
+    String url = '${TBaseURL.auditUrl}finishing_audit_vg_new?type=Checker&Unit=$unit';
     final response = await http.get(Uri.parse(url));
 
     if (kDebugMode) {
@@ -541,10 +802,69 @@ class FinishAuditSelectionState extends State<FinishAuditSelection> {
 
     if (response.statusCode == 200) {
       final List<dynamic> data = jsonDecode(response.body);
+      List<String> options = data.map((e) => '${e['NAME']}(${e['PAY_CODE']})').toList();
+      String lineKey = selectedLine ?? '';
+      String? savedCheck = await loadLineMappedPref('checkerSewingByLine', lineKey);
       setState(() {
-        checkerOptions = ['----'] + data.map((e) => '${e['NAME']}(${e['PAY_CODE']})').toList();
+        checkerOptions = options;
         checkerMap = {for (var item in data) '${item['NAME']}(${item['PAY_CODE']})': item['PAY_CODE'].toString()};
-        selectedChecker = checkerOptions.isNotEmpty ? checkerOptions[0] : null;
+        selectedChecker = (savedCheck != null && options.contains(savedCheck))
+            ? savedCheck
+            : (options.isNotEmpty ? options[0] : null);
+      });
+    } else {
+      if (kDebugMode) {
+        print('Failed to load Checker options');
+      }
+    }
+  }
+
+  Future<void> _fetchAqmOptions(String unit) async {
+    String url = '${TBaseURL.auditUrl}sewing_audit_vg_new?type=AQM&Unit=$unit';
+    final response = await http.get(Uri.parse(url));
+
+    if (kDebugMode) {
+      print(url);
+    }
+
+    if (response.statusCode == 200) {
+      final List<dynamic> data = jsonDecode(response.body);
+      List<String> options = data.map((e) => '${e['NAME']}(${e['PAY_CODE']})').toList();
+      String lineKey = selectedLine ?? '';
+      String? savedCheck = await loadLineMappedPref('aqmSewingByLine', lineKey);
+      setState(() {
+        aqmOptions = options;
+        aqmMap = {for (var item in data) '${item['NAME']}(${item['PAY_CODE']})': item['PAY_CODE'].toString()};
+        selectedAqm = (savedCheck != null && options.contains(savedCheck))
+            ? savedCheck
+            : (options.isNotEmpty ? options[0] : null);
+      });
+    } else {
+      if (kDebugMode) {
+        print('Failed to load Checker options');
+      }
+    }
+  }
+
+  Future<void> _fetchInChargeOptions(String unit) async {
+    String url = '${TBaseURL.auditUrl}sewing_audit_vg_new?type=InCharge&Unit=$unit';
+    final response = await http.get(Uri.parse(url));
+
+    if (kDebugMode) {
+      print(url);
+    }
+
+    if (response.statusCode == 200) {
+      final List<dynamic> data = jsonDecode(response.body);
+      List<String> options = data.map((e) => '${e['NAME']}(${e['PAY_CODE']})').toList();
+      String lineKey = selectedLine ?? '';
+      String? savedCheck = await loadLineMappedPref('inChargeSewingByLine', lineKey);
+      setState(() {
+        inChargeOptions = options;
+        inChargeMap = {for (var item in data) '${item['NAME']}(${item['PAY_CODE']})': item['PAY_CODE'].toString()};
+        selectedInCharge = (savedCheck != null && options.contains(savedCheck))
+            ? savedCheck
+            : (options.isNotEmpty ? options[0] : null);
       });
     } else {
       if (kDebugMode) {
@@ -554,7 +874,7 @@ class FinishAuditSelectionState extends State<FinishAuditSelection> {
   }
 
   Future<void> _fetchProductOptions() async {
-    String url = '${TBaseURL.auditLocalUrl}sewing_audit?type=Product&unit=&style=&color=&lineId=&line_Id=&orderNo=';
+    String url = '${TBaseURL.auditUrl}finishing_audit_vg_new?type=Product&Unit=&order=$selectedOrderNo&color=$selectedColor&Vendor=$selectedVendor';
     final response = await http.get(Uri.parse(url));
 
     if (kDebugMode) {
@@ -563,10 +883,16 @@ class FinishAuditSelectionState extends State<FinishAuditSelection> {
 
     if (response.statusCode == 200) {
       final List<dynamic> data = jsonDecode(response.body);
+      List<String> options = data.map((e) => e['Component'].toString()).toList();
+      // Use an empty string if selectedLine is null
+      String lineKey = selectedLine ?? '';
+      String? savedProd = await loadLineMappedPref('prodSewingByLine', lineKey);
       setState(() {
-        productOptions =  ['----'] + data.map((e) => e['Category'].toString()).toList();
-        productMap = {for (var item in data) item['Category'].toString(): item['CategoryId'].toString()};
-        selectedProduct = productOptions.isNotEmpty ? productOptions[0] : null;
+        productOptions = options;
+        productMap = {for (var item in data) item['Component'].toString(): item['Component'].toString()};
+        selectedProduct = (savedProd != null && options.contains(savedProd))
+            ? savedProd
+            : (options.isNotEmpty ? options[0] : '');
       });
     } else {
       if (kDebugMode) {
@@ -580,15 +906,25 @@ class FinishAuditSelectionState extends State<FinishAuditSelection> {
     setState(() {
       selectedBuyer = null;
       selectedStyleNo = null;
+      styleMap.clear();
+      styleNoOptions.clear();
+      productOptions.clear();
       selectedOrderNo = null;
+      lineMap.clear();
+      lineOption.clear();
+      colorMap.clear();
+      colorOptions.clear();
       selectedColor = null;
       selectedLine = null;
       selectedFloor = null;
-      selectedProduct = null;
+      selectedProduct = '';
       selectedInterval = null;
       selectedVendor = null;
       selectedSupervisor = null;
       selectedQa = null;
+      selectedChecker = null;
+      selectedAqm = null;
+      selectedInCharge = null;
       selectedChecker = null;
       orderQty.text = '';
       issueQty.text = '';
@@ -621,7 +957,7 @@ class FinishAuditSelectionState extends State<FinishAuditSelection> {
           },
         ),
         title: const Text(
-          'Finish Audit',
+          'Finishing Audit',
           style: TextStyle(
             color: Colors.white,
             fontSize: 16,
@@ -674,20 +1010,29 @@ class FinishAuditSelectionState extends State<FinishAuditSelection> {
               onChanged: (newValue) async {
                 _clearList();
                 styleNoOptions.clear();
+                lineOption.clear();
+                vendorOptions.clear();
+                supervisorOptions.clear();
+                qaOptions.clear();
+                checkerOptions.clear();
+                aqmOptions.clear();
+                inChargeOptions.clear();
                 setState(() {
 
                   _selectedUnit = newValue;
                   _saveSelectedUnitToSharedPreferences(newValue!);
                 });
                 String? unit = _unitMap[_selectedUnit];
+                String type = _currentIndex == 0 ? 'Apps' : 'VG';
                 if (newValue != null && newValue != '----') {
-                  await _fetchStyleOptions(newValue);
+                  await _fetchVendorOptions();
                   await _fetchSupervisorOptions(newValue);
                   await _fetchStartTime(unit!);
                   await _fetchQAOptions(newValue);
                   await _fetchCheckerOptions(newValue);
+                  await _fetchAqmOptions(_selectedUnit!);
+                  await _fetchInChargeOptions(_selectedUnit!);
                   await _fetchAuditOptions(unit);
-                  await _fetchProductOptions();
                 }
               },
             ),
@@ -695,11 +1040,103 @@ class FinishAuditSelectionState extends State<FinishAuditSelection> {
           ),
         ],
       ),
+      bottomNavigationBar: BottomNavigationBar(
+        currentIndex: _currentIndex,
+        onTap: (index) async {
+          _clearList();
+          setState(() {
+            _currentIndex = index; // Change the selected tab
+          });
+          String type = _currentIndex == 0 ? 'Apps' : 'VG';
+          String? unit = type == 'Apps' ? _unitMap[_selectedUnit] : _unitMapVg[_selectedUnit];
+
+          await _fetchVendorOptions();
+          await _fetchStartTime(unit!);
+          await _fetchSupervisorOptions(_selectedUnit!);
+          await _fetchQAOptions(_selectedUnit!);
+          await _fetchCheckerOptions(_selectedUnit!);
+          await _fetchAuditOptions(unit);
+        },
+        selectedItemColor: Colors.black,
+        unselectedItemColor: Colors.black54,
+        items: const [
+          BottomNavigationBarItem(
+            icon: Icon(Icons.app_shortcut,color: Colors.black54,size: 20,), // Icon for Stitching
+            label: "Apps",
+            activeIcon: Icon(Icons.app_shortcut,color: Colors.black,size: 25,),
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.diamond,color: Colors.black54,size: 20,), // Icon for Finishing
+            label: "VG",
+            activeIcon: Icon(Icons.diamond,color: Colors.black,size: 25,),
+          ),
+        ],
+        backgroundColor: const Color(0xFF5FE3D3),
+      ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
         child: SingleChildScrollView(
           child: Column(
             children: [
+              Row(
+                children: [
+                  // Unit Dropdown
+                  Expanded(
+                    flex: 1,
+                    child: SizedBox(
+                      height: 40,
+                      child: DropdownSearch<String>(
+                        enabled: isReAudit,
+                        selectedItem: selectedLine,
+                        dropdownButtonProps: const DropdownButtonProps(padding: EdgeInsets.all(0)),
+                        popupProps: const PopupProps.menu(showSearchBox: true),
+                        dropdownDecoratorProps: DropDownDecoratorProps(
+                          dropdownSearchDecoration: dropdownDecoration(!isOutHouse ? 'Line' : 'Vendor'),
+                        ),
+                        items: lineOption,
+                        itemAsString: (item) => item,
+                        onChanged: (newValue) async {
+                          setState(()  {
+                            selectedLine = newValue;
+                          });
+                          String? lineId = lineIDMap[newValue];
+
+                          await _fetchSupervisorOptions(_selectedUnit!);
+                          await _fetchQAOptions(_selectedUnit!);
+                          await _fetchCheckerOptions(_selectedUnit!);
+                          await _fetchFloorOptions(_selectedUnit!,lineMap[newValue]!);
+                          await _fetchStyleOptions(_selectedUnit!,lineMap[newValue]!);
+                          await saveLineMappedPref('prodSewingByLine', selectedLine ?? '', selectedProduct ?? '');
+                          await saveLineMappedPref('supSewingByLine', selectedLine ?? '', selectedSupervisor ?? '');
+                          await saveLineMappedPref('qaSewingByLine', selectedLine ?? '', selectedQa ?? '');
+                          await saveLineMappedPref('checkerSewingByLine', selectedLine ?? '', selectedChecker ?? '');
+                          await saveLineMappedPref('aqmSewingByLine', selectedLine ?? '', selectedColor ?? '');
+                          await saveLineMappedPref('inChargeSewingByLine', selectedLine ?? '', selectedColor ?? '');
+                        },
+                      ),
+                    ),
+                  ),
+                  if(!isOutHouse)
+                    const SizedBox(width: 8,),
+                  if(!isOutHouse)
+                    Expanded(
+                      flex: 1,
+                      child: SizedBox(
+                        height: 40,
+                        child: DropdownSearch<String>(
+                          selectedItem: selectedFloor,
+                          dropdownButtonProps: const DropdownButtonProps(padding: EdgeInsets.all(0)),
+                          enabled: false, // Disabled dropdown
+                          dropdownDecoratorProps: DropDownDecoratorProps(
+                            dropdownSearchDecoration: dropdownDecoration('Floor'),
+                          ),
+                          items: floorOptions,
+                          itemAsString: (item) => item,
+                        ),
+                      ),
+                    ),
+                ],
+              ),const SizedBox(height: 16),
               Row(
                 children: [
                   Expanded(
@@ -711,29 +1148,8 @@ class FinishAuditSelectionState extends State<FinishAuditSelection> {
                         selectedItem: selectedStyleNo,
                         dropdownButtonProps: const DropdownButtonProps(padding: EdgeInsets.all(0)),
                         popupProps: const PopupProps.menu(showSearchBox: true),
-                        dropdownDecoratorProps: const DropDownDecoratorProps(
-                          dropdownSearchDecoration: InputDecoration(
-                            labelText: 'Style No',
-                            labelStyle: TextStyle(fontSize: 12),
-                            floatingLabelStyle: TextStyle(fontSize: 16),
-                            contentPadding: EdgeInsets.symmetric(vertical: 2.0, horizontal: 8.0),
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.all(Radius.circular(8.0)),
-                              borderSide: BorderSide(color: Colors.grey, width: 1.0),
-                            ),
-                            enabledBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.all(Radius.circular(8.0)),
-                              borderSide: BorderSide(color: Colors.grey, width: 1.0),
-                            ),
-                            disabledBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.all(Radius.circular(8.0)),
-                              borderSide: BorderSide(color: Colors.grey, width: 1.0),
-                            ),
-                            focusedBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.all(Radius.circular(8.0)),
-                              borderSide: BorderSide(color: Color(0xFF5FE3D3), width: 2.0),
-                            ),
-                          ),
+                        dropdownDecoratorProps: DropDownDecoratorProps(
+                          dropdownSearchDecoration: dropdownDecoration('Style No'),
                         ),
                         items: styleNoOptions,
                         itemAsString: (item) => item,
@@ -741,9 +1157,31 @@ class FinishAuditSelectionState extends State<FinishAuditSelection> {
                           setState(() {
                             selectedStyleNo = newValue;
                           });
-                          await _fetchOrderOptions(_selectedUnit!, newValue!);
-                          await _fetchBuyerOptions(_selectedUnit!, newValue);
-                          await _fetchColorOptions(_selectedUnit!, newValue);
+                          await saveLineMappedPref('styleSewingByLine', selectedLine ?? '', newValue ?? '');
+                          String? line = lineMap[selectedLine];
+                          String? lineId = lineIDMap[selectedFloor];
+                          String type = _currentIndex == 0 ? 'Apps' : 'VG';
+                          selectedOrderNo = null;
+                          selectedBuyer = null;
+                          selectedColor = null;
+                          orderQty.text = '';
+                          issueQty.text = '';
+                          pcsChkd.text = '';
+                          receivedQty.text = '';
+                          if(type == 'Apps') {
+                            await _fetchOrderOptions(_selectedUnit!, newValue!);
+                            await _fetchBuyerOptions(_selectedUnit!, newValue);
+                            await _fetchColorOptions(_selectedUnit!, newValue);
+                            await _fetchQtyOptions(_selectedUnit!, selectedStyleNo!,selectedColor!,lineId!,line!,selectedOrderNo!);
+                          }
+                          else if(type == 'VG'){
+                            String? vgUnit = _unitMapVg[_selectedUnit];
+                            String? lineId = lineMap[selectedLine];
+                            await _fetchOdrByrClr(_selectedUnit!,newValue!,lineId!);
+                            await _fetchProductOptions();
+                          }
+                          String? unit = type == 'Apps' ? _unitMap[_selectedUnit] : _unitMapVg[_selectedUnit];
+                          await _fetchStartTime(unit!);
                         },
                       ),
                     ),
@@ -757,29 +1195,8 @@ class FinishAuditSelectionState extends State<FinishAuditSelection> {
                         selectedItem: selectedOrderNo,
                         dropdownButtonProps: const DropdownButtonProps(padding: EdgeInsets.all(0)),
                         enabled: false, // Disabled dropdown
-                        dropdownDecoratorProps: const DropDownDecoratorProps(
-                          dropdownSearchDecoration: InputDecoration(
-                            labelText: 'Order No',
-                            labelStyle: TextStyle(fontSize: 12),
-                            floatingLabelStyle: TextStyle(fontSize: 16),
-                            contentPadding: EdgeInsets.symmetric(vertical: 2.0, horizontal: 8.0),
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.all(Radius.circular(8.0)),
-                              borderSide: BorderSide(color: Colors.grey, width: 1.0),
-                            ),
-                            disabledBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.all(Radius.circular(8.0)),
-                              borderSide: BorderSide(color: Colors.grey, width: 1.0),
-                            ),
-                            enabledBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.all(Radius.circular(8.0)),
-                              borderSide: BorderSide(color: Colors.grey, width: 1.0),
-                            ),
-                            focusedBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.all(Radius.circular(8.0)),
-                              borderSide: BorderSide(color: Color(0xFF5FE3D3), width: 2.0),
-                            ),
-                          ),
+                        dropdownDecoratorProps: DropDownDecoratorProps(
+                          dropdownSearchDecoration: dropdownDecoration('Order No'),
                         ),
                         items: orderNoOptions,
                         itemAsString: (item) => item,
@@ -799,29 +1216,8 @@ class FinishAuditSelectionState extends State<FinishAuditSelection> {
                         selectedItem: selectedBuyer,
                         dropdownButtonProps: const DropdownButtonProps(padding: EdgeInsets.all(0)),
                         enabled: false,
-                        dropdownDecoratorProps: const DropDownDecoratorProps(
-                          dropdownSearchDecoration: InputDecoration(
-                            labelText: 'Buyer',
-                            labelStyle: TextStyle(fontSize: 12),
-                            floatingLabelStyle: TextStyle(fontSize: 16),
-                            contentPadding: EdgeInsets.symmetric(vertical: 2.0, horizontal: 8.0),
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.all(Radius.circular(8.0)),
-                              borderSide: BorderSide(color: Colors.grey, width: 1.0),
-                            ),
-                            enabledBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.all(Radius.circular(8.0)),
-                              borderSide: BorderSide(color: Colors.grey, width: 1.0),
-                            ),
-                            disabledBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.all(Radius.circular(8.0)),
-                              borderSide: BorderSide(color: Colors.grey, width: 1.0),
-                            ),
-                            focusedBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.all(Radius.circular(8.0)),
-                              borderSide: BorderSide(color: Color(0xFF5FE3D3), width: 2.0),
-                            ),
-                          ),
+                        dropdownDecoratorProps: DropDownDecoratorProps(
+                          dropdownSearchDecoration: dropdownDecoration('Buyer'),
                         ),
                         items: buyerOptions,
                         itemAsString: (item) => item,
@@ -840,37 +1236,31 @@ class FinishAuditSelectionState extends State<FinishAuditSelection> {
                               enabled: isReAudit,
                               selectedItem: selectedColor,
                               dropdownButtonProps: const DropdownButtonProps(padding: EdgeInsets.all(0)),
-                              dropdownDecoratorProps: const DropDownDecoratorProps(
-                                dropdownSearchDecoration: InputDecoration(
-                                  labelText: 'Color',
-                                  labelStyle: TextStyle(fontSize: 12),
-                                  floatingLabelStyle: TextStyle(fontSize: 16),
-                                  contentPadding: EdgeInsets.symmetric(vertical: 2.0, horizontal: 8.0),
-                                  border: OutlineInputBorder(
-                                    borderRadius: BorderRadius.all(Radius.circular(8.0)),
-                                    borderSide: BorderSide(color: Colors.grey, width: 1.0),
-                                  ),
-                                  enabledBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.all(Radius.circular(8.0)),
-                              borderSide: BorderSide(color: Colors.grey, width: 1.0),
-                            ),
-                            disabledBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.all(Radius.circular(8.0)),
-                              borderSide: BorderSide(color: Colors.grey, width: 1.0),
-                            ),
-                                  focusedBorder: OutlineInputBorder(
-                                    borderRadius: BorderRadius.all(Radius.circular(8.0)),
-                                    borderSide: BorderSide(color: Color(0xFF5FE3D3), width: 2.0),
-                                  ),
-                                ),
+                              dropdownDecoratorProps: DropDownDecoratorProps(
+                                dropdownSearchDecoration: dropdownDecoration('Color'),
                               ),
                               items: colorOptions,
                               itemAsString: (item) => item,
-                              onChanged: (newValue) {
+                              onChanged: (newValue) async {
                                 setState(() {
                                   selectedColor = newValue;
-                                  _fetchLineOptions(_selectedUnit!, selectedStyleNo!,newValue!);
                                 });
+                                await saveLineMappedPref('colorSewingByLine', selectedLine ?? '', newValue ?? '');
+                                String? lineId;
+                                String? line = lineMap[selectedLine];
+                                if(isOutHouse){
+                                  lineId = lineMap[selectedLine];
+                                }
+                                else {
+                                  lineId = lineIDMap[selectedFloor];
+                                }
+                                orderQty.text = '';
+                                issueQty.text = '';
+                                pcsChkd.text = '';
+                                receivedQty.text = '';
+
+                                await _fetchQtyOptions(_selectedUnit!, selectedStyleNo!,newValue!,lineId!,line!,selectedOrderNo!);
+                                await _fetchProductOptions();
                               },
                             ),
                           ),
@@ -883,104 +1273,6 @@ class FinishAuditSelectionState extends State<FinishAuditSelection> {
               const SizedBox(height: 16),
               Row(
                 children: [
-                  // Unit Dropdown
-                  Expanded(
-                    flex: 1,
-                    child: SizedBox(
-                      height: 40,
-                      child: DropdownSearch<String>(
-                        enabled: isReAudit,
-                        selectedItem: selectedLine,
-                        dropdownButtonProps: const DropdownButtonProps(padding: EdgeInsets.all(0)),
-                        dropdownDecoratorProps: const DropDownDecoratorProps(
-                          dropdownSearchDecoration: InputDecoration(
-                            labelText: 'Line',
-                            labelStyle: TextStyle(fontSize: 12),
-                            floatingLabelStyle: TextStyle(fontSize: 16),
-                            contentPadding: EdgeInsets.symmetric(vertical: 2.0, horizontal: 8.0),
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.all(Radius.circular(8.0)),
-                              borderSide: BorderSide(color: Colors.grey, width: 1.0),
-                            ),
-                            enabledBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.all(Radius.circular(8.0)),
-                              borderSide: BorderSide(color: Colors.grey, width: 1.0),
-                            ),
-                            disabledBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.all(Radius.circular(8.0)),
-                              borderSide: BorderSide(color: Colors.grey, width: 1.0),
-                            ),
-                            focusedBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.all(Radius.circular(8.0)),
-                              borderSide: BorderSide(color: Color(0xFF5FE3D3), width: 2.0),
-                            ),
-                          ),
-                        ),
-                        items: lineOption,
-                        itemAsString: (item) => item,
-                        onChanged: (newValue) async {
-                          setState(()  {
-                            selectedLine = newValue;
-
-                          });
-                          String? lineId = lineIDMap[newValue];
-
-                          await _fetchQtyOptions(_selectedUnit!, selectedStyleNo!,selectedColor!,lineId!,lineMap[newValue]!);
-                          await _fetchFloorOptions(_selectedUnit!, selectedStyleNo!,selectedColor!,lineMap[newValue]!);
-                          await _fetchVendorOptions(lineMap[selectedLine]!);
-                        },
-                      ),
-                    ),
-                  ),
-
-                  Expanded(
-                    flex: 1,
-                    child: Row(
-                      children: [
-                        const SizedBox(width: 8,),
-                        Expanded(
-                          child: SizedBox(
-                            height: 40,
-                            child: DropdownSearch<String>(
-                              selectedItem: selectedFloor,
-                              dropdownButtonProps: const DropdownButtonProps(padding: EdgeInsets.all(0)),
-                              enabled: false, // Disabled dropdown
-                              dropdownDecoratorProps: const DropDownDecoratorProps(
-                                dropdownSearchDecoration: InputDecoration(
-                                  labelText: 'Floor',
-                                  labelStyle: TextStyle(fontSize: 12),
-                                  floatingLabelStyle: TextStyle(fontSize: 16),
-                                  contentPadding: EdgeInsets.symmetric(vertical: 2.0, horizontal: 8.0),
-                                  border: OutlineInputBorder(
-                                    borderRadius: BorderRadius.all(Radius.circular(8.0)),
-                                    borderSide: BorderSide(color: Colors.grey, width: 1.0),
-                                  ),
-                                  disabledBorder: OutlineInputBorder(
-                                    borderRadius: BorderRadius.all(Radius.circular(8.0)),
-                                    borderSide: BorderSide(color: Colors.grey, width: 1.0),
-                                  ),
-                                  enabledBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.all(Radius.circular(8.0)),
-                              borderSide: BorderSide(color: Colors.grey, width: 1.0),
-                            ),
-                                  focusedBorder: OutlineInputBorder(
-                                    borderRadius: BorderRadius.all(Radius.circular(8.0)),
-                                    borderSide: BorderSide(color: Color(0xFF5FE3D3), width: 2.0),
-                                  ),
-                                ),
-                              ),
-                              items: floorOptions,
-                              itemAsString: (item) => item,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),const SizedBox(height: 16),
-              Row(
-                children: [
                   Expanded(
                     flex: 1,
                     child: SizedBox(
@@ -989,36 +1281,31 @@ class FinishAuditSelectionState extends State<FinishAuditSelection> {
                         enabled: isReAudit,
                         selectedItem: selectedVendor,
                         dropdownButtonProps: const DropdownButtonProps(padding: EdgeInsets.all(0)),
-                        dropdownDecoratorProps: const DropDownDecoratorProps(
-                          dropdownSearchDecoration: InputDecoration(
-                            labelText: 'Vendor Type',
-                            labelStyle: TextStyle(fontSize: 12),
-                            floatingLabelStyle: TextStyle(fontSize: 16),
-                            contentPadding: EdgeInsets.symmetric(vertical: 2.0, horizontal: 8.0),
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.all(Radius.circular(8.0)),
-                              borderSide: BorderSide(color: Colors.grey, width: 1.0),
-                            ),
-                            enabledBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.all(Radius.circular(8.0)),
-                              borderSide: BorderSide(color: Colors.grey, width: 1.0),
-                            ),
-                            disabledBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.all(Radius.circular(8.0)),
-                              borderSide: BorderSide(color: Colors.grey, width: 1.0),
-                            ),
-                            focusedBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.all(Radius.circular(8.0)),
-                              borderSide: BorderSide(color: Color(0xFF5FE3D3), width: 2.0),
-                            ),
-                          ),
+                        dropdownDecoratorProps: DropDownDecoratorProps(
+                          dropdownSearchDecoration: dropdownDecoration('Vendor Type'),
                         ),
                         items: vendorOptions,
                         itemAsString: (item) => item,
-                        onChanged: (newValue) {
+                        onChanged: (newValue) async {
+                          _clearList();
                           setState(() {
                             selectedVendor = newValue;
                           });
+                          setState(() {
+                            if(selectedVendor == 'OH-FINISHING' || selectedVendor == 'OutHouse'|| selectedVendor == 'PR-WORK' || selectedVendor == 'PcsRate'){
+                              isOutHouse = true;
+                            }
+                            else{
+                              isOutHouse = false;
+                            }
+                          });
+                          String? unit = _unitMap[_selectedUnit];
+
+                          await _fetchLineOptions(_selectedUnit!,newValue!);
+                          await _fetchSupervisorOptions(_selectedUnit!);
+                          await _fetchStartTime(unit!);
+                          await _fetchQAOptions(_selectedUnit!);
+                          await _fetchCheckerOptions(_selectedUnit!);
                         },
                       ),
                     ),
@@ -1036,35 +1323,14 @@ class FinishAuditSelectionState extends State<FinishAuditSelection> {
                               selectedItem: selectedInterval,
                               popupProps: const PopupProps.menu(showSearchBox: false),
                               dropdownButtonProps: const DropdownButtonProps(padding: EdgeInsets.all(0),),
-                              dropdownDecoratorProps: const DropDownDecoratorProps(
-                                dropdownSearchDecoration: InputDecoration(
-                                  labelText: 'Hours',
-                                  labelStyle: TextStyle(fontSize: 12),
-                                  floatingLabelStyle: TextStyle(fontSize: 16),
-                                  contentPadding: EdgeInsets.symmetric(vertical: 2.0, horizontal: 8.0),
-                                  border: OutlineInputBorder(
-                                    borderRadius: BorderRadius.all(Radius.circular(8.0)),
-                                    borderSide: BorderSide(color: Colors.grey, width: 1.0),
-                                  ),
-                                  enabledBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.all(Radius.circular(8.0)),
-                              borderSide: BorderSide(color: Colors.grey, width: 1.0),
-                            ),
-                            disabledBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.all(Radius.circular(8.0)),
-                              borderSide: BorderSide(color: Colors.grey, width: 1.0),
-                            ),
-                                  focusedBorder: OutlineInputBorder(
-                                    borderRadius: BorderRadius.all(Radius.circular(8.0)),
-                                    borderSide: BorderSide(color: Color(0xFF5FE3D3), width: 2.0),
-                                  ),
-                                ),
+                              dropdownDecoratorProps: DropDownDecoratorProps(
+                                dropdownSearchDecoration: dropdownDecoration('Hours'),
                               ),
                               items: hourIntervals,
                               itemAsString: (item) => item,
                               onChanged: (newValue) {
                                 setState(() {
-                                  selectedHrs = newValue;
+                                  selectedInterval = newValue;
                                 });
                               },
                             ),
@@ -1083,13 +1349,71 @@ class FinishAuditSelectionState extends State<FinishAuditSelection> {
                     child: SizedBox(
                       height: 40,
                       child: DropdownSearch<String>(
-                        enabled: isReAudit,
+                        enabled: isReAudit && productOptions.isNotEmpty,
                         selectedItem: selectedProduct,
+                        popupProps: const PopupProps.menu(showSearchBox: true),
+                        dropdownButtonProps: const DropdownButtonProps(padding: EdgeInsets.all(0)),
+                        dropdownDecoratorProps: DropDownDecoratorProps(
+                          dropdownSearchDecoration: dropdownDecoration('Component'),
+                        ),
+                        items: productOptions,
+                        itemAsString: (item) => item,
+                        onChanged: (newValue) async {
+                          setState(() {
+                            selectedProduct = newValue;
+                          });
+                          await saveLineMappedPref('prodSewingByLine', selectedLine ?? '', selectedProduct ?? '');
+                        },
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    flex: 1,
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: SizedBox(
+                            height: 40,
+                            child: DropdownSearch<String>(
+                              enabled: isReAudit,
+                              selectedItem: selectedSupervisor,
+                              popupProps: const PopupProps.menu(showSearchBox: true),
+                              dropdownButtonProps: const DropdownButtonProps(padding: EdgeInsets.all(0)),
+                              dropdownDecoratorProps: DropDownDecoratorProps(
+                                dropdownSearchDecoration: dropdownDecoration('Supervisor'),
+                              ),
+                              items: supervisorOptions,
+                              itemAsString: (item) => item,
+                              onChanged: (newValue) async {
+                                setState(() {
+                                  selectedSupervisor = newValue;
+                                });
+                                await saveLineMappedPref('supSewingByLine', selectedLine ?? '', newValue ?? '');
+                              },
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              Row(
+                children: [
+                  Expanded(
+                    flex: 1,
+                    child: SizedBox(
+                      height: 40,
+                      child: DropdownSearch<String>(
+                        enabled: isReAudit,
+                        selectedItem: selectedInCharge,
                         popupProps: const PopupProps.menu(showSearchBox: true),
                         dropdownButtonProps: const DropdownButtonProps(padding: EdgeInsets.all(0)),
                         dropdownDecoratorProps: const DropDownDecoratorProps(
                           dropdownSearchDecoration: InputDecoration(
-                            labelText: 'Product',
+                            labelText: 'Floor InCharge',
                             labelStyle: TextStyle(fontSize: 12),
                             floatingLabelStyle: TextStyle(fontSize: 16),
                             contentPadding: EdgeInsets.symmetric(vertical: 2.0, horizontal: 8.0),
@@ -1111,12 +1435,13 @@ class FinishAuditSelectionState extends State<FinishAuditSelection> {
                             ),
                           ),
                         ),
-                        items: productOptions,
+                        items: inChargeOptions,
                         itemAsString: (item) => item,
-                        onChanged: (newValue) {
+                        onChanged: (newValue) async {
                           setState(() {
-                            selectedProduct = newValue;
+                            selectedInCharge = newValue;
                           });
+                          await saveLineMappedPref('inChargeSewingByLine', selectedLine ?? '', newValue ?? '');
                         },
                       ),
                     ),
@@ -1131,12 +1456,12 @@ class FinishAuditSelectionState extends State<FinishAuditSelection> {
                             height: 40,
                             child: DropdownSearch<String>(
                               enabled: isReAudit,
-                              selectedItem: selectedSupervisor,
+                              selectedItem: selectedAqm,
                               popupProps: const PopupProps.menu(showSearchBox: true),
                               dropdownButtonProps: const DropdownButtonProps(padding: EdgeInsets.all(0)),
                               dropdownDecoratorProps: const DropDownDecoratorProps(
                                 dropdownSearchDecoration: InputDecoration(
-                                  labelText: 'Supervisor',
+                                  labelText: 'AQM',
                                   labelStyle: TextStyle(fontSize: 12),
                                   floatingLabelStyle: TextStyle(fontSize: 16),
                                   contentPadding: EdgeInsets.symmetric(vertical: 2.0, horizontal: 8.0),
@@ -1145,25 +1470,26 @@ class FinishAuditSelectionState extends State<FinishAuditSelection> {
                                     borderSide: BorderSide(color: Colors.grey, width: 1.0),
                                   ),
                                   enabledBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.all(Radius.circular(8.0)),
-                              borderSide: BorderSide(color: Colors.grey, width: 1.0),
-                            ),
-                            disabledBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.all(Radius.circular(8.0)),
-                              borderSide: BorderSide(color: Colors.grey, width: 1.0),
-                            ),
+                                    borderRadius: BorderRadius.all(Radius.circular(8.0)),
+                                    borderSide: BorderSide(color: Colors.grey, width: 1.0),
+                                  ),
+                                  disabledBorder: OutlineInputBorder(
+                                    borderRadius: BorderRadius.all(Radius.circular(8.0)),
+                                    borderSide: BorderSide(color: Colors.grey, width: 1.0),
+                                  ),
                                   focusedBorder: OutlineInputBorder(
                                     borderRadius: BorderRadius.all(Radius.circular(8.0)),
                                     borderSide: BorderSide(color: Color(0xFF5FE3D3), width: 2.0),
                                   ),
                                 ),
                               ),
-                              items: supervisorOptions,
+                              items: aqmOptions,
                               itemAsString: (item) => item,
-                              onChanged: (newValue) {
+                              onChanged: (newValue) async {
                                 setState(() {
-                                  selectedSupervisor = newValue;
+                                  selectedAqm = newValue;
                                 });
+                                await saveLineMappedPref('aqmSewingByLine', selectedLine ?? '', newValue ?? '');
                               },
                             ),
                           ),
@@ -1185,88 +1511,18 @@ class FinishAuditSelectionState extends State<FinishAuditSelection> {
                         selectedItem: selectedQa,
                         popupProps: const PopupProps.menu(showSearchBox: true),
                         dropdownButtonProps: const DropdownButtonProps(padding: EdgeInsets.all(0)),
-                        dropdownDecoratorProps: const DropDownDecoratorProps(
-                          dropdownSearchDecoration: InputDecoration(
-                            labelText: 'QA',
-                            labelStyle: TextStyle(fontSize: 12),
-                            floatingLabelStyle: TextStyle(fontSize: 16),
-                            contentPadding: EdgeInsets.symmetric(vertical: 2.0, horizontal: 8.0),
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.all(Radius.circular(8.0)),
-                              borderSide: BorderSide(color: Colors.grey, width: 1.0),
-                            ),
-                            enabledBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.all(Radius.circular(8.0)),
-                              borderSide: BorderSide(color: Colors.grey, width: 1.0),
-                            ),
-                            disabledBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.all(Radius.circular(8.0)),
-                              borderSide: BorderSide(color: Colors.grey, width: 1.0),
-                            ),
-                            focusedBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.all(Radius.circular(8.0)),
-                              borderSide: BorderSide(color: Color(0xFF5FE3D3), width: 2.0),
-                            ),
-                          ),
+                        dropdownDecoratorProps: DropDownDecoratorProps(
+                          dropdownSearchDecoration: dropdownDecoration('QA'),
                         ),
                         items: qaOptions,
                         itemAsString: (item) => item,
-                        onChanged: (newValue) {
+                        onChanged: (newValue) async {
                           setState(() {
                             selectedQa = newValue;
                           });
+                          await saveLineMappedPref('qaSewingByLine', selectedLine ?? '', newValue ?? '');
                         },
                       ),
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    flex: 1,
-                    child: Row(
-                      children: [
-                        Expanded(
-                          child: SizedBox(
-                            height: 40,
-                            child: DropdownSearch<String>(
-                              enabled: isReAudit,
-                              selectedItem: selectedChecker,
-                              popupProps: const PopupProps.menu(showSearchBox: true),
-                              dropdownButtonProps: const DropdownButtonProps(padding: EdgeInsets.all(0)),
-                              dropdownDecoratorProps: const DropDownDecoratorProps(
-                                dropdownSearchDecoration: InputDecoration(
-                                  labelText: 'Checker',
-                                  labelStyle: TextStyle(fontSize: 12),
-                                  floatingLabelStyle: TextStyle(fontSize: 16),
-                                  contentPadding: EdgeInsets.symmetric(vertical: 2.0, horizontal: 8.0),
-                                  border: OutlineInputBorder(
-                                    borderRadius: BorderRadius.all(Radius.circular(8.0)),
-                                    borderSide: BorderSide(color: Colors.grey, width: 1.0),
-                                  ),
-                                  enabledBorder: OutlineInputBorder(
-                                    borderRadius: BorderRadius.all(Radius.circular(8.0)),
-                                    borderSide: BorderSide(color: Colors.grey, width: 1.0),
-                                  ),
-                                  disabledBorder: OutlineInputBorder(
-                                    borderRadius: BorderRadius.all(Radius.circular(8.0)),
-                                    borderSide: BorderSide(color: Colors.grey, width: 1.0),
-                                  ),
-                                  focusedBorder: OutlineInputBorder(
-                                    borderRadius: BorderRadius.all(Radius.circular(8.0)),
-                                    borderSide: BorderSide(color: Color(0xFF5FE3D3), width: 2.0),
-                                  ),
-                                ),
-                              ),
-                              items: checkerOptions,
-                              itemAsString: (item) => item,
-                              onChanged: (newValue) {
-                                setState(() {
-                                  selectedChecker = newValue;
-                                });
-                              },
-                            ),
-                          ),
-                        ),
-                      ],
                     ),
                   ),
                 ],
@@ -1282,24 +1538,10 @@ class FinishAuditSelectionState extends State<FinishAuditSelection> {
                       child: TextField(
                         readOnly: true,
                         controller: orderQty,
-                        decoration: const InputDecoration(
-                          labelText: 'Order Qty',
-                          labelStyle: TextStyle(fontSize: 12),
-                          floatingLabelStyle: TextStyle(fontSize: 16),
-                          focusedBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.all(Radius.circular(8.0)),
-                            borderSide: BorderSide(color: Color(0xFF5FE3D3), width: 2.0),
-                          ),
-                          contentPadding: EdgeInsets.symmetric(vertical: 2.0, horizontal: 8.0),
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.all(Radius.circular(8.0)),
-                            borderSide: BorderSide(color: Colors.grey, width: 1.0),
-                          ),
-                        ),
+                        decoration: textDecoration('Order Qty'),
                       ),
                     ),
                   ),
-                  // Field 2
                   Expanded(
                     child: Container(
                       height: 40,
@@ -1307,20 +1549,7 @@ class FinishAuditSelectionState extends State<FinishAuditSelection> {
                       child: TextField(
                         readOnly: true,
                         controller: issueQty,
-                        decoration: const InputDecoration(
-                          labelText: 'Issue Qty',
-                          labelStyle: TextStyle(fontSize: 12),
-                          floatingLabelStyle: TextStyle(fontSize: 16),
-                          focusedBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.all(Radius.circular(8.0)),
-                            borderSide: BorderSide(color: Color(0xFF5FE3D3), width: 2.0),
-                          ),
-                          contentPadding: EdgeInsets.symmetric(vertical: 2.0, horizontal: 8.0),
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.all(Radius.circular(8.0)),
-                            borderSide: BorderSide(color: Colors.grey, width: 1.0),
-                          ),
-                        ),
+                        decoration: textDecoration('Issue Qty'),
                       ),
                     ),
                   ),
@@ -1331,20 +1560,7 @@ class FinishAuditSelectionState extends State<FinishAuditSelection> {
                       child: TextField(
                         readOnly: true,
                         controller: pcsChkd,
-                        decoration: const InputDecoration(
-                          labelText: 'PCS Checked',
-                          labelStyle: TextStyle(fontSize: 12),
-                          floatingLabelStyle: TextStyle(fontSize: 16),
-                          focusedBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.all(Radius.circular(8.0)),
-                            borderSide: BorderSide(color: Color(0xFF5FE3D3), width: 2.0),
-                          ),
-                          contentPadding: EdgeInsets.symmetric(vertical: 2.0, horizontal: 8.0),
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.all(Radius.circular(8.0)),
-                            borderSide: BorderSide(color: Colors.grey, width: 1.0),
-                          ),
-                        ),
+                        decoration: textDecoration('PCS Checked'),
                       ),
                     ),
                   ),
@@ -1359,20 +1575,7 @@ class FinishAuditSelectionState extends State<FinishAuditSelection> {
                         },
                         keyboardType: TextInputType.number,
                         controller: receivedQty,
-                        decoration: const InputDecoration(
-                          labelText: 'Received Qty',
-                          labelStyle: TextStyle(fontSize: 12),
-                          floatingLabelStyle: TextStyle(fontSize: 16),
-                          focusedBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.all(Radius.circular(8.0)),
-                            borderSide: BorderSide(color: Color(0xFF5FE3D3), width: 2.0),
-                          ),
-                          contentPadding: EdgeInsets.symmetric(vertical: 2.0, horizontal: 8.0),
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.all(Radius.circular(8.0)),
-                            borderSide: BorderSide(color: Colors.grey, width: 1.0),
-                          ),
-                        ),
+                        decoration: textDecoration('Received Qty'),
                       ),
                     ),
                   ),
@@ -1422,6 +1625,25 @@ class FinishAuditSelectionState extends State<FinishAuditSelection> {
                       ],
                     ),
                   ),
+                  // const SizedBox(width: 16),
+                  // Expanded(
+                  //   flex: 1,
+                  //   child: Row(
+                  //     children: [
+                  //       Radio<String>(
+                  //         value: "Sampling",
+                  //         groupValue: isFresh,
+                  //         onChanged: (value) {
+                  //           setState(() {
+                  //             isFresh = value!;
+                  //             _clearList();
+                  //           });
+                  //         },
+                  //       ),
+                  //       const Text("Sampling"),
+                  //     ],
+                  //   ),
+                  // ),
                   const SizedBox(width: 0),
                   if (isFresh == "ReAudit")
                     Expanded(
@@ -1431,25 +1653,8 @@ class FinishAuditSelectionState extends State<FinishAuditSelection> {
                         child: DropdownSearch<String>(
                           selectedItem: selectedAudit,
                           dropdownButtonProps: const DropdownButtonProps(padding: EdgeInsets.all(0)),
-                          dropdownDecoratorProps: const DropDownDecoratorProps(
-                            dropdownSearchDecoration: InputDecoration(
-                              labelText: 'Audit No',
-                              labelStyle: TextStyle(fontSize: 12),
-                              floatingLabelStyle: TextStyle(fontSize: 14),
-                              contentPadding: EdgeInsets.symmetric(vertical: 2.0, horizontal: 8.0),
-                              border: OutlineInputBorder(
-                                borderRadius: BorderRadius.all(Radius.circular(8.0)),
-                                borderSide: BorderSide(color: Colors.grey, width: 1.0),
-                              ),
-                              enabledBorder: OutlineInputBorder(
-                                borderRadius: BorderRadius.all(Radius.circular(8.0)),
-                                borderSide: BorderSide(color: Colors.grey, width: 1.0),
-                              ),
-                              focusedBorder: OutlineInputBorder(
-                                borderRadius: BorderRadius.all(Radius.circular(8.0)),
-                                borderSide: BorderSide(color: Color(0xFF5FE3D3), width: 2.0),
-                              ),
-                            ),
+                          dropdownDecoratorProps: DropDownDecoratorProps(
+                            dropdownSearchDecoration: dropdownDecoration('Audit No'),
                           ),
                           items: auditOptions,
                           itemAsString: (item) => item,
@@ -1467,35 +1672,97 @@ class FinishAuditSelectionState extends State<FinishAuditSelection> {
               const SizedBox(height: 20,),
               SizedBox(width: 140,child:
               ElevatedButton(
-                onPressed: () {
+                onPressed: () async {
                   setState(() {
-                    int issueQtyValue = int.tryParse(issueQty.text) ?? 0;
-                    int pcsChkdValue = int.tryParse(pcsChkd.text) ?? 0;
-                    int recValue = int.tryParse(receivedQty.text) ?? 0;
-                    print(issueQtyValue);
-                    print(pcsChkdValue);
-                    print(recValue);
-                    if(issueQtyValue + pcsChkdValue < recValue){
-                      ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text("Received Qty is Exceeding balance Qty."))
-                      );
-                      return;
-                    }
-                    else if (selectedStyleNo == null || selectedStyleNo == "----" ||
-                        selectedColor == null || selectedColor == "----" ||
-                        selectedLine == null || selectedLine == "----" ||
-                        selectedBuyer == null || selectedBuyer == "----" ||
-                        selectedChecker == null || selectedChecker == "----" ||
-                        selectedQa == null || selectedQa == "----" ||
-                        selectedSupervisor == null || selectedSupervisor == "----" ||
-                        pcsChkd.text.isEmpty || receivedQty.text.isEmpty) {
+                    int issueQtyValue = int.tryParse(issueQty.text.trim()) ?? 0;
+                    int pcsChkdValue = int.tryParse(pcsChkd.text.trim()) ?? 0;
+                    int recValue = int.tryParse(receivedQty.text.trim()) ?? 0;
 
-                      // Show an error message
-                      ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(content: Text("❌ Please fill all fields correctly. ❌"))
-                      );
-                      return;
+                    print("Issue Qty: $issueQtyValue, Pcs Checked: $pcsChkdValue, Received Qty: $recValue");
+
+                    int isReAudit = 0;
+                    setState(() {
+                      if (isFresh == "ReAudit") {
+                        isReAudit = 1;
+                      }
+                      else {
+                        isReAudit = 0;
+                      }
+                    });
+                    if(isReAudit == 0){
+                      if (issueQtyValue - pcsChkdValue < recValue) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text("Received Qty is Exceeding balance Qty."))
+                        );
+                        return;
+                      }
                     }
+
+                    if(isReAudit == 0) {
+                      if (!isOutHouse) {
+                        if (selectedStyleNo == null ||
+                            selectedStyleNo == "----" ||
+                            selectedColor == null || selectedColor == "----" ||
+                            selectedLine == null || selectedLine == "----" ||
+                            selectedBuyer == null || selectedBuyer == "----" ||
+                            selectedQa == null || selectedQa == "----" ||
+                            selectedSupervisor == null ||
+                            selectedSupervisor == "----" ||
+                            selectedAqm == null ||
+                            selectedAqm == "----" ||
+                            selectedInCharge == null ||
+                            selectedInCharge == "----" ||
+                            pcsChkd.text.isEmpty || receivedQty.text.isEmpty) {
+                          // Show an error message
+                          ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(content: Text(
+                                  "❌ Please fill all fields correctly. ❌"))
+                          );
+                          return;
+                        }
+                      }
+                      else {
+                        if (selectedStyleNo == null ||
+                            selectedStyleNo == "----" ||
+                            selectedColor == null || selectedColor == "----" ||
+                            selectedBuyer == null || selectedBuyer == "----" ||
+                            selectedQa == null || selectedQa == "----" ||
+                            selectedSupervisor == null ||
+                            selectedSupervisor == "----" ||
+                            selectedAqm == null ||
+                            selectedAqm == "----" ||
+                            selectedInCharge == null ||
+                            selectedInCharge == "----" ||
+                            pcsChkd.text.isEmpty || receivedQty.text.isEmpty) {
+                          // Show an error message
+                          ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(content: Text(
+                                  "❌ Please fill all fields correctly. ❌"))
+                          );
+                          return;
+                        }
+                      }
+                    }
+                    else{
+                      if (selectedStyleNo == null ||
+                          selectedStyleNo == "----" ||
+                          selectedColor == null || selectedColor == "----" ||
+                          selectedBuyer == null || selectedBuyer == "----" ||
+                          selectedQa == null || selectedQa == "----" ||
+                          selectedSupervisor == null ||
+                          selectedSupervisor == "----" ||
+                          selectedAudit == null || selectedAudit == '----' ||
+                          pcsChkd.text.isEmpty || receivedQty.text.isEmpty) {
+                        // Show an error message
+                        ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text(
+                                "❌ Please fill all fields correctly. ❌"))
+                        );
+                        return;
+                      }
+                    }
+
+                    String type = _currentIndex == 0 ? 'Apps' : 'VG';
 
                     tableData = {
                       'Style': selectedStyleNo,
@@ -1509,18 +1776,11 @@ class FinishAuditSelectionState extends State<FinishAuditSelection> {
                     String? supervisor = supervisorMap[selectedSupervisor];
                     String? line = lineMap[selectedLine];
                     String? floor = floorMap[selectedFloor];
+                    String? aqm = aqmMap[selectedAqm];
+                    String? inCharge = inChargeMap[selectedInCharge];
                     String? lineIdLocal = lineIDMap[selectedFloor];
-                    String?  unit = _unitMap[_selectedUnit];
-                    String? product = productMap[selectedProduct];
-                    int isReAudit = 0;
-                    setState(() {
-                      if (isFresh == "ReAudit") {
-                        isReAudit = 1;
-                      }
-                      else {
-                        isReAudit = 0;
-                      }
-                    });
+                    String?  unit = type == 'Apps' ? _unitMap[_selectedUnit] : _unitMapVg[_selectedUnit];
+
 
                     textData = {
                       'Pcs Checked': pcsChkd.text,
@@ -1528,40 +1788,57 @@ class FinishAuditSelectionState extends State<FinishAuditSelection> {
                       'Buyer': isReAudit == 0 ? buyerCodeLocal : buyerCode,
                     };
 
+
+
                     allData = {
                       'Unit' : unit,
+                      'UnitShCode' : _selectedUnit,
                       'Style': selectedStyleNo!,
                       'Order' : selectedOrderNo!,
                       'Buyer': isReAudit == 0 ? buyerCodeLocal! : buyerCode!,
                       'Color': selectedColor!,
-                      'Product' : product!,
-                      'Line': line!,
-                      'Floor' : isReAudit == 0 ? floor! : floorId!,
-                      'LineId' : isReAudit == 0 ? lineIdLocal! : lineId!,
+                      'Product' : selectedProduct,
+                      'Line': !isOutHouse ? isReAudit == 0 ? line! : lineId : '',
+                      'Floor' : !isOutHouse ?isReAudit == 0 ? floor! : floorId! : '',
+                      'LineId': !isOutHouse ? isReAudit == 0 ? (lineIdLocal ?? 0) : (lineId ?? 0) : '',
+                      'VendorId' : isOutHouse ? isReAudit == 0 ? line! : lineId : '',
                       'Hrs' : selectedInterval!,
                       'PcsChecked': pcsChkd.text,
                       'OrderQty': orderQty.text,
                       'IssueQty': issueQty.text,
-                      'Checker' : checker!,
-                      'CheckerName' : selectedChecker?.split('(')[0].trim(),
                       'QA' : qa!,
                       'QAName' : selectedQa?.split('(')[0].trim(),
                       'Supervisor' : supervisor!,
                       'SupervisorName' : selectedSupervisor?.split('(')[0].trim(),
+                      'InCharge' : inCharge!,
+                      'InChargeName' : selectedInCharge?.split('(')[0].trim(),
+                      'AQM' : aqm!,
+                      'AQMName' : selectedAqm?.split('(')[0].trim(),
                       'Vendor': selectedVendor!,
                       'AuditType' : 'F',
-                      'ReAuditNo' : reAuditNo,
+                      'ReAuditNo' : isReAudit == 1 ? reAuditNo : '',
                       'IsReAudit' : isReAudit,
                       'Version' : version,
                       'DeviceId' : uuid,
                       'Login' : _loginId,
+                      'Type' : type,
                     };
 
                     if (kDebugMode) {
                       print(allData);
                     }
 
-                    Set<String> excludeFields = {'ReAuditNo', 'DeviceId'};
+                    Set<String> excludeFields = {'ReAuditNo', 'DeviceId','Vendor'};
+                    if (isOutHouse) {
+                      excludeFields.add('Line');
+                      excludeFields.add('Floor');
+                      excludeFields.add('LineId');
+                    } else {
+                      excludeFields.add('VendorId');
+                    }
+                    if(productOptions.isEmpty || productOptions == []){
+                      excludeFields.add('Product');
+                    }
                     List<String> nullFields = allData.entries
                         .where((entry) =>
                     !excludeFields.contains(entry.key) && // Exclude specific fields
@@ -1581,6 +1858,12 @@ class FinishAuditSelectionState extends State<FinishAuditSelection> {
                     }
 
                   });
+                  await saveLineMappedPref('prodSewingByLine', selectedLine ?? '', selectedProduct ?? '');
+                  await saveLineMappedPref('supSewingByLine', selectedLine ?? '', selectedSupervisor ?? '');
+                  await saveLineMappedPref('qaSewingByLine', selectedLine ?? '', selectedQa ?? '');
+                  await saveLineMappedPref('checkerSewingByLine', selectedLine ?? '', selectedChecker ?? '');
+                  await saveLineMappedPref('styleSewingByLine', selectedLine ?? '', selectedStyleNo ?? '');
+                  await saveLineMappedPref('colorSewingByLine', selectedLine ?? '', selectedColor ?? '');
                 },
                 style: ElevatedButton.styleFrom(backgroundColor: const Color(0xC27CF378)),
                 child: const Text('Start Audit', style: TextStyle(color: Colors.white), textAlign: TextAlign.center),
@@ -1595,10 +1878,11 @@ class FinishAuditSelectionState extends State<FinishAuditSelection> {
   }
   Future <void> navigate (Map<String, dynamic> tableData,Map<String, dynamic> textFieldData,Map<String, dynamic> allData)async{
     String?  unit = _unitMap[_selectedUnit];
+    String? lineId = lineIDMap[selectedFloor];
     await Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => SewingAuditPage(
+        builder: (context) => FinishingAuditPage(
           tableData: tableData,
           textFieldData: textData,
           allData: allData,
@@ -1607,5 +1891,54 @@ class FinishAuditSelectionState extends State<FinishAuditSelection> {
     );
     await _fetchStartTime(unit!);
     await _fetchAuditOptions(unit);
+    setState(() {
+      selectedStyleNo = null;
+    });
+    // await _fetchQtyOptions(_selectedUnit!, selectedStyleNo!,selectedColor!,lineId!,lineMap[selectedLine]!,selectedOrderNo!);
+    if(isFresh == 'ReAudit'){
+      _clearList();
+    }
+  }
+
+  InputDecoration dropdownDecoration(String labelText) {
+    return InputDecoration(
+      labelText: labelText,
+      labelStyle: const TextStyle(fontSize: 12),
+      floatingLabelStyle: const TextStyle(fontSize: 16),
+      contentPadding: const EdgeInsets.symmetric(vertical: 2.0, horizontal: 8.0),
+      border: const OutlineInputBorder(
+        borderRadius: BorderRadius.all(Radius.circular(8.0)),
+        borderSide: BorderSide(color: Colors.grey, width: 1.0),
+      ),
+      enabledBorder: const OutlineInputBorder(
+        borderRadius: BorderRadius.all(Radius.circular(8.0)),
+        borderSide: BorderSide(color: Colors.grey, width: 1.0),
+      ),
+      disabledBorder: const OutlineInputBorder(
+        borderRadius: BorderRadius.all(Radius.circular(8.0)),
+        borderSide: BorderSide(color: Colors.grey, width: 1.0),
+      ),
+      focusedBorder: const OutlineInputBorder(
+        borderRadius: BorderRadius.all(Radius.circular(8.0)),
+        borderSide: BorderSide(color: Color(0xFF5FE3D3), width: 2.0),
+      ),
+    );
+  }
+
+  InputDecoration textDecoration(String labelText) {
+    return InputDecoration(
+      labelText: labelText,
+      labelStyle: const TextStyle(fontSize: 12),
+      floatingLabelStyle: const TextStyle(fontSize: 16),
+      focusedBorder: const OutlineInputBorder(
+        borderRadius: BorderRadius.all(Radius.circular(8.0)),
+        borderSide: BorderSide(color: Color(0xFF5FE3D3), width: 2.0),
+      ),
+      contentPadding: const EdgeInsets.symmetric(vertical: 2.0, horizontal: 8.0),
+      border: const OutlineInputBorder(
+        borderRadius: BorderRadius.all(Radius.circular(8.0)),
+        borderSide: BorderSide(color: Colors.grey, width: 1.0),
+      ),
+    );
   }
 }

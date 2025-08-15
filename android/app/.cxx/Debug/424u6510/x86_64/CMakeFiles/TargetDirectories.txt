@@ -1,0 +1,2 @@
+/Users/macos15/Development/ppms/android/app/.cxx/Debug/424u6510/x86_64/CMakeFiles/rebuild_cache.dir
+/Users/macos15/Development/ppms/android/app/.cxx/Debug/424u6510/x86_64/CMakeFiles/edit_cache.dir

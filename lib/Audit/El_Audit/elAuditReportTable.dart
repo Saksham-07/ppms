@@ -50,59 +50,59 @@ class CustomDataGrid extends StatelessWidget {
           columnName: 'StyleNo',
           maximumWidth: 150,
           label: Container(
-              color: const Color(0xFF5FE3D3),
-              child: const Center(child: Text('Style No',textAlign: TextAlign.center, style: TextStyle(fontWeight: FontWeight.bold)))),
+              color: Colors.grey[400],
+              child: const Center(child: Text('Style No',textAlign: TextAlign.center, style: TextStyle(fontWeight: FontWeight.bold,color: Colors.black)))),
         ),
         GridColumn(
           columnName: 'Color',
           maximumWidth: 140,
           label: Container(
-              color: const Color(0xFF5FE3D3),child: const Center(child: Text('Color',textAlign: TextAlign.center, style: TextStyle(fontWeight: FontWeight.bold)))),
+              color: Colors.grey[400],child: const Center(child: Text('Color',textAlign: TextAlign.center, style: TextStyle(fontWeight: FontWeight.bold,color: Colors.black)))),
         ),
         if (isChecked || isLineWise)
           GridColumn(
             columnName: 'LineName',
             label: Container(
-                color: const Color(0xFF5FE3D3),child: const Center(child: Text('Line',textAlign: TextAlign.center, style: TextStyle(fontWeight: FontWeight.bold)))),
+                color: Colors.grey[400],child: const Center(child: Text('Line',textAlign: TextAlign.center, style: TextStyle(fontWeight: FontWeight.bold,color: Colors.black)))),
           ),
         if (isChecked)
           GridColumn(
             columnName: 'AuditDate',
             label: Container(
-                color: const Color(0xFF5FE3D3),child: Center(child: Text('Date',textAlign: TextAlign.center, style: TextStyle(fontWeight: FontWeight.bold)))),
+                color: Colors.grey,child: const Center(child: Text('Date',textAlign: TextAlign.center, style: TextStyle(fontWeight: FontWeight.bold,color: Colors.black)))),
           ),
         GridColumn(
           columnName: 'PassQty',
           label: Container(
-              color: const Color(0xFF5FE3D3),child: Center(child: Text('Pass Qty',textAlign: TextAlign.center, style: TextStyle(fontWeight: FontWeight.bold)))),
+              color: Colors.grey[400],child: const Center(child: Text('Pass Qty',textAlign: TextAlign.center, style: TextStyle(fontWeight: FontWeight.bold,color: Colors.black)))),
         ),
         GridColumn(
           columnName: 'RejectQty',
           label: Container(
-              color: const Color(0xFF5FE3D3),child: Center(child: Text('Reject Qty',textAlign: TextAlign.center, style: TextStyle(fontWeight: FontWeight.bold)))),
+              color: Colors.grey[400],child: const Center(child: Text('Reject Qty',textAlign: TextAlign.center, style: TextStyle(fontWeight: FontWeight.bold,color: Colors.black)))),
         ),
         GridColumn(
           columnName: 'DefectQty',
           label: Container(
-              color: const Color(0xFF5FE3D3),child: Center(child: Text('Defect Qty',textAlign: TextAlign.center, style: TextStyle(fontWeight: FontWeight.bold)))),
+              color: Colors.grey[400],child: const Center(child: Text('Defect Qty',textAlign: TextAlign.center, style: TextStyle(fontWeight: FontWeight.bold,color: Colors.black)))),
         ),
         GridColumn(
           minimumWidth: 50,
           columnName: 'RectifiedQty',
           label: Container(
-              color: const Color(0xFF5FE3D3),child: Center(child: Text('Rectify Qty',textAlign: TextAlign.center, style: TextStyle(fontWeight: FontWeight.bold)))),
+              color: Colors.grey[400],child: const Center(child: Text('Rectify Qty',textAlign: TextAlign.center, style: TextStyle(fontWeight: FontWeight.bold,color: Colors.black)))),
         ),
         if (!isChecked)
           GridColumn(
             columnName: 'AuditQty',
             label: Container(
-                color: const Color(0xFF5FE3D3),child: Center(child: Text('Audit Qty',textAlign: TextAlign.center, style: TextStyle(fontWeight: FontWeight.bold)))),
+                color: Colors.grey[400],child: const Center(child: Text('Audit Qty',textAlign: TextAlign.center, style: TextStyle(fontWeight: FontWeight.bold,color: Colors.black)))),
           ),
         if (!isChecked)
           GridColumn(
             columnName: 'BalanceQty',
             label: Container(
-                color: const Color(0xFF5FE3D3),child: Center(child: Text('Balance Qty',textAlign: TextAlign.center, style: TextStyle(fontWeight: FontWeight.bold)))),
+                color: Colors.grey[400],child: const Center(child: Text('Balance Qty',textAlign: TextAlign.center, style: TextStyle(fontWeight: FontWeight.bold,color: Colors.black)))),
           ),
       ],
     );

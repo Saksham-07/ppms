@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'package:flutter/services.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:uuid/uuid.dart';
 import 'package:device_info_plus/device_info_plus.dart';
@@ -14,13 +15,18 @@ class PersistentUUID {
 
     if (uuid == null) {
       if (Platform.isAndroid) {
-        final deviceInfo = DeviceInfoPlugin();
-        final androidInfo = await deviceInfo.androidInfo;
-        uuid = androidInfo.id;
+        try {
+          final DeviceInfoPlugin deviceInfo = DeviceInfoPlugin();
+          final AndroidDeviceInfo androidInfo = await deviceInfo.androidInfo;
+          uuid = androidInfo.id; // Get Android ID
+        } on PlatformException {
+          uuid = '';
+        }
       } else if (Platform.isIOS) {
         uuid = const Uuid().v4();
       }
-      uuid = uuid?.replaceAll('.', '').substring(0, 8);
+
+      uuid = uuid?.replaceAll('.', '').substring(0, 6);
 
       // Store the UUID securely
       if (uuid != null) {

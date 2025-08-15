@@ -1,12 +1,16 @@
 import 'dart:async';
 import 'dart:io';
 
+import 'package:dropdown_button2/dropdown_button2.dart';
 import 'package:dropdown_search/dropdown_search.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:ppms/Allocation/report.dart';
 import 'package:ppms/Allocation/scan_qr.dart';
+import 'package:ppms/ExtraFunction/lottie_loading.dart';
+import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
@@ -15,6 +19,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../common/utils/constants/baseurl.dart';
 import '../ExtraFunction/uuid.dart';
 import '../Installation/dio.dart';
+import '../Theme/app_theme.dart';
 
 class Allocation extends StatefulWidget {
   const Allocation({super.key});
@@ -23,33 +28,32 @@ class Allocation extends StatefulWidget {
   _AllocationState createState() => _AllocationState();
 }
 
-class _AllocationState extends State<Allocation> {
+class _AllocationState extends State<Allocation> with TickerProviderStateMixin {
   List<Map<String, dynamic>> scannedDataList = [];
   List<Map<String, String>> dropdownData3 = [];
   List<String> dropdownData5 = [];
-  String? selectedValue3;
-  String? selectedLineID;
-  String? selectedValue4;
-  String? selectedValue5;
-  String? userId;
-  String? fetchedTailorName;
+  String? selectedValue3,
+      selectedLineID,
+      selectedValue4,
+      selectedValue5,
+      userId,
+      fetchedTailorName,
+      fetchedTailorUnit,
+      fetchedTailorCode,
+      paycodes,
+      prevLine;
   int? fetchedTailorDept;
   int? fetchedTailorSDept;
   int? fetchedTailorDesg;
-  String? fetchedTailorUnit;
-  String? fetchedTailorCode;
-  String? paycodes;
-  String? prevLine;
   bool _isAllocation = false;
   bool _isR = false;
   String appVersion = '';
   String fileName = '';
   Timer? _versionTimer;
-
   TextEditingController textController = TextEditingController();
 
   List<String> _dropDownOptions = [];
-  Map<String, String> _unitMap = {};
+  Map<String, String> _unitMap = {}, _unitMapVg = {};
   String? _selectedUnit;
   String? _loginId;
   String? previousValue;
@@ -58,13 +62,28 @@ class _AllocationState extends State<Allocation> {
   String _totalMnpwr = '';
   bool isData = false;
   String uuid = '';
+  bool _isRVisible = false,
+      _showFullTitle = true,
+      _isReversing = false,
+      _showCursor = true,
+      _fromDateFocused = false,
+      _toDateFocused = false;
+  bool isDarkMode = false;
+  late AnimationController _typingController,
+      _backButtonController,
+      _scaleController;
+  late Animation<double> _scaleAnimation;
+  late Animation<Offset> _backButtonAnimation;
+  late Animation<int> _typingAnimation;
+  late Timer _cursorTimer;
+  String _displayText = '';
+  int _currentMaxLength = 0;
 
   @override
   void initState() {
     super.initState();
     getUid();
-    _versionTimer = Timer.periodic(const Duration(minutes: 30), (timer)
-    {
+    _versionTimer = Timer.periodic(const Duration(minutes: 30), (timer) {
       _fetchAppVersion();
     });
     previousValue = selectedValue3;
@@ -73,17 +92,176 @@ class _AllocationState extends State<Allocation> {
     _getSelectedUnitFromSharedPreferences();
     Future.delayed(const Duration(milliseconds: 200), () {
       if (_selectedUnit != null) {
-        _fetchTableData(_unitMap[_selectedUnit]!);
+        _fetchTotalAllocated(_unitMapVg[_selectedUnit]!);
         // Fetch pending allocation data
-        if(selectedLineID != null){
+        if (selectedLineID != null) {
           if (kDebugMode) {
             print(selectedLineID);
           }
-          _isData(selectedLineID);
+          _isLineVerified(selectedLineID);
         }
       }
     });
     checkForAllocate();
+    buttonAnimation();
+    _currentMaxLength = 'Paramount Product Management System'.length;
+    _setupAnimations();
+    _startTypingSequence();
+    backAnimation();
+  }
+
+  @override
+  void dispose() {
+    _scaleController.dispose();
+    _typingController
+      ..removeListener(_updateText)
+      ..dispose();
+    _cursorTimer.cancel();
+    _backButtonController.dispose();
+    _versionTimer?.cancel();
+    super.dispose();
+  }
+
+  void backAnimation() {
+    _backButtonController = AnimationController(
+      vsync: this,
+      duration: const Duration(
+          milliseconds: 500), // Longer duration for two-part animation
+    );
+  }
+
+  void buttonAnimation() {
+    _scaleController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 400),
+    );
+
+    _scaleAnimation = Tween<double>(begin: 1.0, end: 1.3).animate(
+      CurvedAnimation(
+        parent: _scaleController,
+        curve: Curves.easeInOut,
+      ),
+    );
+
+    _scaleController.addStatusListener((status) {
+      if (status == AnimationStatus.completed) {
+        _scaleController.reverse();
+      }
+    });
+  }
+
+  //back button animation
+  Future<void> _handleBack() async {
+    final animation = TweenSequence<double>([
+      TweenSequenceItem(
+        tween: Tween(begin: 0.0, end: 0.2), // Move right (backward) 20%
+        weight: 40, // 40% of total duration
+      ),
+      TweenSequenceItem(
+        tween:
+            Tween(begin: 0.2, end: -1.5), // Then move left (forward) off screen
+        weight: 60, // 60% of total duration
+      ),
+    ]).animate(_backButtonController);
+
+    await _backButtonController.forward(); // Start animation
+    if (mounted) Navigator.of(context).pop(); // Pop after animation completes
+  }
+
+  //App bar typing animation
+  void _setupAnimations() {
+    _typingController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1500),
+    );
+
+    _typingAnimation = IntTween(begin: 0, end: _currentMaxLength).animate(
+      CurvedAnimation(
+        parent: _typingController,
+        curve: Curves.easeInOut,
+      ),
+    );
+
+    _typingAnimation.addListener(_updateText);
+    _cursorTimer =
+        Timer.periodic(const Duration(milliseconds: 500), _toggleCursor);
+  }
+
+  void _updateText() {
+    if (!mounted) return;
+
+    const fullText = 'Paramount Product Management System';
+    var shortText = 'Allocation';
+
+    final newText = _showFullTitle
+        ? fullText.substring(0, _typingAnimation.value)
+        : shortText.substring(
+            0, _typingAnimation.value.clamp(0, shortText.length));
+
+    if (_displayText != newText) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          setState(() {
+            _displayText = newText;
+          });
+        }
+      });
+    }
+  }
+
+// 2. Update the _toggleCursor method
+  void _toggleCursor(Timer timer) {
+    if (!mounted) {
+      _cursorTimer.cancel();
+      return;
+    }
+
+    final shouldShowCursor =
+        _typingController.value > 0 && _typingController.value < 1.0;
+
+    if (shouldShowCursor != _showCursor) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          setState(() => _showCursor = shouldShowCursor);
+        }
+      });
+    }
+  }
+
+  //App bar typing animation
+  Future<void> _startTypingSequence() async {
+    try {
+      // Type out full title
+      _currentMaxLength = 'Paramount Product Management System'.length;
+      _typingController.duration = const Duration(milliseconds: 3000);
+      await _typingController.forward(from: 0);
+
+      // Wait 2 seconds
+      await Future.delayed(const Duration(seconds: 2));
+
+      // Reverse type full title
+      if (mounted) {
+        setState(() => _isReversing = true);
+      }
+      await _typingController.reverse(from: 1.0);
+
+      // Switch to short title
+      if (mounted) {
+        setState(() {
+          _showFullTitle = false;
+          _isReversing = false;
+          _currentMaxLength = 'Allocation'.length;
+        });
+      }
+
+      // Adjust duration for shorter text
+      _typingController.duration = const Duration(milliseconds: 3000);
+      await _typingController.forward(from: 0);
+    } catch (e) {
+      if (kDebugMode) {
+        print('Animation error: $e');
+      }
+    }
   }
 
   void getUid() async {
@@ -95,12 +273,6 @@ class _AllocationState extends State<Allocation> {
     });
 
     print('Persistent UUID: $uuid');
-  }
-
-  @override
-  void dispose() {
-    _versionTimer?.cancel();
-    super.dispose();
   }
 
   //*-*-*-*-*-*-*-*-*-*-*-*-Update code Start-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
@@ -116,15 +288,16 @@ class _AllocationState extends State<Allocation> {
 
   Future<void> getVersion(String version) async {
     try {
-      final response = await http.get(Uri.parse('http://14.142.248.34:10008/version?version=$version'));
-      print('http://14.142.248.34:10008/version?version=$version');
+      final response = await http
+          .get(Uri.parse('${TBaseURL.baseUrl}version?version=$version'));
+      print('${TBaseURL.baseUrl}version?version=$version');
       if (response.statusCode == 200) {
         var data = jsonDecode(response.body);
         if (data.isNotEmpty) {
           bool isVersionValid = data[0]['IsActive'];
           if (!isVersionValid) {
             await getFile();
-            _showUpdateDialog();  // Only show dialog if fileName is available
+            _showUpdateDialog(); // Only show dialog if fileName is available
           }
         } else {
           if (kDebugMode) {
@@ -133,7 +306,8 @@ class _AllocationState extends State<Allocation> {
         }
       } else {
         if (kDebugMode) {
-          print('Failed to check version with status code: ${response.statusCode}');
+          print(
+              'Failed to check version with status code: ${response.statusCode}');
         }
       }
     } catch (e) {
@@ -145,7 +319,8 @@ class _AllocationState extends State<Allocation> {
 
   Future<void> getFile() async {
     try {
-      final response = await http.get(Uri.parse('http://14.142.248.34:10008/version_file_path'));
+      final response =
+          await http.get(Uri.parse('${TBaseURL.baseUrl}version_file_path'));
       if (kDebugMode) {
         print(response);
       }
@@ -157,7 +332,8 @@ class _AllocationState extends State<Allocation> {
         fileName = data[0]['VersionFile'] ?? ''; // Set fileName if available
       } else {
         if (kDebugMode) {
-          print('Failed to fetch file with status code: ${response.statusCode}');
+          print(
+              'Failed to fetch file with status code: ${response.statusCode}');
         }
       }
     } catch (e) {
@@ -168,7 +344,7 @@ class _AllocationState extends State<Allocation> {
   }
 
   void _showUpdateDialog() {
-    String apkUrl = 'http://14.142.248.34:10004/assets/media/$fileName';
+    String apkUrl = 'http://14.96.24.164:10004/assets/media/$fileName';
     print(apkUrl);
     if (kDebugMode) {
       print(apkUrl);
@@ -176,7 +352,8 @@ class _AllocationState extends State<Allocation> {
     if (kDebugMode) {
       print("Apk: $apkUrl");
     }
-    Uri appStoreUrl = Uri.parse('https://apps.apple.com/app/ppms-ios/id6504535323');
+    Uri appStoreUrl =
+        Uri.parse('https://apps.apple.com/app/ppms-ios/id6504535323');
 
     showDialog(
       context: context,
@@ -185,8 +362,9 @@ class _AllocationState extends State<Allocation> {
         return WillPopScope(
           onWillPop: () async => false,
           child: AlertDialog(
-            title: const Text('Update Required'),
-            content: const Text('Please update the app to the latest version.'),
+            backgroundColor: Theme.of(context).cardColor,
+            title: Text('Update Required',style: TextStyle(color: Theme.of(context).colorScheme.secondary)),
+            content: Text('Please update the app to the latest version.',style: TextStyle(color: Theme.of(context).colorScheme.secondary)),
             actions: [
               TextButton(
                 onPressed: () async {
@@ -202,7 +380,7 @@ class _AllocationState extends State<Allocation> {
                     }
                   }
                 },
-                child: const Text('OK'),
+                child: Text('OK',style: TextStyle(color: Theme.of(context).colorScheme.secondary)),
               ),
             ],
           ),
@@ -213,31 +391,31 @@ class _AllocationState extends State<Allocation> {
 
   //*-*-*-*-*-*-*-*-*-*-*-*-Update Code End-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
 
-  Future<void> _isData(String ?line) async {
+  Future<void> _isLineVerified(String? line) async {
     const int maxRetries = 5; // Number of retry attempts
     int retryCount = 0;
     int ot = isOTSelected ? 1 : 0;
     String? unit = _unitMap[_selectedUnit]!;
 
-    if(ot == 0)
-    {
+    if (ot == 0) {
       try {
-        final response = await http.get(Uri.parse('http://14.142.248.34:10008/chk_line_verification?line_id=$line&ot=$ot&unit=$unit'));
+        final response = await http.get(Uri.parse(
+            '${TBaseURL.baseUrl}chk_line_verification?line_id=$line&ot=$ot&unit=$unit'));
         if (kDebugMode) {
-          print('http://14.142.248.34:10008/chk_line_verification?line_id=$line&ot=$ot&unit=$unit');
+          print(
+              '${TBaseURL.baseUrl}chk_line_verification?line_id=$line&ot=$ot&unit=$unit');
         }
 
         if (response.statusCode == 200) {
           final data = json.decode(response.body);
           if (data.isNotEmpty) {
             setState(() {
-            isData = true;
-            if (kDebugMode) {
-              print('isData $isData');
-            }
+              isData = true;
+              if (kDebugMode) {
+                print('isData $isData');
+              }
             });
-          }
-          else{
+          } else {
             isData = false;
           }
         } else {
@@ -249,16 +427,14 @@ class _AllocationState extends State<Allocation> {
           });
           throw Exception('Failed to load table data');
         }
-      }
-      catch (e) {
+      } catch (e) {
         retryCount++;
         if (retryCount >= maxRetries) {
           throw Exception('Unable to fetch data after $retryCount attempts');
         }
       }
       await Future.delayed(const Duration(seconds: 1));
-    }
-    else{
+    } else {
       isData = false;
       if (kDebugMode) {
         print('isData $isData');
@@ -266,17 +442,20 @@ class _AllocationState extends State<Allocation> {
     }
   }
 
-  Future<void> _fetchTableData(String unitCode) async {
+  Future<void> _fetchTotalAllocated(String unitCode) async {
     const int maxRetries = 5;
     int retryCount = 0;
+    String date = DateTime.now().toString();
     bool success = false;
 
     while (retryCount < maxRetries && !success) {
       try {
-        final response = await http.get(Uri.parse('http://14.142.248.34:10008/total_alloc?unit=$unitCode&dated='));
+        final response = await http.get(Uri.parse(
+            '${TBaseURL.baseUrl}allocation_tailor_vg?type=totalAllocated&data=$unitCode&dated=$date'));
 
         if (kDebugMode) {
-          print('http://14.142.248.34:10008/total_alloc?unit=$unitCode&dated=');
+          print(
+              '${TBaseURL.baseUrl}allocation_tailor_vg?type=totalAllocated&data=$unitCode&dated=$date');
         }
 
         if (response.statusCode == 200) {
@@ -302,32 +481,47 @@ class _AllocationState extends State<Allocation> {
           throw Exception('Unable to fetch data after $retryCount attempts');
         }
       }
-      await Future.delayed(const Duration(seconds: 1)); // Optional delay between retries
+      await Future.delayed(
+          const Duration(seconds: 1)); // Optional delay between retries
     }
   }
 
   Future<void> _fetchDropDownOptions() async {
     final prefs = await SharedPreferences.getInstance();
+    String? selectedUnit = prefs.getString('selectedUnit');
     _loginId = prefs.getString('login_id');
-    final String url = '${TBaseURL.baseUrl}unit?type=permissions&user=$_loginId';
+    final String url = '${TBaseURL.baseUrl}unit_vg?type=VG&user=$_loginId';
+    if (kDebugMode) {
+      print(url);
+    }
     final response = await http.get(Uri.parse(url));
 
     if (response.statusCode == 200) {
       final List<dynamic> data = jsonDecode(response.body);
       setState(() {
-        _dropDownOptions = ['----'] + data.map((e) => e['UnitShortCode'].toString()).toList();
-        _unitMap = {for (var item in data) item['UnitShortCode'].toString(): item['UnitCode'].toString()};
+        _dropDownOptions =
+            ['----'] + data.map((e) => e['UnitShortCode1'].toString()).toList();
+        _unitMap = {
+          for (var item in data)
+            item['UnitShortCode1'].toString(): item['UnitCode1'].toString()
+        };
+        _unitMapVg = {
+          for (var item in data)
+            item['UnitShortCode1'].toString(): item['UnitCode'].toString()
+        };
 
-        if (_dropDownOptions.contains(selectedValue4)) {
-          _selectedUnit = selectedValue4;
-        } else {
-          _selectedUnit = _dropDownOptions.isNotEmpty ? _dropDownOptions[0] : null;
-        }
-        saveUnitMapToSharedPreferences(_unitMap);
+        print(_dropDownOptions);
+        print(selectedUnit);
+        Future.delayed(Duration(microseconds: 400), () {
+          if (_dropDownOptions.contains(selectedUnit)) {
+            _selectedUnit = selectedValue4;
+          } else {
+            _selectedUnit =
+                _dropDownOptions.isNotEmpty ? _dropDownOptions[0] : '';
+          }
+          saveUnitMapToSharedPreferences(_unitMap);
+        });
       });
-      if (_selectedUnit != null) {
-        _fetchTableData(_unitMap[_selectedUnit]!); // Fetch pending allocation data
-      }
     } else {
       if (kDebugMode) {
         print('Failed to load options');
@@ -343,19 +537,22 @@ class _AllocationState extends State<Allocation> {
 
     while (retryCount < maxRetries && !success) {
       try {
-        final response = await http.get(Uri.parse('http://14.142.248.34:10008/line?unit=$unit&ot=$ot'));
+        final response = await http
+            .get(Uri.parse('${TBaseURL.baseUrl}line_vg?unit=$unit&ot=$ot'));
         // final response = await http.get(Uri.parse('http://172.16.10.11:8001/line?unit=$unit&ot=$ot'));
         if (kDebugMode) {
-          print('http://14.142.248.34:10008/line?unit=$unit&ot=$ot');
+          print('${TBaseURL.baseUrl}line_vg?unit=$unit&ot=$ot');
         }
 
         if (response.statusCode == 200) {
           List<dynamic> jsonResponse = json.decode(response.body);
           setState(() {
-            dropdownData3 = jsonResponse.map((item) => {
-              'LineName': item['LineName'].toString(),
-              'LineID': item['LineId'].toString(),
-            }).toList();
+            dropdownData3 = jsonResponse
+                .map((item) => {
+                      'LineName': item['LineName'].toString(),
+                      'LineID': item['LineId'].toString(),
+                    })
+                .toList();
           });
           success = true; // Data successfully fetched, exit loop
         } else {
@@ -371,7 +568,8 @@ class _AllocationState extends State<Allocation> {
         }
       }
 
-      await Future.delayed(const Duration(seconds: 2)); // Optional delay between retries
+      await Future.delayed(
+          const Duration(seconds: 2)); // Optional delay between retries
     }
   }
 
@@ -382,10 +580,13 @@ class _AllocationState extends State<Allocation> {
 
     while (retryCount < maxRetries && !success) {
       try {
-        String yesterday = DateFormat('yyyy-MM-dd').format(DateTime.now().subtract(const Duration(days: 1)));
-        final response = await http.get(Uri.parse('http://14.142.248.34:10008/tailor?unit=$unit&date=$yesterday'));
+        String yesterday = DateFormat('yyyy-MM-dd')
+            .format(DateTime.now().subtract(const Duration(days: 1)));
+        final response = await http.get(Uri.parse(
+            '${TBaseURL.baseUrl}allocation_tailor_vg?type=dropdown&data=$unit&dated=$yesterday'));
         if (kDebugMode) {
-          print('http://14.142.248.34:10008/tailor?unit=$unit&date=$yesterday');
+          print(
+              '${TBaseURL.baseUrl}allocation_tailor_vg?type=dropdown&data=$unit&dated=$yesterday');
         }
 
         if (response.statusCode == 200) {
@@ -411,10 +612,10 @@ class _AllocationState extends State<Allocation> {
         }
       }
 
-      await Future.delayed(const Duration(seconds: 2)); // Optional delay between retries
+      await Future.delayed(
+          const Duration(seconds: 2)); // Optional delay between retries
     }
   }
-
 
   Future<void> _getUserIdFromSharedPreferences() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
@@ -434,9 +635,8 @@ class _AllocationState extends State<Allocation> {
       if (selectedUnit != null) {
         dropdownData3.clear();
         Future.delayed(const Duration(milliseconds: 300), () {
-          fetchLineDataFromApi(selectedUnit);
+          fetchLineDataFromApi(_unitMapVg[_selectedUnit]!);
         });
-        fetchLineDataFromApi(selectedUnit);
         Future.delayed(const Duration(milliseconds: 500), () {
           fetchTailorDataFromApi(selectedUnit);
         });
@@ -446,12 +646,16 @@ class _AllocationState extends State<Allocation> {
 
   Future<void> fetchTailorDataByCode(String code) async {
     try {
-      final response = await http.get(Uri.parse('http://14.142.248.34:10008/tailor_data?code=$code'));
+      final response = await http.get(Uri.parse(
+          '${TBaseURL.baseUrl}allocation_tailor_vg?type=single&data=$code&dated='));
+      print(
+          '${TBaseURL.baseUrl}allocation_tailor_vg?type=single&data=$code&dated=');
       // final response = await http.get(Uri.parse('http://172.16.10.11:8000/tailor_data?code=$code'));
       if (response.statusCode == 200) {
         List<dynamic> jsonResponse = json.decode(response.body);
         if (jsonResponse.isNotEmpty) {
           var data = jsonResponse[0];
+          print(data);
           setState(() {
             paycodes = data['PAY_CODE'];
             if (kDebugMode) {
@@ -488,7 +692,6 @@ class _AllocationState extends State<Allocation> {
     }
   }
 
-
   void _addSelectedData() {
     if (selectedValue5 == null) {
       _showTailorSelectionAlert();
@@ -498,28 +701,40 @@ class _AllocationState extends State<Allocation> {
 
     String todayDate = DateFormat('yyyy-MM-dd').format(DateTime.now());
 
-    if (selectedValue5 != null && selectedValue3 != null && selectedValue4 != null) {
+    if (selectedValue5 != null &&
+        selectedValue3 != null &&
+        selectedValue4 != null) {
+      print(1);
       fetchTailorDataByCode(selectedValue5!).then((_) {
-        if (fetchedTailorName != null && !_isNameDuplicate(fetchedTailorName!)) {
+        print(2);
+        if (fetchedTailorName != null &&
+            !_isNameDuplicate(fetchedTailorName!)) {
+          print(3);
           if (fetchedTailorUnit == selectedValue4) {
-            checkDataInApi(todayDate,paycodes!).then((alreadyExists) {
+            print(4);
+            checkDataInApi(todayDate, paycodes!).then((alreadyExists) {
+              print(5);
               if (alreadyExists) {
-                if(ot){
+                print('already');
+                if (ot) {
                   _showDataExistsAlert(() {
+                    print(6);
                     _addDataToList();
                   });
-                }
-                else {
+                } else {
+                  print(7);
                   if (_isAllocation) {
+                    print(8);
                     _showDataExistsAlert(() {
+                      print(9);
                       _addDataToList();
                     });
-                  }
-                  else {
+                  } else {
                     _showRights();
                   }
                 }
               } else {
+                print('add');
                 _addDataToList();
               }
             });
@@ -544,25 +759,23 @@ class _AllocationState extends State<Allocation> {
     if (result != null) {
       await fetchTailorDataByCode(result);
 
-      if(selectedValue3 != null) {
+      if (selectedValue3 != null) {
         if (fetchedTailorUnit == selectedValue4) {
           fetchTailorDataByCode(selectedValue3!).then((_) {
             if (fetchedTailorName != null &&
                 !_isNameDuplicate(fetchedTailorName!)) {
               checkDataInApi(todayDate, paycodes!).then((alreadyExists) {
                 if (alreadyExists) {
-                  if(ot){
+                  if (ot) {
                     _showDataExistsAlert(() {
                       _addDataToList();
                     });
-                  }
-                  else {
+                  } else {
                     if (_isAllocation) {
                       _showDataExistsAlert(() {
                         _addDataToList();
                       });
-                    }
-                    else {
+                    } else {
                       _showRights();
                     }
                   }
@@ -595,24 +808,38 @@ class _AllocationState extends State<Allocation> {
     showDialog(
       context: context,
       builder: (BuildContext context) {
-        return AlertDialog(
-          title: const Text('Data Already Present'),
-          content: const Text('The data you are trying to add already exists. Do you want to update it?'),
-          actions: [
-            TextButton(
-              onPressed: () {
-                Navigator.of(context).pop(); // Close the dialog
-              },
-              child: const Text('Reject'),
-            ),
-            TextButton(
-              onPressed: () {
-                Navigator.of(context).pop(); // Close the dialog
-                onConfirm(); // Call the onConfirm callback to add the data
-              },
-              child: const Text('Confirm'),
-            ),
-          ],
+        return Container(
+          decoration: BoxDecoration(
+            boxShadow: [
+              BoxShadow(
+                color: Colors.grey.withOpacity(0.1),
+                spreadRadius: 5,
+                blurRadius: 7,
+                offset: const Offset(0, 3),
+              )
+            ],
+          ),
+          child: AlertDialog(
+            backgroundColor: Theme.of(context).cardColor,
+            title: Text('Data Already Present',style: TextStyle(color: Theme.of(context).colorScheme.secondary),),
+            content: Text(
+                'The data you are trying to add already exists. Do you want to update it?',style: TextStyle(color: Theme.of(context).colorScheme.secondary),),
+            actions: [
+              TextButton(
+                onPressed: () {
+                  Navigator.of(context).pop(); // Close the dialog
+                },
+                child: Text('Reject',style: TextStyle(color: Theme.of(context).colorScheme.secondary),),
+              ),
+              TextButton(
+                onPressed: () {
+                  Navigator.of(context).pop(); // Close the dialog
+                  onConfirm(); // Call the onConfirm callback to add the data
+                },
+                child: Text('Confirm',style: TextStyle(color: Theme.of(context).colorScheme.secondary),),
+              ),
+            ],
+          ),
         );
       },
     );
@@ -622,23 +849,36 @@ class _AllocationState extends State<Allocation> {
     showDialog(
       context: context,
       builder: (BuildContext context) {
-        return AlertDialog(
-          content: const Text('You do not have rights to modify data'),
-          actions: [
-            TextButton(
-              onPressed: () {
-                Navigator.of(context).pop();
-              },
-              child: const Text('Ok'),
-            ),
-          ],
+        return Container(
+          decoration: BoxDecoration(
+            boxShadow: [
+              BoxShadow(
+                color: Colors.grey.withOpacity(0.1),
+                spreadRadius: 5,
+                blurRadius: 7,
+                offset: const Offset(0, 3),
+              )
+            ],
+          ),
+          child: AlertDialog(
+            backgroundColor: Theme.of(context).cardColor,
+            title: Text('Access Denied',style: TextStyle(color: Theme.of(context).colorScheme.secondary),),
+            content: Text('You do not have rights to modify data',style: TextStyle(color: Theme.of(context).colorScheme.secondary),),
+            actions: [
+              TextButton(
+                onPressed: () {
+                  Navigator.of(context).pop();
+                },
+                child: Text('Ok',style: TextStyle(color: Theme.of(context).colorScheme.secondary),),
+              ),
+            ],
+          ),
         );
       },
     );
   }
 
   void _addDataToList() {
-
     bool ot = isOTSelected;
     if (kDebugMode) {
       print(ot);
@@ -650,6 +890,7 @@ class _AllocationState extends State<Allocation> {
         'LineID': selectedLineID!,
         'unit': fetchedTailorUnit!,
         'UnitCode': _unitMap[fetchedTailorUnit] ?? '',
+        'VgUnit': _unitMapVg[fetchedTailorUnit] ?? '',
         'EMP_CODE': fetchedTailorName!,
         'DEPT': fetchedTailorDept!,
         'SDEPT': fetchedTailorSDept!,
@@ -663,17 +904,30 @@ class _AllocationState extends State<Allocation> {
     showDialog(
       context: context,
       builder: (context) {
-        return AlertDialog(
-          title: const Text('Line Not Selected'),
-          content: const Text('Please select a line before adding.'),
-          actions: <Widget>[
-            TextButton(
-              onPressed: () {
-                Navigator.of(context).pop(); // Close the dialog
-              },
-              child: const Text('OK'),
-            ),
-          ],
+        return Container(
+          decoration: BoxDecoration(
+            boxShadow: [
+              BoxShadow(
+                color: Colors.grey.withOpacity(0.1),
+                spreadRadius: 5,
+                blurRadius: 7,
+                offset: const Offset(0, 3),
+              )
+            ],
+          ),
+          child: AlertDialog(
+            backgroundColor: Theme.of(context).cardColor,
+            title: Text('Line Not Selected',style: TextStyle(color: Theme.of(context).colorScheme.secondary),),
+            content: Text('Please select a line before adding.',style: TextStyle(color: Theme.of(context).colorScheme.secondary),),
+            actions: <Widget>[
+              TextButton(
+                onPressed: () {
+                  Navigator.of(context).pop(); // Close the dialog
+                },
+                child: Text('OK',style: TextStyle(color: Theme.of(context).colorScheme.secondary),),
+              ),
+            ],
+          ),
         );
       },
     );
@@ -683,17 +937,30 @@ class _AllocationState extends State<Allocation> {
     showDialog(
       context: context,
       builder: (context) {
-        return AlertDialog(
-          title: const Text('Tailor Not Selected'),
-          content: const Text('Please select a tailor before adding.'),
-          actions: <Widget>[
-            TextButton(
-              onPressed: () {
-                Navigator.of(context).pop(); // Close the dialog
-              },
-              child: const Text('OK'),
-            ),
-          ],
+        return Container(
+          decoration: BoxDecoration(
+            boxShadow: [
+              BoxShadow(
+                color: Colors.grey.withOpacity(0.1),
+                spreadRadius: 5,
+                blurRadius: 7,
+                offset: const Offset(0, 3),
+              )
+            ],
+          ),
+          child: AlertDialog(
+            backgroundColor: Theme.of(context).cardColor,
+            title: Text('Tailor Not Selected',style: TextStyle(color: Theme.of(context).colorScheme.secondary),),
+            content: Text('Please select a tailor before adding.',style: TextStyle(color: Theme.of(context).colorScheme.secondary),),
+            actions: <Widget>[
+              TextButton(
+                onPressed: () {
+                  Navigator.of(context).pop(); // Close the dialog
+                },
+                child: Text('OK',style: TextStyle(color: Theme.of(context).colorScheme.secondary),),
+              ),
+            ],
+          ),
         );
       },
     );
@@ -703,24 +970,40 @@ class _AllocationState extends State<Allocation> {
     showDialog(
       context: context,
       builder: (context) {
-        return AlertDialog(
-          title: const Text('Unit Mismatch'),
-          content: const Text('User unit does not match the Selected unit. Please select the appropriate unit.'),
-          actions: <Widget>[
-            TextButton(
-              onPressed: () {
-                Navigator.of(context).pop(); // Close the dialog
-              },
-              child: const Text('OK'),
+        return Container(
+          decoration: BoxDecoration(
+            boxShadow: [
+              BoxShadow(
+                color: Colors.grey.withOpacity(0.1),
+                spreadRadius: 5,
+                blurRadius: 7,
+                offset: const Offset(0, 3),
+              )
+            ],
+          ),
+          child: AlertDialog(
+            backgroundColor: Theme.of(context).cardColor,
+            title: Text('Unit Mismatch',style: TextStyle(color: Theme.of(context).colorScheme.secondary),),
+            content: Text(
+                'User unit does not match the Selected unit. Please select the appropriate unit.',style: TextStyle(color: Theme.of(context).colorScheme.secondary),
             ),
-          ],
+            actions: <Widget>[
+              TextButton(
+                onPressed: () {
+                  Navigator.of(context).pop(); // Close the dialog
+                },
+                child: Text('OK',style: TextStyle(color: Theme.of(context).colorScheme.secondary),),
+              ),
+            ],
+          ),
         );
       },
     );
   }
 
   bool _isNameDuplicate(String name) {
-    bool isDuplicate = scannedDataList.any((element) => element['EMP_CODE'] == name);
+    bool isDuplicate =
+        scannedDataList.any((element) => element['EMP_CODE'] == name);
 
     if (isDuplicate) {
       _showDuplicateAlert();
@@ -734,11 +1017,12 @@ class _AllocationState extends State<Allocation> {
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-          title: const Text("Duplicate Data"),
-          content: const Text("This data is already present."),
+          backgroundColor: Theme.of(context).cardColor,
+          title: Text("Duplicate Data",style: TextStyle(color: Theme.of(context).colorScheme.secondary),),
+          content: Text("This data is already present.",style: TextStyle(color: Theme.of(context).colorScheme.secondary),),
           actions: <Widget>[
             TextButton(
-              child: const Text("OK"),
+              child: Text("OK",style: TextStyle(color: Theme.of(context).colorScheme.secondary),),
               onPressed: () {
                 Navigator.of(context).pop();
               },
@@ -754,25 +1038,65 @@ class _AllocationState extends State<Allocation> {
       scannedDataList.clear();
     });
   }
-  Future<void> _sendDataToApi(String tailor, String fy, String pay, String lineID, String unitCode, int dept, int sDept, int desg, String emp) async {
 
-    final response = await http.get(Uri.parse(
-        'http://14.142.248.34:10008/allocate?line=$lineID&fy=$fy&empC=$emp&payC=$pay'
-            '&empN=$tailor&dept=$dept&sDept=$sDept&desg=$desg&unit=$unitCode&created=$_loginId&device_id=$uuid'));
+  Future<void> _saveAllocationData(
+      String tailor,
+      String fy,
+      String pay,
+      String lineID,
+      String unitCode,
+      int dept,
+      int sDept,
+      int desg,
+      String emp,
+      String vgUnit) async {
+    // Define URLs for both APIs
+    final apiUrl1 = Uri.parse(
+        '${TBaseURL.baseUrl}allocate?line=$lineID&fy=$fy&empC=$emp&payC=$pay'
+        '&empN=$tailor&dept=$dept&sDept=$sDept&desg=$desg&unit=$unitCode&created=$_loginId&device_id=$uuid');
+
+    final apiUrl2 = Uri.parse(
+        '${TBaseURL.baseUrl}insert_allocation_vg?line=$lineID&fy=$fy&empC=$emp&payC=$pay'
+        '&empN=$tailor&dept=$dept&sDept=$sDept&desg=$desg&unit=$unitCode&created=$_loginId&device_id=$uuid&bussLocation=$vgUnit');
 
     if (kDebugMode) {
-      print('Request URL: http://14.142.248.34:10008/allocate?line=$lineID&fy=$fy'
-          '&empC=$emp&payC=$pay&empN=$tailor&dept=$dept&sDept=$sDept'
-          '&desg=$desg&unit=$unitCode&created=$_loginId&device_id=$uuid');
+      print('Request URL 1: $apiUrl1');
+      print('Request URL 2: $apiUrl2');
     }
 
-    if (response.statusCode == 200) {
-      if (kDebugMode) {
-        print('Data sent successfully: Tailor: $tailor, LineID: $lineID, Unit: $unitCode');
+    try {
+      // Execute both API calls concurrently
+      final responses = await Future.wait([
+        http.get(apiUrl1),
+        http.get(apiUrl2),
+      ]);
+
+      // Handle responses
+      if (responses[0].statusCode == 200) {
+        if (kDebugMode) {
+          print(
+              'API 1: Data sent successfully: Tailor: $tailor, LineID: $lineID, Unit: $unitCode');
+        }
+      } else {
+        if (kDebugMode) {
+          print('API 1: Failed to send data: ${responses[0].body}');
+        }
       }
-    } else {
+
+      if (responses[1].statusCode == 200) {
+        if (kDebugMode) {
+          print(
+              'API 2: Data sent successfully: Tailor: $tailor, LineID: $lineID, Unit: $unitCode');
+        }
+      } else {
+        if (kDebugMode) {
+          print('API 2: Failed to send data: ${responses[1].body}');
+        }
+      }
+    } catch (e) {
+      // Handle any errors that occur during the requests
       if (kDebugMode) {
-        print('Failed to send data: ${response.body}');
+        print('Error occurred while sending data: $e');
       }
     }
   }
@@ -780,10 +1104,12 @@ class _AllocationState extends State<Allocation> {
   Future<void> checkForAllocate() async {
     final prefs = await SharedPreferences.getInstance();
     var loginId = prefs.getString('login_id');
-    final String url = 'http://14.142.248.34:10008/base?user=$loginId&module=kpi&page=LineAllocation';
+    final String url =
+        '${TBaseURL.baseUrl}base?user=$loginId&module=kpi&page=LineAllocation';
 
     if (kDebugMode) {
-      print('http://14.142.248.34:10008/base?user=$loginId&module=kpi&page=LineAllocation');
+      print(
+          '${TBaseURL.baseUrl}base?user=$loginId&module=kpi&page=LineAllocation');
     }
 
     final response = await http.get(Uri.parse(url));
@@ -793,7 +1119,8 @@ class _AllocationState extends State<Allocation> {
       setState(() {
         // If all items are 'R', hide the buttons
         bool allR = data.every((item) => item['shortname'] == 'R');
-        _isR = !allR; // _isAllocation will be true if there is any 'M' or other than 'R'
+        _isR =
+            !allR; // _isAllocation will be true if there is any 'M' or other than 'R'
         _isAllocation = data.any((item) => item['shortname'] == 'M');
       });
     } else {
@@ -801,24 +1128,56 @@ class _AllocationState extends State<Allocation> {
     }
   }
 
-  Future<void> _sendDataToUpdateApi(String lineID, String pay, String date, bool isOt, String otLine) async {
-    final url = isOt
-        ? 'http://14.142.248.34:10008/update_line_alloc?type=2&line=&otLine=$lineID&paycode=$pay&date=$date&modified=$_loginId'
-        : 'http://14.142.248.34:10008/update_line_alloc?type=1&line=$lineID&otLine=&paycode=$pay&date=$date&modified=$_loginId';
+  Future<void> _updateAllocationData(String lineID, String pay, String date,
+      bool isOt, String otLine, String vgUnit) async {
+    // Define URLs for both APIs
+    final url1 = isOt
+        ? '${TBaseURL.baseUrl}update_line_alloc?type=2&line=&otLine=$lineID&paycode=$pay&date=$date&modified=$_loginId'
+        : '${TBaseURL.baseUrl}update_line_alloc?type=1&line=$lineID&otLine=&paycode=$pay&date=$date&modified=$_loginId';
+
+    final url2 = isOt
+        ? '${TBaseURL.baseUrl}update_allocation_vg?type=2&line=&otLine=$lineID&paycode=$pay&date=$date&modified=$_loginId&bussLocation=$vgUnit'
+        : '${TBaseURL.baseUrl}update_allocation_vg?type=1&line=$lineID&otLine=&paycode=$pay&date=$date&modified=$_loginId&bussLocation=$vgUnit';
 
     if (kDebugMode) {
-      print('Request URL: $url');
+      print('Request URL 1: $url1');
+      print('Request URL 2: $url2');
     }
 
-    final response = await http.get(Uri.parse(url));
+    try {
+      // Execute both API calls concurrently
+      final responses = await Future.wait([
+        http.get(Uri.parse(url1)),
+        http.get(Uri.parse(url2)),
+      ]);
 
-    if (response.statusCode == 200) {
-      if (kDebugMode) {
-        print('Data updated successfully: LineID: $lineID, Paycode: $pay');
+      // Handle responses for the first API
+      if (responses[0].statusCode == 200) {
+        if (kDebugMode) {
+          print(
+              'API 1: Data updated successfully: LineID: $lineID, Paycode: $pay');
+        }
+      } else {
+        if (kDebugMode) {
+          print('API 1: Failed to update data: ${responses[0].body}');
+        }
       }
-    } else {
+
+      // Handle responses for the second API
+      if (responses[1].statusCode == 200) {
+        if (kDebugMode) {
+          print(
+              'API 2: Data updated successfully: LineID: $lineID, Paycode: $pay');
+        }
+      } else {
+        if (kDebugMode) {
+          print('API 2: Failed to update data: ${responses[1].body}');
+        }
+      }
+    } catch (e) {
+      // Handle errors during the API requests
       if (kDebugMode) {
-        print('Failed to update data: ${response.body}');
+        print('Error occurred while updating data: $e');
       }
     }
   }
@@ -833,7 +1192,8 @@ class _AllocationState extends State<Allocation> {
   }
 
   Future<bool> checkDataInApi(String date, String paycode) async {
-    final response = await http.get(Uri.parse('http://14.142.248.34:10008/check_line_alloc?date=$date&paycode=$paycode'));
+    final response = await http.get(Uri.parse(
+        '${TBaseURL.baseUrl}check_line_alloc?date=$date&paycode=$paycode'));
 
     if (response.statusCode == 200) {
       final data = json.decode(response.body);
@@ -853,6 +1213,7 @@ class _AllocationState extends State<Allocation> {
       throw Exception('Failed to check data');
     }
   }
+
   bool isLoading = false;
 
   Future<void> _allocate() async {
@@ -877,19 +1238,21 @@ class _AllocationState extends State<Allocation> {
         }
 
         if (isDataPresent) {
-          await _sendDataToUpdateApi(
+          await _updateAllocationData(
             data['LineID'],
             data['PayCode']!,
             todayDate,
             ot,
             data['LineID'],
+            data['VgUnit']!,
           );
           successCount++; // Increment success for update
         } else {
           if (kDebugMode) {
             print('Allocating');
+            print(data);
           }
-          await _sendDataToApi(
+          await _saveAllocationData(
             data['tailor']!,
             fy,
             data['PayCode'],
@@ -899,10 +1262,10 @@ class _AllocationState extends State<Allocation> {
             data['SDEPT']!,
             data['DESG']!,
             data['EMP_CODE'],
+            data['VgUnit']!,
           );
           successCount++; // Increment success for new allocation
         }
-
       } catch (e) {
         if (kDebugMode) {
           print('Error in _allocate: $e');
@@ -916,18 +1279,19 @@ class _AllocationState extends State<Allocation> {
       context: context,
       builder: (context) {
         return AlertDialog(
+          backgroundColor: Theme.of(context).cardColor,
           title: successCount == scannedDataList.length
-              ? const Text('Allocation Successful')
-              : const Text('Allocation Partially Successful'),
+              ? Text('Allocation Successful',style: TextStyle(color: Theme.of(context).colorScheme.secondary),)
+              : Text('Allocation Partially Successful',style: TextStyle(color: Theme.of(context).colorScheme.secondary),),
           content: Text(successCount == scannedDataList.length
               ? 'All data allocations were successful.'
-              : '$successCount allocations succeeded, $failureCount failed.'),
+              : '$successCount allocations succeeded, $failureCount failed.',style: TextStyle(color: Theme.of(context).colorScheme.secondary)),
           actions: <Widget>[
             TextButton(
               onPressed: () {
                 Navigator.of(context).pop(); // Close the dialog
               },
-              child: const Text('OK'),
+              child: Text('OK',style: TextStyle(color: Theme.of(context).colorScheme.secondary),),
             ),
           ],
         );
@@ -936,7 +1300,7 @@ class _AllocationState extends State<Allocation> {
 
     // Clear the list regardless of success or failure
     _clearList();
-    _fetchTableData(_unitMap[_selectedUnit]!);
+    _fetchTotalAllocated(_unitMapVg[_selectedUnit]!);
 
     setState(() {
       isLoading = false;
@@ -948,17 +1312,18 @@ class _AllocationState extends State<Allocation> {
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-          title: const Text("Data already exists"),
-          content: const Text("Do you want to update the existing data?"),
+          backgroundColor: Theme.of(context).cardColor,
+          title: Text("Data already exists",style: TextStyle(color: Theme.of(context).colorScheme.secondary),),
+          content: Text("Do you want to update the existing data?", style: TextStyle(color: Theme.of(context).colorScheme.secondary),),
           actions: <Widget>[
             TextButton(
-              child: const Text("Reject"),
+              child: Text("Reject",style: TextStyle(color: Theme.of(context).colorScheme.secondary),),
               onPressed: () {
                 Navigator.of(context).pop(false);
               },
             ),
             TextButton(
-              child: const Text("Confirm"),
+              child: Text("Confirm",style: TextStyle(color: Theme.of(context).colorScheme.secondary),),
               onPressed: () {
                 Navigator.of(context).pop(true);
               },
@@ -972,14 +1337,14 @@ class _AllocationState extends State<Allocation> {
   String _getTailorName(String payCode) {
     // Find the name corresponding to the PAY_CODE in your dropdownData5
     final item = dropdownData5.firstWhere(
-          (element) => element.startsWith(payCode),
+      (element) => element.startsWith(payCode),
       orElse: () => '',
     );
     return item.split('[').last.replaceAll(']', '');
   }
 
-
-  Future<void> saveUnitMapToSharedPreferences(Map<String, String> unitMap) async {
+  Future<void> saveUnitMapToSharedPreferences(
+      Map<String, String> unitMap) async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     prefs.setString('unitMap', jsonEncode(unitMap));
   }
@@ -992,476 +1357,715 @@ class _AllocationState extends State<Allocation> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Theme.of(context).primaryColor,
       appBar: AppBar(
-        backgroundColor: const Color(0xFF5FE3D3),
+        bottom: const PreferredSize(
+                        preferredSize: Size(7, 7),
+                        child: Divider(
+                          color: Colors.white,
+                          indent: 16,
+                          endIndent: 16,
+                        )),
+              backgroundColor: Theme.of(context).appBarTheme.backgroundColor,
         automaticallyImplyLeading: false,
-        leading: IconButton(
-          icon: const Icon(
-            Icons.arrow_back_rounded,
-            color: Colors.white,
-            size: 22,
-          ),
-          onPressed: () {
-            Navigator.of(context).pop();
+        surfaceTintColor: Colors.transparent,
+        leading: AnimatedBuilder(
+          animation: _backButtonController,
+          builder: (context, child) {
+            final value = _backButtonController.value;
+            double offset;
+
+            // Custom easing for the two-part motion
+            if (value < 0.4) {
+              // First part - move right (backward)
+              offset = Curves.easeOut.transform(value / 0.4) * 0.2;
+            } else {
+              // Second part - move left (forward)
+              offset =
+                  0.2 + Curves.easeIn.transform((value - 0.4) / 0.6) * -1.7;
+            }
+
+            return Transform.translate(
+              offset:
+                  Offset(offset * 30, 0), // Multiply by approximate pixel value
+              child: Container(
+                margin: const EdgeInsets.only(left: 12, top: 6),
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  border: Border.all(
+                    color: Colors.white,
+                    width: 0.5,
+                  ),
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.all(3.0),
+                  child: IconButton(
+                    icon: const Icon(
+                      Icons.arrow_back_ios_new_rounded,
+                      color: Colors.black,
+                      size: 20,
+                    ),
+                    onPressed: _handleBack,
+                    style: IconButton.styleFrom(
+                      backgroundColor: Colors.white,
+                      shape: const CircleBorder(),
+                    ),
+                  ),
+                ),
+              ),
+            );
           },
         ),
-        title: const Text(
-          'Allocation',
-          style: TextStyle(
-            color: Colors.white,
-            fontSize: 16,
-            fontWeight: FontWeight.bold,
-          ),
+        title: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            AnimatedSwitcher(
+              duration: const Duration(milliseconds: 200),
+              child: Text(
+                _displayText,
+                key: ValueKey(_showFullTitle),
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: _showFullTitle ? 14 : 18,
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: _showFullTitle ? 0.0 : 1.5,
+                ),
+              ),
+            ),
+            if (_showCursor &&
+                _typingController.value < 1.0 &&
+                _typingController.value > 0)
+              Container(
+                width: 6,
+                height: 20,
+                margin: const EdgeInsets.only(left: 2),
+                color: Colors.grey,
+              ),
+          ],
         ),
         centerTitle: true,
         elevation: 2,
+        // actions: [
+        //   Consumer<ThemeProvider>(
+        //     builder: (context, themeProvider, child) {
+        //       return CupertinoSwitch(
+        //         activeTrackColor: Colors.indigo.shade400,
+        //         thumbIcon: WidgetStateProperty.resolveWith<Icon?>(
+        //             (Set<WidgetState> states) {
+        //           if (states.contains(WidgetState.selected)) {
+        //             return const Icon(
+        //               Icons.mode_night_rounded,
+        //               color: Colors.white,
+        //             );
+        //           }
+        //           return const Icon(Icons
+        //               .sunny); // All other states will use the default thumbIcon.
+        //         }),
+        //         thumbColor: themeProvider.themeMode != ThemeMode.dark
+        //             ? Colors.white
+        //             : Colors.black,
+        //         value: themeProvider.themeMode == ThemeMode.dark,
+        //         onChanged: (value) {
+        //           themeProvider.toggleTheme(value);
+        //         },
+        //       );
+        //     },
+        //   ),
+        // ],
       ),
       body: Padding(
-        padding: const EdgeInsets.all(16.0),
+        padding: const EdgeInsets.all(12.0),
         child: Stack(
           children: [
-          Column(
-            children: <Widget>[
-              Row(
-                children: [
-                  Expanded(
-                    child: DropdownSearch<String>(
-                      selectedItem: _selectedUnit,
-                      dropdownDecoratorProps: const DropDownDecoratorProps(
-                        dropdownSearchDecoration: InputDecoration(
-                          labelText: 'Unit',
-                          contentPadding: EdgeInsets.symmetric(vertical: 2.0, horizontal: 8.0),
-                        ),
-                      ),
-                      items: _dropDownOptions,
-                      itemAsString: (item) => item, // Display unit names
-                      onChanged: (newValue) {
-                        _clearList();
-                        setState(() {
-                          selectedValue4 = newValue;
-                          _selectedUnit = newValue;
-                          selectedValue3 = null; // Clear line value
-                          selectedValue5 = null; // Clear tailor value
-                          dropdownData3.clear(); // Clear line data
-                          dropdownData5.clear(); // Clear tailor data
-                          _saveSelectedUnitToSharedPreferences(newValue!);
-                        });
-                        fetchLineDataFromApi(newValue!);
-                        _fetchTableData(_unitMap[newValue]!);
-                        Future.delayed(const Duration(milliseconds: 300), () {
-                          fetchTailorDataFromApi(newValue);
-                        });
-                      },
-                    ),
+            Column(
+              children: [
+                // Unit and Line Selection Row
+                Card(
+                  elevation: 2,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
                   ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: DropdownSearch<String>(
-                      popupProps: const PopupProps.menu(
-                        showSearchBox: true,
-                        constraints: BoxConstraints(
-                          maxHeight: 350.0,
-                        ),
-                        searchFieldProps: TextFieldProps(
-                          decoration: InputDecoration(
-                            contentPadding: EdgeInsets.symmetric(vertical: 8.0, horizontal: 12.0), // Adjust padding for the search box
-                            border: OutlineInputBorder(), // Border around the search box
-                            hintText: 'Search...',
-                          ),
-                          style: TextStyle(fontSize: 14.0), // Adjust font size if needed
-                        ),
-                      ),
-                      dropdownDecoratorProps: const DropDownDecoratorProps(
-                        dropdownSearchDecoration: InputDecoration(
-                          labelText: 'Line',
-                          contentPadding: EdgeInsets.symmetric(vertical: 2.0, horizontal: 8.0),
-                        ),
-                      ),
-                      items: dropdownData3.map((Map<String, String> value) => value['LineName']!).toList(),
-                      itemAsString: (item) => item,
-                      onBeforePopupOpening: (popupProps) async {
-                        bool? shouldOpen = true;
-                        if(scannedDataList.isNotEmpty) {
-                          // Show a dialog to confirm whether the popup should open
-                          shouldOpen = await showDialog<bool>(
-                            context: context,
-                            builder: (context) {
-                              return AlertDialog(
-                                title: const Text("Confirm Change"),
-                                content: const Text(
-                                    "Changing the line will clear all your data. Are you sure?"),
-                                actions: [
-                                  TextButton(
-                                    onPressed: () =>
-                                        Navigator.of(context).pop(false),
-                                    // Prevent opening
-                                    child: const Text("No"),
-                                  ),
-                                  TextButton(
-                                    onPressed: () {
-                                      Navigator.of(context).pop(true);
-                                      _clearList();
-                                    },
-                                    // Allow opening
-                                    child: const Text("Yes"),
-                                  ),
-                                ],
-                              );
-                            },
-                          );
-                        }
-
-                        return shouldOpen == true; // Open only if user confirms
-                      },
-                      onChanged: (newValue) {
-                        previousValue = selectedValue3;
-                        {
-                          // If no data, just change the line directly
-                          setState(() {
-                            previousValue = newValue; // Update the previous value
-                            selectedValue3 = newValue;
-                            selectedLineID = dropdownData3.firstWhere((element) => element['LineName'] == newValue)['LineID'];
-                            _isData(selectedLineID);
-                          });
-                          print('faervgrfgv');
-                        }
-                        print('$selectedValue3 $previousValue');
-                      },
-                      selectedItem: selectedValue3,
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 16),
-              Row(
-                children: [
-                  Expanded(
-                    child: DropdownSearch<String>(
-                      popupProps: const PopupProps.menu(
-                        showSearchBox: true,
-                        constraints: BoxConstraints(
-                          maxHeight: 350.0,
-                        ),
-                        searchFieldProps: TextFieldProps(
-                          decoration: InputDecoration(
-                            contentPadding: EdgeInsets.symmetric(vertical: 8.0, horizontal: 12.0), // Adjust padding for the search box
-                            border: OutlineInputBorder(), // Border around the search box
-                            hintText: 'Search...',
-                          ),
-                          style: TextStyle(fontSize: 14.0), // Adjust font size if needed
-                        ),
-                      ),
-                      selectedItem: selectedValue5 != null ? '$selectedValue5[${_getTailorName(selectedValue5!)}]' : null,
-                      dropdownDecoratorProps: const DropDownDecoratorProps(
-                        dropdownSearchDecoration: InputDecoration(
-                          label: Text('Tailor'),
-                          contentPadding: EdgeInsets.symmetric(vertical: 2.0, horizontal: 8.0),
-                          isDense: true,
-                        ),
-                      ),
-                      items: dropdownData5,
-                      itemAsString: (item) => item,
-                      onChanged: (newValue) {
-                        setState(() {
-                          if (newValue != null) {
-                            selectedValue5 = newValue.split('[').first;
-                          }
-                        });
-                      },
-                    ),
-                  ),
-                  const SizedBox(width: 20),
-                  Row(
-                    children: [
-
-                      Row(
-                        children: [
-                          Checkbox(
-                            value: isOTSelected,
-                            onChanged: (bool? value) {
-                              setState(() {
-                                isOTSelected = value ?? false;
-                              });
-                              if (kDebugMode) {
-                                print(isOTSelected);
-                              }
-                              setState(() {
-                                if (_selectedUnit != null) {
-                                  dropdownData3.clear();
-                                  fetchLineDataFromApi(_selectedUnit!);
-                                }
-                                if(selectedLineID != null){
-                                  _isData(selectedLineID);
-                                }
-                              });
-                            },
-                          ),
-                          const Text(
-                            'OT',
-                          ),
-                        ],
-                      ),
-                      const SizedBox(width: 20,)
-                    ],
-                  ),
-                ],
-              ),
-              const SizedBox(height: 16),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  if(_isR)
-                  ElevatedButton(
-                    style: ElevatedButton.styleFrom(backgroundColor: const Color(0xC27CF378),),
-                    onPressed: _addSelectedData,
-                    child: const Text('Add',style: TextStyle(
-                        color: Colors.black
-                    ),),
-                  ),
-                  const SizedBox(width: 10),
-                  if(_isR)
-                  ElevatedButton(
-                    style: ElevatedButton.styleFrom(backgroundColor: const Color(0xC2F63F54),),
-                    onPressed: () {
-                      if (selectedValue3 == null || selectedValue3!.isEmpty) {
-                        _showLineSelectionAlert();
-                      } else {
-                        _navigateToScanner(context);
-                      }
-                    },
-                    child: const Text('Scan',style: TextStyle(
-                        color: Colors.black
-                    ),),
-                  ),
-                  const SizedBox(width: 8,),
-                  // Add a table here
-                  Expanded(
-                    child: Center(
-                      child: Container(
-                        decoration: BoxDecoration(
-                          border: Border.all(color: Colors.black),
-                          color: Colors.lightBlue[200],
-                        ),
-                        child: Padding(
-                          padding: const EdgeInsets.only(top: 8.0 , bottom: 8, right: 2, left: 2),
-                          child: Text('Present/Allocated : $_totalMnpwr/$_allocMnpwr',style: const TextStyle(
-                            fontWeight: FontWeight.w300,
-                            fontSize: 14
-                          ),),
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 20),
-              Expanded(
-                child: SizedBox(
-                  width: double.infinity,
-                  child: SingleChildScrollView(
-                    child: Table(
-                      border: TableBorder.all(),
-                      columnWidths: const {
-                        0: FixedColumnWidth(25),
-                        1: FlexColumnWidth(2.3),
-                        2: FlexColumnWidth(2.5),
-                        3: FlexColumnWidth(4.2),
-                        4: FixedColumnWidth(40),
-                      },
+                  child: Padding(
+                    padding: const EdgeInsets.all(12.0),
+                    child: Column(
                       children: [
-                        TableRow(
-                          decoration: BoxDecoration(
-                            color: Colors.lightBlue[200],
-                          ),
-                          children: const [
-                            TableCell(
-                              child: Padding(
-                                padding: EdgeInsets.all(8.0),
-                                child: Center(
-                                  child: Text(
-                                    '',
-                                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
-                                  ),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: Container(
+                                height: 30,
+                                child: _buildSearchableDropdown(
+                                  context: context,
+                                  label: 'Unit',
+                                  value: _selectedUnit,
+                                  items: _dropDownOptions,
+                                  onChanged: (newValue) {
+                                    _clearList();
+                                    setState(() {
+                                      selectedValue4 = newValue;
+                                      _selectedUnit = newValue;
+                                      selectedValue3 = null;
+                                      selectedValue5 = null;
+                                      dropdownData3.clear();
+                                      dropdownData5.clear();
+                                      _saveSelectedUnitToSharedPreferences(newValue!);
+                                    });
+                                    fetchLineDataFromApi(_unitMapVg[newValue]!);
+                                    _fetchTotalAllocated(_unitMapVg[newValue]!);
+                                    Future.delayed(const Duration(milliseconds: 300), () {
+                                      fetchTailorDataFromApi(newValue!);
+                                    });
+                                  },
                                 ),
                               ),
                             ),
-                            TableCell(
-                              child: Padding(
-                                padding: EdgeInsets.all(8.0),
-                                child: Center(
-                                  child: Text(
-                                    'Pay Code',
-                                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
-                                  ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: SizedBox(
+                                height: 30,
+                                child: _buildSearchableDropdown(
+                                  context: context,
+                                  label: 'Line',
+                                  value: selectedValue3,
+                                  items: dropdownData3.map((Map<String, String> value) => value['LineName']!).toList(),
+                                  onBeforePopupOpening: (popupProps) async {
+                                    bool? shouldOpen = true;
+                                    if(scannedDataList.isNotEmpty) {
+                                      shouldOpen = await showDialog<bool>(
+                                        context: context,
+                                        builder: (context) {
+                                          return AlertDialog(
+                                            backgroundColor: Theme.of(context).cardColor,
+                                            title: Text("Confirm Change",style: TextStyle(color: Theme.of(context).colorScheme.secondary),),
+                                            content: Text("Changing the line will clear all your data. Are you sure?",style: TextStyle(color: Theme.of(context).colorScheme.secondary),),
+                                            actions: [
+                                              TextButton(
+                                                onPressed: () => Navigator.of(context).pop(false),
+                                                child: Text("No",style: TextStyle(color: Theme.of(context).colorScheme.secondary),),
+                                              ),
+                                              TextButton(
+                                                onPressed: () {
+                                                  Navigator.of(context).pop(true);
+                                                  _clearList();
+                                                },
+                                                child: Text("Yes",style: TextStyle(color: Theme.of(context).colorScheme.secondary),),
+                                              ),
+                                            ],
+                                          );
+                                        },
+                                      );
+                                    }
+                                    return shouldOpen == true;
+                                  },
+                                  onChanged: (newValue) {
+                                    previousValue = selectedValue3;
+                                    setState(() {
+                                      previousValue = newValue;
+                                      selectedValue3 = newValue;
+                                      selectedLineID = dropdownData3.firstWhere((element) => element['LineName'] == newValue)['LineID'];
+                                      _isLineVerified(selectedLineID);
+                                    });
+                                  },
                                 ),
-                              ),
-                            ),
-                            TableCell(
-                              child: Padding(
-                                padding: EdgeInsets.all(8.0),
-                                child: Center(
-                                  child: Text(
-                                    'Emp Code',
-                                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
-                                  ),
-                                ),
-                              ),
-                            ),
-                            TableCell(
-                              child: Padding(
-                                padding: EdgeInsets.all(8.0),
-                                child: Center(
-                                  child: Text(
-                                    'Name',
-                                    style: TextStyle(
-                                        fontWeight: FontWeight.bold, fontSize: 13),
-                                  ),
-                                ),
-                              ),
-                            ),
-                            TableCell(
-                              child: Padding(
-                                padding: EdgeInsets.all(8.0),
-                                child: SizedBox.shrink(), // Empty cell for the delete icon
                               ),
                             ),
                           ],
                         ),
-                        ...scannedDataList.asMap().entries.map((entry) {
-                          int index = entry.key;
-                          var data = entry.value;
-                          return TableRow(
-                            children: [
-                              TableCell(
-                                child: Padding(
-                                  padding: const EdgeInsets.only(top:8.0),
-                                  child: Center(
-                                    child: Text(
-                                      (index + 1).toString(),
-                                      textAlign: TextAlign.center,// Serial number
-                                      style: const TextStyle(fontSize: 13),
-                                    ),
-                                  ),
+                        const SizedBox(height: 12),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: SizedBox(
+                                height: 30,
+                                child: _buildSearchableDropdown(
+                                  context: context,
+                                  label: 'Tailor',
+                                  value: selectedValue5 != null ? '$selectedValue5[${_getTailorName(selectedValue5!)}]' : null,
+                                  items: dropdownData5,
+                                  onChanged: (newValue) {
+                                    setState(() {
+                                      if (newValue != null) {
+                                        selectedValue5 = newValue.split('[').first;
+                                      }
+                                    });
+                                  },
                                 ),
                               ),
-                              TableCell(
-                                child: Padding(
-                                  padding: const EdgeInsets.all(8.0),
-                                  child: Center(
-                                    child: Text(
-                                      data['PayCode'] ?? '',
-                                      style: const TextStyle(fontSize: 13),
-                                    ),
-                                  ),
-                                ),
+                            ),
+                            const SizedBox(width: 12),
+                            Container(
+                              height: 30,
+                              padding: const EdgeInsets.only(right: 12),
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(8),
+                                color: Theme.of(context).cardColor.withValues(alpha: 2),
                               ),
-                              TableCell(
-                                child: Padding(
-                                  padding: const EdgeInsets.all(8.0),
-                                  child: Center(
-                                    child: Text(
-                                      data['EMP_CODE'] ?? '',
-                                      style: const TextStyle(fontSize: 13),
+                              child: Row(
+                                children: [
+                                  Checkbox(
+                                    value: isOTSelected,
+                                    checkColor: Theme.of(context).colorScheme.primary,
+                                    side: BorderSide(
+                                      color: Theme.of(context).colorScheme.secondary,
                                     ),
-                                  ),
-                                ),
-                              ),
-                              TableCell(
-                                child: Padding(
-                                  padding: const EdgeInsets.all(8.0),
-                                  child: Center(
-                                    child: Text(
-                                      data['tailor'] != null && data['tailor']!.length > 13
-                                          ? '${data['tailor']!.substring(0, 14)}..'
-                                          : data['tailor'] ?? '',
-                                      style: const TextStyle(fontSize: 13),
-                                    ),
-                                  ),
-                                ),
-                              ),
-                              TableCell(
-                                child: SizedBox(
-                                  height: 20,
-                                  child: IconButton(
-                                    icon: const Icon(
-                                      Icons.delete,
-                                      color: Colors.red,
-                                      size: 20,
-                                    ),
-                                    onPressed: () {
+                                    activeColor: Theme.of(context).colorScheme.secondary,
+                                    onChanged: (bool? value) {
                                       setState(() {
-                                        scannedDataList.remove(data);
+                                        isOTSelected = value ?? false;
+                                        // Instead of setting to empty string, set to null
+                                        selectedValue3 = null;
+                                      });
+                                      setState(() {
+                                        if (_selectedUnit != null) {
+                                          dropdownData3.clear();
+                                          fetchLineDataFromApi(_unitMapVg[_selectedUnit]!);
+                                        }
+                                        if (selectedLineID != null) {
+                                          _isLineVerified(selectedLineID);
+                                        }
                                       });
                                     },
                                   ),
-                                ),
+                                  Text(
+                                    'OT',
+                                    style: TextStyle(color: Theme.of(context).colorScheme.secondary),
+                                  ),
+                                ],
                               ),
-                            ],
-                          );
-                        }),
+                            ),
+                          ],
+                        ),
                       ],
                     ),
                   ),
                 ),
-              ),
-              const SizedBox(height: 16),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  if(_isR)
-                    ElevatedButton(
-                      style: ElevatedButton.styleFrom(backgroundColor: const Color(0xC27CF378),),
-                      onPressed: () {
-                        if(!isLoading) {
-                          if (!isData) {
-                            if (scannedDataList.isEmpty) {
-                              showEmptyListAlert(context);
-                            } else {
-                              _allocate();
-                            }
-                          }
-                          else {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(content: Text(
-                                  "Can't Allocate, Line Manpower Already Verified")),
-                            );
-                          }
-                        }
-                      },
-                      child: const Text('Allocate',style: TextStyle(
-                          color: Colors.black
-                      ),),),
-                  const SizedBox(width: 16),
-                  if(_isR)
-                    ElevatedButton(
-                      style: ElevatedButton.styleFrom(backgroundColor: const Color(
-                          0xC2F63F54),),
-                      onPressed: _clearList,
-                      child: const Text('Clear All',style: TextStyle(
-                          color: Colors.black
-                      ),),
-                    ),
-                  const SizedBox(width: 16),
-                  ElevatedButton(
-                    style: ElevatedButton.styleFrom(backgroundColor: const Color(
-                        0xC2F6AD3F),),
-                    onPressed: () => navigateToReport(context),
-                    child: const Text('Report',style: TextStyle(
-                        color: Colors.black
-                    ),),
+
+                Card(
+                  elevation: 2,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
                   ),
-                ],
-              ),
-            ],
-          ),
+                  child: Padding(
+                    padding: const EdgeInsets.all(8.0),
+                    child: Column(
+                      children: [
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            if (_isR) ...[
+                              SizedBox(
+                                height: 30,
+                                child: _buildActionButton(
+                                  context: context,
+                                  text: 'Add',
+                                  icon: Icons.add,
+                                  color: Colors.green,
+                                  onPressed: _addSelectedData,
+                                ),
+                              ),
+                              const SizedBox(width: 8,),
+                              SizedBox(
+                                height: 30,
+                                child: _buildActionButton(
+                                  context: context,
+                                  text: 'Scan',
+                                  icon: Icons.qr_code_scanner,
+                                  color: Colors.blue,
+                                  onPressed: () {
+                                    if (selectedValue3 == null ||
+                                        selectedValue3!.isEmpty) {
+                                      _showLineSelectionAlert();
+                                    } else {
+                                      _navigateToScanner(context);
+                                    }
+                                  },
+                                ),
+                              ),
+                            ],
+
+                            const SizedBox(width: 8,),
+                            // Present/Allocated Info
+                            Expanded(
+                              child: Container(
+                                height: 30,
+                                padding: const EdgeInsets.symmetric(
+                                    vertical: 4, horizontal: 4),
+                                decoration: BoxDecoration(
+                                  borderRadius: BorderRadius.circular(8),
+                                  color: Theme.of(context).cardColor.withValues(alpha: 0.5),
+                                  border: Border.all(color: Theme.of(context).colorScheme.secondary.withValues(alpha: 0.5))
+                                ),
+                                child: Center(
+                                  child: Text(
+                                    'Present/Allocated : $_totalMnpwr/$_allocMnpwr',
+                                    style: TextStyle(
+                                      color: Theme.of(context).colorScheme.secondary,
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+
+                const SizedBox(height: 4),
+
+                // Data Table
+                Expanded(
+                  child: Card(
+                    elevation: 2,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Padding(
+                      padding: const EdgeInsets.all(6.0),
+                      child: scannedDataList.isEmpty? Center(child: LottieLoading(animationPath: 'assets/animation/allNoData.json',size: 250,),) : SingleChildScrollView(
+                        child: Table(
+                          border: TableBorder.symmetric(
+                              inside: BorderSide(
+                                  color: Colors.grey.withOpacity(0.5))),
+                          columnWidths: const {
+                            0: FixedColumnWidth(40),
+                            1: FlexColumnWidth(2.3),
+                            2: FlexColumnWidth(2.5),
+                            3: FlexColumnWidth(4.2),
+                            4: FixedColumnWidth(50),
+                          },
+                          children: [
+                            // Table Header
+                            TableRow(
+                              decoration: BoxDecoration(
+                                  color: Colors.grey[400],
+                                  borderRadius: const BorderRadius.vertical(
+                                      top: Radius.circular(8))),
+                              children: [
+                                _buildTableHeaderCell(''),
+                                _buildTableHeaderCell('Pay Code'),
+                                _buildTableHeaderCell('Emp Code'),
+                                _buildTableHeaderCell('Name'),
+                                const TableCell(child: SizedBox.shrink()),
+                              ],
+                            ),
+                            // Table Rows
+                            ...scannedDataList.asMap().entries.map((entry) {
+                              int index = entry.key;
+                              var data = entry.value;
+                              return TableRow(
+                                decoration: BoxDecoration(
+                                  color: Theme.of(context).cardColor
+                                ),
+                                children: [
+                                  _buildTableCell((index + 1).toString()),
+                                  _buildTableCell(data['PayCode'] ?? ''),
+                                  _buildTableCell(data['EMP_CODE'] ?? ''),
+                                  _buildTableCell(
+                                    data['tailor'] != null &&
+                                            data['tailor']!.length > 13
+                                        ? '${data['tailor']!.substring(0, 14)}..'
+                                        : data['tailor'] ?? '',
+                                  ),
+                                  TableCell(
+                                    child: IconButton(
+                                      icon: Icon(
+                                        Icons.delete_outline,
+                                        color: Colors.red[400],
+                                        size: 20,
+                                      ),
+                                      onPressed: () {
+                                        setState(() {
+                                          scannedDataList.remove(data);
+                                        });
+                                      },
+                                    ),
+                                  ),
+                                ],
+                              );
+                            }),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+
+                const SizedBox(height: 8),
+
+                // Bottom Action Buttons
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    if (_isR) ...[
+                      SizedBox(
+                        height: 30,
+                        child: _buildBottomButton(
+                          context: context,
+                          text: 'Allocate',
+                          icon: Icons.check_circle,
+                          color: Colors.green,
+                          onPressed: () {
+                            if (!isLoading) {
+                              if (!isData) {
+                                if (scannedDataList.isEmpty) {
+                                  showEmptyListAlert(context);
+                                } else {
+                                  _allocate();
+                                }
+                              } else {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(
+                                      content: Text(
+                                          "Can't Allocate, Line Manpower Already Verified")),
+                                );
+                              }
+                            }
+                          },
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      SizedBox(
+                        height: 30,
+                        child: _buildBottomButton(
+                          context: context,
+                          text: 'Clear All',
+                          icon: Icons.delete_sweep,
+                          color: Colors.red,
+                          onPressed: _clearList,
+                        ),
+                      ),
+                    ],
+                    const SizedBox(width: 12),
+                    SizedBox(
+                      height: 30,
+                      child: _buildBottomButton(
+                        context: context,
+                        text: 'Report',
+                        icon: Icons.assignment,
+                        color: Colors.orange,
+                        onPressed: () => navigateToReport(context),
+                      ),
+                    ),
+                  ],
+                ),
+                SizedBox(height: 5,)
+              ],
+            ),
+
+            // Loading Indicator
             if (isLoading)
-              Container(
-                color: Colors.black.withOpacity(0.5), // Overlay background
-                child: const Center(
-                  child: CircularProgressIndicator(),
+              Center(
+                child: Container(
+                  height: 350,
+                  width: 350,
+                  decoration: BoxDecoration(
+                    color: Colors.black,
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.grey.withOpacity(0.4),
+                        spreadRadius: 2,
+                        blurRadius: 5,
+                        offset: const Offset(0, 3),
+                      )
+                    ],
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: const Center(
+                    child: LottieLoading(animationPath: 'assets/animation/allocation.json',size: 300,)
+                  ),
                 ),
               ),
-          ]
+          ],
+        ),
+      ),
+    );
+  }
+
+// Helper Widgets
+  Widget _buildSearchableDropdown({
+    required BuildContext context,
+    required String label,
+    required String? value,
+    required List<String> items,
+    required void Function(String?)? onChanged,
+    Future<bool?> Function(bool?)? onBeforePopupOpening,
+  }) {
+    return DropdownButtonFormField2<String>(
+      value: value,
+      decoration: InputDecoration(
+        labelText: label,
+        labelStyle: TextStyle(color: Theme.of(context).colorScheme.secondary),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(8),
+          borderSide: BorderSide(color: Colors.grey.shade400),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(8),
+          borderSide: BorderSide(color: Colors.grey.shade400),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(8),
+          borderSide: BorderSide(color: Colors.grey.shade400),
+        ),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
+      ),
+      isExpanded: true,
+      items: items
+          .map((item) => DropdownMenuItem<String>(
+        value: item,
+        child: Text(
+          item,
+          style: TextStyle(
+            fontSize: 14,
+            color: Theme.of(context).colorScheme.secondary,
+          ),
+          overflow: TextOverflow.ellipsis,
+        ),
+      ))
+          .toList(),
+      onChanged: onChanged,
+      style: TextStyle(
+        color: Theme.of(context).colorScheme.secondary,
+        fontSize: 14,
+      ),
+      buttonStyleData: const ButtonStyleData(
+        padding: EdgeInsets.only(right: 2),
+      ),
+      iconStyleData: IconStyleData(
+        icon: Icon(
+          Icons.arrow_drop_down,
+          color: Colors.grey.shade600,
+        ),
+      ),
+      dropdownStyleData: DropdownStyleData(
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(8),
+          color: Theme.of(context).colorScheme.primary,
+        ),
+      ),
+      menuItemStyleData: const MenuItemStyleData(
+        padding: EdgeInsets.symmetric(horizontal: 16),
+      ),
+      dropdownSearchData: DropdownSearchData(
+        searchController: TextEditingController(),
+        searchInnerWidgetHeight: 50,
+        searchInnerWidget: Container(
+          height: 50,
+          padding: const EdgeInsets.only(
+            top: 8,
+            bottom: 4,
+            right: 8,
+            left: 8,
+          ),
+          child: TextFormField(
+            cursorColor: Theme.of(context).colorScheme.secondary,
+            style: TextStyle(color: Theme.of(context).colorScheme.secondary),
+            controller: TextEditingController(),
+            decoration: InputDecoration(
+              isDense: true,
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 10,
+                vertical: 8,
+              ),
+              hintText: 'Search...',
+              hintStyle: TextStyle(fontSize: 12,color: Theme.of(context).colorScheme.secondary),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(8),
+                borderSide: BorderSide(color: Colors.grey.shade400),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(8),
+                borderSide: BorderSide(color: Colors.grey.shade400),
+              ),
+            ),
+          ),
+        ),
+        searchMatchFn: (item, searchValue) {
+          return item.value.toString().toLowerCase().contains(searchValue.toLowerCase());
+        },
+      ),
+      onMenuStateChange: (isOpen) {
+        if (!isOpen) {
+          // Clear search when dropdown closes
+          FocusManager.instance.primaryFocus?.unfocus();
+        }
+      },
+    );
+  }
+
+  Widget _buildActionButton({
+    required BuildContext context,
+    required String text,
+    required IconData icon,
+    required Color color,
+    required VoidCallback onPressed,
+  }) {
+    return ElevatedButton.icon(
+      icon: Icon(icon, size: 15),
+      label: Text(text),
+      style: ElevatedButton.styleFrom(
+        backgroundColor: color,
+        foregroundColor: Colors.white,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(8),
+        ),
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      ),
+      onPressed: onPressed,
+    );
+  }
+
+  Widget _buildBottomButton({
+    required BuildContext context,
+    required String text,
+    required IconData icon,
+    required Color color,
+    required VoidCallback onPressed,
+  }) {
+    return ElevatedButton.icon(
+      icon: Icon(icon, size: 18),
+      label: Text(text),
+      style: ElevatedButton.styleFrom(
+        backgroundColor: color.withOpacity(0.9),
+        foregroundColor: Colors.white,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(8),
+        ),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+      ),
+      onPressed: onPressed,
+    );
+  }
+
+  Widget _buildTableHeaderCell(String text) {
+    return TableCell(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 2, horizontal: 4),
+        child: Text(
+          text,
+          style: const TextStyle(
+            fontWeight: FontWeight.bold,
+            fontSize: 13,
+            color: Colors.black,
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTableCell(String text) {
+    return TableCell(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 2, horizontal: 4),
+        child: Text(
+          text,
+          style: TextStyle(fontSize: 13,color: Theme.of(context).colorScheme.secondary),
         ),
       ),
     );
@@ -1472,11 +2076,12 @@ class _AllocationState extends State<Allocation> {
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-          title: const Text('No Data Available'),
-          content: const Text('Add Some Data before Allocating.'),
+          backgroundColor: Theme.of(context).cardColor,
+          title: Text('No Data Available',style: TextStyle(color: Theme.of(context).colorScheme.secondary),),
+          content: Text('Add Some Data before Allocating.',style: TextStyle(color: Theme.of(context).colorScheme.secondary),),
           actions: <Widget>[
             TextButton(
-              child: const Text('OK'),
+              child: Text('OK',style: TextStyle(color: Theme.of(context).colorScheme.secondary),),
               onPressed: () {
                 Navigator.of(context).pop();
               },
@@ -1485,16 +2090,19 @@ class _AllocationState extends State<Allocation> {
         );
       },
     );
-  }void showChangeLineAlert(BuildContext context) {
+  }
+
+  void showChangeLineAlert(BuildContext context) {
     showDialog(
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-          title: const Text('Are You Sure'),
-          content: const Text('This will Clear All Data.'),
+          backgroundColor: Theme.of(context).cardColor,
+          title: Text('Are You Sure',style: TextStyle(color: Theme.of(context).colorScheme.secondary),),
+          content: Text('This will Clear All Data.',style: TextStyle(color: Theme.of(context).colorScheme.secondary),),
           actions: <Widget>[
             TextButton(
-              child: const Text('OK'),
+              child: Text('OK',style: TextStyle(color: Theme.of(context).colorScheme.secondary),),
               onPressed: () {
                 Navigator.of(context).pop();
               },

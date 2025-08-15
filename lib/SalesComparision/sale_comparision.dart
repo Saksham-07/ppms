@@ -57,7 +57,7 @@ class SaleComparisonState extends State<SaleComparison> {
 
   Future<void> _fetchFyData() async {
     final response =
-    await http.get(Uri.parse('http://14.142.248.34:10008/year?year='));
+    await http.get(Uri.parse('${TBaseURL.baseUrl}year?year='));
     if (response.statusCode == 200) {
       final data = json.decode(response.body);
       setState(() {
@@ -83,7 +83,7 @@ class SaleComparisonState extends State<SaleComparison> {
       //     'http://172.16.10.11:8001/sales_buyer?type=$selectedWiseValue&fy=23-24&user=$_loginId'));
 
       final response = await http.get(Uri.parse(
-          '${TBaseURL.localUrl}sales_buyer?type=$selectedWiseValue&fy=23-24&user=$_loginId'));
+          '${TBaseURL.baseUrl}sales_buyer?type=$selectedWiseValue&fy=23-24&user=$_loginId'));
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
@@ -165,10 +165,10 @@ class SaleComparisonState extends State<SaleComparison> {
 
     // final response = await http.get(Uri.parse('http://172.16.2.168:8001/sales_test'));
     // final response = await http.get(Uri.parse('${TBaseURL.baseUrl}sales_comp?report_for=monthly&report_type=value'));
-    final response = await http.get(Uri.parse('${TBaseURL.localUrl}sales_comp?report_for=monthly&report_type=value&fy=$_selectedFyShortName'));
+    final response = await http.get(Uri.parse('${TBaseURL.baseUrl}sales_comp?report_for=monthly&report_type=value&fy=$_selectedFyShortName'));
 
     if (kDebugMode) {
-      print('${TBaseURL.localUrl}sales_comp?report_for=monthly&report_type=value&fy=$_selectedFyShortName');
+      print('${TBaseURL.baseUrl}sales_comp?report_for=monthly&report_type=value&fy=$_selectedFyShortName');
     }
 
     if (response.statusCode == 200) {

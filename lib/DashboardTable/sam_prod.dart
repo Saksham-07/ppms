@@ -4,6 +4,9 @@ import 'package:flutter/material.dart';
 import 'package:syncfusion_flutter_datagrid/datagrid.dart';
 import 'package:http/http.dart' as http;
 
+import '../ExtraFunction/lottie_loading.dart';
+import '../common/utils/constants/baseurl.dart';
+
 class SamProdDetail {
   final double avgSam;
   final int stitchInHouseSam;
@@ -55,12 +58,12 @@ class SamProdDetail {
   }
 }
 
-Future<List<SamProdDetail>> fetchSamData(String from, String to, String units) async {
+Future<List<SamProdDetail>> fetchSamData(String from, String to, String units,String vgUnit) async {
   final response = await http.get(
-    Uri.parse('http://14.142.248.34:10008/management?proce_type=sam&from=$from&to=$to&units=$units'),
+    Uri.parse('${TBaseURL.baseUrl}mngmnt_review_vg?type=SamProduced&unitVg=$vgUnit&fromDate=$from&toDate=$to&unit=$units&proc_type=MngmntReviewSamProduce'),
   );
   if (kDebugMode) {
-    print('http://14.142.248.34:10008/management?proce_type=sam&from=$from&to=$to&units=$units');
+    print('${TBaseURL.baseUrl}mngmnt_review_vg?type=SamProduced&unitVg=$vgUnit&fromDate=$from&toDate=$to&unit=$units&proc_type=MngmntReviewSamProduce');
   }
 
   if (response.statusCode == 200) {
@@ -121,7 +124,7 @@ class SamProdDataSource extends DataGridSource {
   DataGridRowAdapter buildRow(DataGridRow row) {
     final isTotalRow = row.getCells().first.value == 'Total';
     return DataGridRowAdapter(
-      color: isTotalRow ? Colors.yellowAccent : null,
+      color: isTotalRow ? const Color(0xFF8DEAA3) : null,
       cells: row.getCells().map<Widget>((dataGridCell) {
         Alignment alignment = dataGridCell.columnName == 'UnitShortCode'
             ? Alignment.centerLeft
@@ -135,6 +138,7 @@ class SamProdDataSource extends DataGridSource {
             style: TextStyle(
               fontSize: 14,
               fontWeight: isTotalRow ? FontWeight.bold : FontWeight.normal,
+              color: Colors.black
             ),
           ),
         );
@@ -174,12 +178,14 @@ class SamProdTable extends StatefulWidget {
   final String from;
   final String to;
   final String units;
+  final String vgUnit;
 
   const SamProdTable({
     super.key,
     required this.from,
     required this.to,
     required this.units,
+    required this.vgUnit
   });
 
   @override
@@ -192,7 +198,7 @@ class _SamProdTableState extends State<SamProdTable> {
   @override
   void initState() {
     super.initState();
-    samProd = fetchSamData(widget.from, widget.to, widget.units);
+    samProd = fetchSamData(widget.from, widget.to, widget.units, widget.vgUnit);
   }
 
   @override
@@ -201,7 +207,9 @@ class _SamProdTableState extends State<SamProdTable> {
       future: samProd,
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Center(child: CircularProgressIndicator());
+          return const SizedBox(
+            width: double.infinity,
+              child: LottieLoading(size: 150,animationPath: 'assets/animation/profit.json',));
         } else if (snapshot.hasError) {
           return Center(child: Text('Error: ${snapshot.error}'));
         } else if (snapshot.hasData) {
@@ -234,111 +242,111 @@ class _SamProdTableState extends State<SamProdTable> {
                   GridColumn(
                       columnName: 'UnitShortCode',
                       label: Container(
-                          color: const Color(0xFF5FE3D3),
+                          color: Colors.grey[400],
                           alignment: Alignment.center,
                           child: const Text('Unit',
                               overflow: TextOverflow.ellipsis,
                               textAlign: TextAlign.center,
-                              style: TextStyle(color: Colors.white)))),
+                              style: TextStyle(color: Colors.black87)))),
                   GridColumn(
                       columnName: 'InHouseQty',
                       label: Container(
-                          color: const Color(0xFF5FE3D3),
+                          color: Colors.grey[400],
                           alignment: Alignment.center,
                           child: const Text('In House\nQty',
                               overflow: TextOverflow.ellipsis,
                               textAlign: TextAlign.center,
-                              style: TextStyle(color: Colors.white)))),
+                              style: TextStyle(color: Colors.black87)))),
                   GridColumn(
                       columnName: 'InHouseSam',
                       label: Container(
-                          color: const Color(0xFF5FE3D3),
+                          color: Colors.grey[400],
                           alignment: Alignment.center,
                           child: const Text('In House\nSam',
                               overflow: TextOverflow.ellipsis,
                               textAlign: TextAlign.center,
-                              style: TextStyle(color: Colors.white)))),
+                              style: TextStyle(color: Colors.black87)))),
                   GridColumn(
                       columnName: 'OutHouseQty',
                       label: Container(
-                          color: const Color(0xFF5FE3D3),
+                          color: Colors.grey[400],
                           alignment: Alignment.center,
                           child: const Text('Out House\nQty',
                               overflow: TextOverflow.ellipsis,
                               textAlign: TextAlign.center,
-                              style: TextStyle(color: Colors.white)))),
+                              style: TextStyle(color: Colors.black87)))),
                   GridColumn(
                       columnName: 'OutHouseSam',
                       label: Container(
-                          color: const Color(0xFF5FE3D3),
+                          color: Colors.grey[400],
                           alignment: Alignment.center,
                           child: const Text('Out House\nSam',
                               overflow: TextOverflow.ellipsis,
                               textAlign: TextAlign.center,
-                              style: TextStyle(color: Colors.white)))),
+                              style: TextStyle(color: Colors.black87)))),
                   GridColumn(
                       columnName: 'PieceRateQty',
                       label: Container(
-                          color: const Color(0xFF5FE3D3),
+                          color: Colors.grey[400],
                           alignment: Alignment.center,
                           child: const Text('Piece Rate\nQty',
                               overflow: TextOverflow.ellipsis,
                               textAlign: TextAlign.center,
-                              style: TextStyle(color: Colors.white)))),
+                              style: TextStyle(color: Colors.black87)))),
                   GridColumn(
                       columnName: 'PieceRateSam',
                       label: Container(
-                          color: const Color(0xFF5FE3D3),
+                          color: Colors.grey[400],
                           alignment: Alignment.center,
                           child: const Text('Piece Rate\nSAm',
                               overflow: TextOverflow.ellipsis,
                               textAlign: TextAlign.center,
-                              style: TextStyle(color: Colors.white)))),
+                              style: TextStyle(color: Colors.black87)))),
                   GridColumn(
                       columnName: 'TotalQty',
                       label: Container(
-                          color: const Color(0xFF5FE3D3),
+                          color: Colors.grey[400],
                           alignment: Alignment.center,
                           child: const Text('Total\nQty',
                               overflow: TextOverflow.ellipsis,
                               textAlign: TextAlign.center,
-                              style: TextStyle(color: Colors.white)))),
+                              style: TextStyle(color: Colors.black87)))),
                   GridColumn(
                       columnName: 'TotalSam',
                       label: Container(
-                          color: const Color(0xFF5FE3D3),
+                          color: Colors.grey[400],
                           alignment: Alignment.center,
                           child: const Text('Total\nSam',
                               overflow: TextOverflow.ellipsis,
                               textAlign: TextAlign.center,
-                              style: TextStyle(color: Colors.white)))),
+                              style: TextStyle(color: Colors.black87)))),
                   GridColumn(
                       columnName: 'AvgSam',
                       label: Container(
-                          color: const Color(0xFF5FE3D3),
+                          color: Colors.grey[400],
                           alignment: Alignment.center,
                           child: const Text("AVG\nSam",
                               overflow: TextOverflow.ellipsis,
                               textAlign: TextAlign.center,
-                              style: TextStyle(color: Colors.white)))),
+                              style: TextStyle(color: Colors.black87)))),
                   GridColumn(
                       columnName: 'TodayCost/Sam',
                       label: Container(
-                          color: const Color(0xFF5FE3D3),
+                          color: Colors.grey[400],
                           alignment: Alignment.center,
                           child: const Text("Today's\nCost/Sam",
                               textAlign: TextAlign.center,
                               overflow: TextOverflow.ellipsis,
-                              style: TextStyle(color: Colors.white)))),
+                              style: TextStyle(color: Colors.black87)))),
                   GridColumn(
                       columnName: 'TotalCost/Sam',
                       label: Container(
-                          color: const Color(0xFF5FE3D3),
+                          color: Colors.grey[400],
                           alignment: Alignment.center,
                           child: const Text("Total\nCost/Sam",
                               overflow: TextOverflow.ellipsis,
                               textAlign: TextAlign.center,
-                              style: TextStyle(color: Colors.white)))),
+                              style: TextStyle(color: Colors.black87)))),
                 ],
               ),
             ),

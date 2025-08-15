@@ -7,7 +7,6 @@ import 'package:ppms/ESS/management_approval/screens/management_approval_form.da
 import 'package:ppms/common/utils/constants/baseurl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:http/http.dart' as http;
-import 'package:velocity_x/velocity_x.dart';
 import '../../../ExtraFunction/uuid.dart';
 import '../models/managementapprovalmodel.dart';
 
@@ -290,7 +289,9 @@ class _ManagementApprovalState extends State<ManagementApproval> {
                       future: _futureAppData,
                       builder: (context, snapshot) {
                         if (!snapshot.hasData) {
-                          return "Loading".text.make();
+                          return const Center(
+                            child: Text("Loading", style: TextStyle(fontWeight: FontWeight.bold)),
+                          );
                         } else {
                           return Column(
                             crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -299,7 +300,7 @@ class _ManagementApprovalState extends State<ManagementApproval> {
                             children: [
                               GridView.builder(
                                 scrollDirection: Axis.vertical,
-                                physics: const ScrollPhysics(),
+                                physics: const NeverScrollableScrollPhysics(), // Prevents nested scrolling issues
                                 shrinkWrap: true,
                                 itemCount: lstapprovalData.length,
                                 gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
@@ -309,152 +310,170 @@ class _ManagementApprovalState extends State<ManagementApproval> {
                                   childAspectRatio: 1.7,
                                 ),
                                 itemBuilder: (context, index) {
-                                  return Column(
-                                    children: [
-                                      Column(
-                                        mainAxisAlignment: MainAxisAlignment.spaceAround,
-                                        crossAxisAlignment: CrossAxisAlignment.start,
-                                        children: [
-                                          Row(
-                                            children: [
-                                              "Emp. Name: ".text.bold.make(),
-                                              const SizedBox(width: 10),
-                                              lstapprovalData[index]
-                                                  .name
-                                                  .toString()
-                                                  .text
-                                                  .overflow(TextOverflow.ellipsis)
-                                                  .make(),
-                                            ],
-                                          ).paddingSymmetric(vertical: 4, horizontal: 8),
-                                          Row(
-                                            children: [
-                                              "Emp. Type: ".text.bold.make(),
-                                              const SizedBox(width: 10),
-                                              ("${lstapprovalData[index].appType}, (${lstapprovalData[index].unit})")
-                                                  .text
-                                                  .overflow(TextOverflow.ellipsis)
-                                                  .make(),
-                                            ],
-                                          ).paddingSymmetric(vertical: 4, horizontal: 8),
-                                          Row(
-                                            children: [
-                                              "Department: ".text.bold.make(),
-                                              const SizedBox(width: 10),
-                                              lstapprovalData[index]
-                                                  .department
-                                                  .toString()
-                                                  .text
-                                                  .overflow(TextOverflow.ellipsis)
-                                                  .make(),
-                                            ],
-                                          ).paddingSymmetric(vertical: 4, horizontal: 8),
-                                          Row(
-                                            children: [
-                                              "Monthly Salary: ".text.bold.make(),
-                                              const SizedBox(width: 10),
-                                              lstapprovalData[index]
-                                                  .monthlySalary
-                                                  .toString()
-                                                  .text
-                                                  .wrapWords(true)
-                                                  .make(),
-                                            ],
-                                          ).paddingSymmetric(vertical: 4, horizontal: 8),
-                                          Row(
-                                            children: [
-                                              "Increment Amount: ".text.bold.make(),
-                                              const SizedBox(width: 10),
-                                              lstapprovalData[index]
-                                                  .incAmount
-                                                  .toString()
-                                                  .text
-                                                  .wrapWords(true)
-                                                  .make(),
-                                            ],
-                                          ).paddingSymmetric(vertical: 4, horizontal: 8),
-                                          Row(
-                                            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                                            children: [
-                                              IconButton(
-                                                onPressed: () {
-                                                  showConfirmDialog(
-                                                    "Are you sure want to Approve?",
-                                                    lstapprovalData[index]
-                                                        .appId
-                                                        .toString(),
-                                                    lstapprovalData[index]
-                                                        .appCatg
-                                                        .toString(),
-                                                    lstapprovalData[index]
-                                                        .updateByType
-                                                        .toString(),
-                                                    1,
-                                                  );
-                                                },
-                                                icon: const Icon(Iconsax.tick_square, color: Colors.green),
-                                                tooltip: "Approve",
+                                  return Container(
+                                    padding: const EdgeInsets.all(8),
+                                    decoration: BoxDecoration(
+                                      color: Colors.grey[50],
+                                      borderRadius: BorderRadius.circular(8),
+                                      border: Border.all(color: Colors.grey),
+                                      boxShadow: [
+                                        BoxShadow(
+                                          color: Colors.black12,
+                                          blurRadius: 2,
+                                          spreadRadius: 1,
+                                        ),
+                                      ],
+                                    ),
+                                    child: Column(
+                                      children: [
+                                        Column(
+                                          mainAxisAlignment: MainAxisAlignment.spaceAround,
+                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          children: [
+                                            Padding(
+                                              padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
+                                              child: Row(
+                                                children: [
+                                                  const Text(
+                                                    "Emp. Name: ",
+                                                    style: TextStyle(fontWeight: FontWeight.bold),
+                                                  ),
+                                                  const SizedBox(width: 10),
+                                                  Expanded(
+                                                    child: Text(
+                                                      lstapprovalData[index].name.toString(),
+                                                      overflow: TextOverflow.ellipsis,
+                                                    ),
+                                                  ),
+                                                ],
                                               ),
-                                              IconButton(
-                                                onPressed: () {
-                                                  showConfirmDialog(
-                                                    "Are you sure want to Reject?",
-                                                    lstapprovalData[index]
-                                                        .appId
-                                                        .toString(),
-                                                    lstapprovalData[index]
-                                                        .appCatg
-                                                        .toString(),
-                                                    lstapprovalData[index]
-                                                        .updateByType
-                                                        .toString(),
-                                                    2,
-                                                  );
-                                                },
-                                                icon: const Icon(Icons.disabled_by_default_rounded, color: Colors.red),
-                                                tooltip: "Reject",
+                                            ),
+                                            Padding(
+                                              padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
+                                              child: Row(
+                                                children: [
+                                                  const Text(
+                                                    "Emp. Type: ",
+                                                    style: TextStyle(fontWeight: FontWeight.bold),
+                                                  ),
+                                                  const SizedBox(width: 10),
+                                                  Expanded(
+                                                    child: Text(
+                                                      "${lstapprovalData[index].appType}, (${lstapprovalData[index].unit})",
+                                                      overflow: TextOverflow.ellipsis,
+                                                    ),
+                                                  ),
+                                                ],
                                               ),
-                                              IconButton(
-                                                onPressed: () {
-                                                  showConfirmDialog(
-                                                    "Are you sure want to Hold?",
-                                                    lstapprovalData[index]
-                                                        .appId
-                                                        .toString(),
-                                                    lstapprovalData[index]
-                                                        .appCatg
-                                                        .toString(),
-                                                    lstapprovalData[index]
-                                                        .updateByType
-                                                        .toString(),
-                                                    3,
-                                                  );
-                                                },
-                                                icon: const Icon(Icons.back_hand, color: Color(0xFFEEE258)),
-                                                tooltip: "Hold",
+                                            ),
+                                            Padding(
+                                              padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
+                                              child: Row(
+                                                children: [
+                                                  const Text(
+                                                    "Department: ",
+                                                    style: TextStyle(fontWeight: FontWeight.bold),
+                                                  ),
+                                                  const SizedBox(width: 10),
+                                                  Expanded(
+                                                    child: Text(
+                                                      lstapprovalData[index].department.toString(),
+                                                      overflow: TextOverflow.ellipsis,
+                                                    ),
+                                                  ),
+                                                ],
                                               ),
-                                              IconButton(
-                                                onPressed: () {
-                                                  Get.to(() => ManagementApprovalForm(
-                                                    appId: lstapprovalData[index]
-                                                        .appId
-                                                        .toString(),
-                                                    appCatg: lstapprovalData[index]
-                                                        .appCatg
-                                                        .toString(),
-                                                    updateByType: lstapprovalData[index]
-                                                        .updateByType
-                                                        .toString(),
-                                                  ));
-                                                },
-                                                icon: const Icon(Iconsax.eye3),
-                                                tooltip: "View",
+                                            ),
+                                            Padding(
+                                              padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
+                                              child: Row(
+                                                children: [
+                                                  const Text(
+                                                    "Monthly Salary: ",
+                                                    style: TextStyle(fontWeight: FontWeight.bold),
+                                                  ),
+                                                  const SizedBox(width: 10),
+                                                  Expanded(
+                                                    child: Text(lstapprovalData[index].monthlySalary.toString()),
+                                                  ),
+                                                ],
                                               ),
-                                            ],
-                                          ).paddingSymmetric(vertical: 0).centered()
-                                        ],
-                                      ).paddingAll(8).box.shadow.color(Vx.gray50).rounded.border(color: Colors.grey).make()
-                                    ],
+                                            ),
+                                            Padding(
+                                              padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
+                                              child: Row(
+                                                children: [
+                                                  const Text(
+                                                    "Increment Amount: ",
+                                                    style: TextStyle(fontWeight: FontWeight.bold),
+                                                  ),
+                                                  const SizedBox(width: 10),
+                                                  Expanded(
+                                                    child: Text(lstapprovalData[index].incAmount.toString()),
+                                                  ),
+                                                ],
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                        const SizedBox(height: 8),
+                                        Row(
+                                          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                                          children: [
+                                            IconButton(
+                                              onPressed: () {
+                                                showConfirmDialog(
+                                                  "Are you sure want to Approve?",
+                                                  lstapprovalData[index].appId.toString(),
+                                                  lstapprovalData[index].appCatg.toString(),
+                                                  lstapprovalData[index].updateByType.toString(),
+                                                  1,
+                                                );
+                                              },
+                                              icon: const Icon(Iconsax.tick_square, color: Colors.green),
+                                              tooltip: "Approve",
+                                            ),
+                                            IconButton(
+                                              onPressed: () {
+                                                showConfirmDialog(
+                                                  "Are you sure want to Reject?",
+                                                  lstapprovalData[index].appId.toString(),
+                                                  lstapprovalData[index].appCatg.toString(),
+                                                  lstapprovalData[index].updateByType.toString(),
+                                                  2,
+                                                );
+                                              },
+                                              icon: const Icon(Icons.disabled_by_default_rounded, color: Colors.red),
+                                              tooltip: "Reject",
+                                            ),
+                                            IconButton(
+                                              onPressed: () {
+                                                showConfirmDialog(
+                                                  "Are you sure want to Hold?",
+                                                  lstapprovalData[index].appId.toString(),
+                                                  lstapprovalData[index].appCatg.toString(),
+                                                  lstapprovalData[index].updateByType.toString(),
+                                                  3,
+                                                );
+                                              },
+                                              icon: const Icon(Icons.back_hand, color: Color(0xFFEEE258)),
+                                              tooltip: "Hold",
+                                            ),
+                                            IconButton(
+                                              onPressed: () {
+                                                Get.to(() => ManagementApprovalForm(
+                                                  appId: lstapprovalData[index].appId.toString(),
+                                                  appCatg: lstapprovalData[index].appCatg.toString(),
+                                                  updateByType: lstapprovalData[index].updateByType.toString(),
+                                                ));
+                                              },
+                                              icon: const Icon(Iconsax.eye3),
+                                              tooltip: "View",
+                                            ),
+                                          ],
+                                        ),
+                                      ],
+                                    ),
                                   );
                                 },
                               ),
@@ -467,7 +486,8 @@ class _ManagementApprovalState extends State<ManagementApproval> {
                 ),
               ),
             ],
-          ),
+          )
+
         ),);
   }
 }

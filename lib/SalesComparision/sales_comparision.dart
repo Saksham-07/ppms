@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 
 import '../Bars/bar3.dart';
+import '../common/utils/constants/baseurl.dart';
 
 class SalesComparision extends StatefulWidget {
   @override
@@ -30,7 +31,7 @@ class _SalesComparisionState extends State<SalesComparision> {
 
   Future<void> _fetchFyData() async {
     final response =
-    await http.get(Uri.parse('http://14.142.248.34:10008/year?year='));
+    await http.get(Uri.parse('${TBaseURL.baseUrl}year?year='));
     if (response.statusCode == 200) {
       final data = json.decode(response.body);
       setState(() {
